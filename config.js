@@ -1,18 +1,26 @@
 /* =============================================================
- * Litpax Suite — saare URLs EK hi jagah
- * Har app ka naya GAS deploy karke /exec URL yahan paste karo.
- * Shell aur charon apps (erp/ ims/ plt/ soms/) yahi file padhte hain.
- * (URLs "Litpax Suite Links" sheet ke Links tab me bhi likhe milenge)
+ * Litpax Suite — EK HI CONFIG (poore repo ki sirf yahi config file hai)
+ * Shell, ERP, IMS, PLT, SOMS — sab pages yahi file load karte hain.
+ * Har app ka GAS deploy karke uska /exec URL neeche paste karo. Bas.
  * ============================================================= */
 window.SUITE = {
-  ERP_URL:  'PASTE_ERP_GAS_EXEC_URL',
-  IMS_URL:  'PASTE_IMS_GAS_EXEC_URL',
-  PLT_URL:  'PASTE_PLT_GAS_EXEC_URL',
-  SOMS_URL: 'PASTE_SOMS_GAS_EXEC_URL',
+  ERP_URL:  'https://script.google.com/macros/s/AKfycbyKm0JNjipurMOfnEhI8p7kiz9C_z4ZRJD8PxrURb4wEIJfxEoS8Xp6mh-nNceX7w37/exec',
+  IMS_URL:  'https://script.google.com/macros/s/AKfycbxkRMRuoaTpUIoijTXKFs6K9QnXcyaxwhSF5Di_iNj7x-lRUNm2VvV9B_EJpNLz2PcaMg/exec',
+  PLT_URL:  'https://script.google.com/macros/s/AKfycbyrXivbtfBEy5FgpzAxHI9z7p52Fqg8AOrPtUUNGiqmVJIcL06zBR06_Tt__QfwXVuXJQ/exec',
+  SOMS_URL: 'https://script.google.com/macros/s/AKfycbzjDjoPhk4gOE-HiG4bMex5MRKpqK4yayYMTiV6cuu2MW1cRDLN3gAHoO49AcrrSrR1Lw/exec',
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
 
+  // PLT scan station settings
+  PLT: {
+    FLOOR: 'Floor-1',            // is PC ka floor / unit — har scan row me jaata hai
+    POLL_MS: 15000,              // admin dashboard refresh (0 = band)
+    LOG_LIMIT: 3000,             // load par kitni recent scan rows
+    ENFORCE_SEQUENCE: false      // station order galat ho to warning
+  },
+
+  // Suite ke sidebar me khulne wale apps
   MODULES: {
     erp:      { label: 'ERP',             path: 'erp/app.html' },
     ims:      { label: 'Inventory (IMS)', path: 'ims/index.html' },
@@ -21,3 +29,18 @@ window.SUITE = {
     soms:     { label: 'Store Orders',    path: 'soms/index.html' }
   }
 };
+
+/* ---- Neeche kuch mat badlo: har app ko wahi variables milte hain jo uska purana config deta tha ---- */
+(function () {
+  var S = window.SUITE, p = location.pathname;
+  window.GAS_URL = S.ERP_URL;                                   // ERP pages
+  window.IMS_URL = S.IMS_URL;                                   // ERP material check
+  window.MP = { ERP_URL: S.ERP_URL, IMS_URL: S.IMS_URL };       // ERP / MaterialProd
+  if (/\/plt\//.test(p)) {
+    window.CONFIG = { API_URL: S.PLT_URL, FLOOR: S.PLT.FLOOR, POLL_MS: S.PLT.POLL_MS, LOG_LIMIT: S.PLT.LOG_LIMIT,
+      ENFORCE_SEQUENCE: S.PLT.ENFORCE_SEQUENCE, TIMEOUT_MS: S.TIMEOUT_MS };
+  } else if (/\/soms\//.test(p)) {
+    window.CONFIG = { API_URL: S.SOMS_URL, APP_NAME: 'Litpax SMS', APP_SUBTITLE: 'Store Management System',
+      COMPANY: 'Litpax Technology', REQUEST_TIMEOUT: 30000 };
+  }
+})();
