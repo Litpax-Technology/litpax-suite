@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LitpaxERP — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- LEFT -->
+  <div class="left">
+    <div class="brand">
+      <div class="brand-mark">L</div>
+      <div>
+        <div class="brand-name">LitpaxERP</div>
+        <div class="brand-tag">Manufacturing Suite</div>
+      </div>
+    </div>
+
+    <div class="left-mid">
+      <div class="left-title">Order to Delivery,<br>fully connected.</div>
+      <div class="left-desc">Ek jagah se manage karo — orders, CRM tracking, production aur dispatch.</div>
+      <div class="flow-list">
+        <div class="flow-item"><div class="flow-num">1</div><div class="flow-text">Sales Order Create</div></div>
+        <div class="flow-item"><div class="flow-num">2</div><div class="flow-text">CRM Tracker Update</div></div>
+        <div class="flow-item"><div class="flow-num">3</div><div class="flow-text">Production Start</div></div>
+        <div class="flow-item"><div class="flow-num">4</div><div class="flow-text">Billing & Dispatch</div></div>
+        <div class="flow-item"><div class="flow-num">5</div><div class="flow-text">Delivery Confirmed</div></div>
+      </div>
+    </div>
+
+    <div class="left-foot">
+      <div class="left-stat"><div class="left-stat-val">7</div><div class="left-stat-lbl">Users</div></div>
+      <div class="left-stat"><div class="left-stat-val">3</div><div class="left-stat-lbl">Sheets</div></div>
+      <div class="left-stat"><div class="left-stat-val">Live</div><div class="left-stat-lbl">Data Sync</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="form-head">
+      <div class="form-title">Welcome back</div>
+      <div class="form-sub">Sign in to access your ERP</div>
+    </div>
+
+    <div class="err-box" id="errBox">
+      <span>⚠</span><span id="errTxt">Invalid credentials</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="uname" placeholder="Enter username" autocomplete="username">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="pword" placeholder="Enter password" autocomplete="current-password">
+        <button class="eye-btn" onclick="toggleEye()">👁</button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <div class="spinner" id="spin"></div>
+      <span id="btnTxt">Sign In →</span>
+    </button>
+
+    <div class="bottom-bar">
+      <span>Role-based Access</span><div class="dot"></div>
+      <span>Google Sheets</span><div class="dot"></div>
+      <span>GitHub Hosted</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="../config.js"></script>
+<script src="index.js"></script>
+</body>
+</html>
