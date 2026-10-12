@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Litpax IMS</title>
+<link rel="stylesheet" href="style.css?v=5">
+
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-bg-shape" style="width:600px;height:600px;top:-200px;right:-100px;"></div>
+  <div class="login-bg-shape" style="width:400px;height:400px;bottom:-150px;left:30%;"></div>
+  <div class="login-left">
+    <div class="login-left-inner">
+      <div class="login-logo-box">L</div>
+      <div class="login-brand">Litpax IMS</div>
+      <div class="login-tagline">Inventory Management System</div>
+      <div class="login-stats">
+        <div class="login-stat"><span class="login-stat-icon">🏪</span><div class="login-stat-text"><strong>Store Management</strong>Real-time inventory tracking</div></div>
+        <div class="login-stat"><span class="login-stat-icon">🏭</span><div class="login-stat-text"><strong>Production Flow</strong>WIP & Finished Goods</div></div>
+        <div class="login-stat"><span class="login-stat-icon">📊</span><div class="login-stat-text"><strong>Smart Reports</strong>Daily closing & analytics</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="login-right">
+    <div class="login-card">
+      <div class="login-card-title">Welcome back 👋</div>
+      <div class="login-card-sub">Select your role and enter your PIN</div>
+      <label class="login-field-label">Select Role</label>
+      <div class="role-grid" id="role-grid">
+        <button class="role-btn" onclick="selectRole('admin')" id="role-admin"><div class="role-icon">👑</div><div class="role-name">Admin</div><div class="role-sub">Full Access</div></button>
+        <button class="role-btn" onclick="selectRole('ajay')" id="role-ajay"><div class="role-icon">📦</div><div class="role-name">Ajay</div><div class="role-sub">Store</div></button>
+        <button class="role-btn" onclick="selectRole('sandeep')" id="role-sandeep"><div class="role-icon">🏭</div><div class="role-name">Nishant</div><div class="role-sub">Production</div></button>
+        <button class="role-btn" onclick="selectRole('purchase')" id="role-purchase"><div class="role-icon">🛒</div><div class="role-name">Purchase</div><div class="role-sub">Store Orders</div></button>
+      </div>
+           
+      <label class="login-field-label">Enter PIN</label>
+      <div class="pin-wrap">
+        <input type="password" class="pin-input" id="login-pin" maxlength="15" placeholder="• • • • • •" autocomplete="off" onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div class="login-err" id="login-err">❌ Galat PIN — dobara try karein</div>
+      <button class="login-btn" onclick="doLogin()"><span>Login</span><span>→</span></button>
+      <div class="login-footer">Litpax Technology Pvt. Ltd. · Designed by Darpan</div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="app-shell" style="display:none;">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="slogo">
+      <div class="slogo-row">
+        <div class="slogo-box">L</div>
+        <div class="slogo-text"><div class="n">Litpax IMS</div><div class="s">Inventory</div></div>
+      </div>
+    </div>
+    <nav>
+      <div class="ng">
+        <div class="ng-label">Overview</div>
+        <div class="ni active" onclick="showPage('dashboard')" data-page="dashboard"><span class="ic">📊</span><span>Dashboard</span></div>
+      </div>
+      <div class="ng">
+        <div class="ng-label">Transactions</div>
+        <div class="ni" onclick="showPage('inward')" data-page="inward"><span class="ic">📥</span><span>Inward</span></div>
+        <div class="ni" onclick="showPage('outward')" data-page="outward"><span class="ic">📤</span><span>Outward</span></div>
+        <div class="ni" onclick="showPage('dispatch')" data-page="dispatch"><span class="ic">🚚</span><span>Dispatch</span></div>
+        <div class="ni" onclick="showPage('received')" data-page="received"><span class="ic">📥</span><span>Received from Store</span></div>
+        <div class="ni" onclick="showPage('wip')" data-page="wip"><span class="ic">🏭</span><span>WIP Tracker</span></div>
+      </div>
+      <div class="ng">
+        <div class="ng-label">Masters</div>
+        <div class="ni" onclick="showPage('items')" data-page="items"><span class="ic">📦</span><span>Items</span></div>
+        <div class="ni" onclick="showPage('opening')" data-page="opening"><span class="ic">🏁</span><span>Opening Stock</span></div>
+        <div class="ni" onclick="showPage('bom')" data-page="bom"><span class="ic">🔧</span><span>BOM Manager</span></div>
+        <div class="ni" onclick="showPage('indent')" data-page="indent"><span class="ic">📋</span><span>Indent / PO</span><span class="nbadge" id="nb-indent" style="display:none">0</span></div>
+      </div>
+      <div class="ng">
+        <div class="ng-label">Reports</div>
+        <div class="ni" onclick="showPage('stock')" data-page="stock"><span class="ic">📈</span><span>Stock Summary</span></div>
+        <div class="ni" onclick="showPage('ledger')" data-page="ledger"><span class="ic">📒</span><span>Stock Ledger</span></div>
+        <div class="ni" onclick="showPage('reorder')" data-page="reorder"><span class="ic">⚠️</span><span>Reorder</span><span class="nbadge" id="nb" style="display:none">0</span></div>
+        <div class="ni" onclick="showPage('closing')" data-page="closing"><span class="ic">🗓️</span><span>Daily Closing</span></div>
+        <div class="ni" onclick="showPage('adc')" data-page="adc"><span class="ic">📉</span><span>ADC Calculate</span></div>
+      </div>
+
+
+    </nav>
+    <div class="sfoot">
+      <div class="conn-dot-row">
+        <div class="dot loading" id="api-dot"></div>
+        <span class="conn-lbl" id="api-lbl">Connecting...</span>
+      </div>
+      <div id="logout-btn" style="display:none;margin-bottom:8px;">
+        <button onclick="logout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;font-family:var(--sans);font-size:11px;font-weight:600;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;" onmouseover="this.style.background='rgba(220,38,38,.2)';this.style.color='#fca5a5';this.style.borderColor='rgba(220,38,38,.3)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)';this.style.borderColor='rgba(255,255,255,.12)'">
+          <span>🚪</span><span id="logout-role-label"></span><span>Logout</span>
+        </button>
+      </div>
+      <div class="foot-brand">Designed by Darpan</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ADMIN DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:22px;font-weight:700;color:var(--navy);" id="dash-greeting">Good morning 👋</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;" id="dash-date">—</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn bg bsm" onclick="loadDash()">↻ Refresh</button>
+
+        </div>
+      </div>
+
+      <!-- KPI — 3 CARDS ONLY -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+        <div class="kpi-card kpi-blue"><div class="kpi-icon">📦</div><div class="kpi-val" id="s-total">—</div><div class="kpi-label">Total Items</div></div>
+        <div class="kpi-card kpi-purple"><div class="kpi-icon">🏭</div><div class="kpi-val" id="s-wip">—</div><div class="kpi-label">Items in WIP</div></div>
+        <div class="kpi-card kpi-red" style="cursor:pointer;" onclick="showPage('reorder')"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="s-ro">—</div><div class="kpi-label">Reorder Alerts</div></div>
+      </div>
+
+      <!-- CHARTS ROW 1: Reorder + WIP -->
+      <div class="g2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="ch" style="background:linear-gradient(90deg,#fff8f0,#fff3e8);">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">⚠️</span><h2>Reorder / Critical Items</h2></div>
+            <button class="btn bg bsm" onclick="showPage('reorder')">View All →</button>
+          </div>
+          <div style="padding:16px 18px;" id="reorder-chart-wrap">
+            <canvas id="reorderChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch" style="background:linear-gradient(90deg,#faf5ff,#f3eeff);">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">🏭</span><h2>WIP — In Production</h2></div>
+          </div>
+          <div style="padding:16px 18px;" id="wip-chart-wrap">
+            <canvas id="wipChart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- INWARD -->
+    <div class="page" id="page-inward">
+      <div class="tb">
+        <div class="pt"><h1>Inward</h1><p>Bahar se store mein aaya raw material</p></div>
+        <div class="ta"><button class="btn bgn" onclick="openInwardModal()">+ New Inward</button></div>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="ch"><h2>Filters</h2>
+          <div class="ta">
+            <input type="date" class="inp" id="in-date-f" style="width:150px;" onchange="loadInward()">
+            <button class="btn bg bsm" onclick="document.getElementById('in-date-f').value='';loadInward()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Supplier</th><th>Invoice/PO</th><th>By</th><th>Remarks</th><th>Photo</th></tr></thead>
+            <tbody id="in-tb"><tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="in-empty" class="empty" style="display:none"><div class="ei">📥</div><div class="et">No inward records</div></div>
+      </div>
+    </div>
+
+    <!-- OUTWARD -->
+    <div class="page" id="page-outward">
+      <div class="tb">
+        <div class="pt"><h1>Outward</h1><p>Store se production ko diya — daily</p></div>
+        <div class="ta"><button class="btn brd" onclick="openOutwardModal()">+ New Outward</button></div>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="ch"><h2>Filters</h2>
+          <div class="ta">
+            <input type="date" class="inp" id="out-date-f" style="width:150px;" onchange="loadOutward()">
+            <select class="inp" id="out-dept-f" style="width:160px;" onchange="loadOutward()">
+              <option value="">All Departments</option>
+              <option>Volt Wing</option><option>Ampere Wing</option><option>Volt x Ampere Wing</option>
+              <option>Mega Grid</option><option>Cathodic Wing</option><option>Future Cell</option>
+              <option>Phoenix Wing</option><option>Other</option>
+            </select>
+            <select class="inp" id="out-item-f" style="width:200px;" onchange="loadOutward()">
+              <option value="">All Items</option>
+            </select>
+            <select class="inp" id="out-purpose-f" style="width:150px;" onchange="loadOutward()">
+              <option value="">All Purpose</option>
+              <option value="Production">🏭 Production</option>
+              <option value="Repair/Other">🔧 Repair / Other</option>
+            </select>
+            <button class="btn bg bsm" onclick="clearOutFilters()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Purpose</th><th>Department</th><th>Issued To</th><th>By</th><th>Remarks</th></tr></thead>
+            <tbody id="out-tb"><tr class="lrow"><td colspan="8"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="out-empty" class="empty" style="display:none"><div class="ei">📤</div><div class="et">No outward records</div></div>
+      </div>
+    </div>
+
+    <!-- DISPATCH -->
+    <div class="page" id="page-dispatch">
+      <div class="tb">
+        <div class="pt"><h1>Dispatch</h1><p>Production → Finished Goods — BOM se auto deduction</p></div>
+        <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" class="inp" id="dis-filter-date" style="width:160px;" onchange="loadDispatch()">
+          <button class="btn bg bsm" onclick="document.getElementById('dis-filter-date').value='';loadDispatch()">All Dates</button>
+          <button class="btn bp" onclick="openDispatchModal()">+ New Dispatch</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Date</th><th>BOM Model</th><th>Qty</th><th>Dispatch To</th><th>Order Ref</th><th>By</th><th>BOM OK</th><th>Remarks</th><th>Actions</th></tr></thead>
+            <tbody id="dis-tb"><tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="dis-empty" class="empty" style="display:none"><div class="ei">🚚</div><div class="et">No dispatch records</div></div>
+      </div>
+    </div>
+
+    <!-- RECEIVED FROM STORE (Sandeep) -->
+    <div class="page" id="page-received">
+      <div class="tb">
+        <div class="pt"><h1>📥 Received from Store</h1><p>Store se production mein aaya material</p></div>
+        <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" class="inp" id="recv-date" style="width:160px;" onchange="loadReceived()">
+          <select class="inp cat-filter-select" id="recv-cat" style="width:170px;" onchange="loadReceived()">
+            <option value="">All Categories</option>
+            <option>Cells</option><option>BMS</option><option>Charger</option>
+            <option>Nickel/Busbar</option><option>Box</option><option>Wire</option>
+            <option>Consumables</option><option>Tools</option><option>Packaging</option>
+          </select>
+          <button class="btn bg bsm" onclick="loadReceived()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="recv-content"><div class="empty"><div class="ei">⏳</div><div class="et">Loading...</div></div></div>
+    </div>
+    <div class="page" id="page-wip">
+      <div class="tb">
+        <div class="pt"><h1>WIP Tracker</h1><p>Production mein kya kya hai — running balance</p></div>
+        <div class="ta">
+          <select class="inp cat-filter-select" id="wip-cat-f" style="width:160px;" onchange="filterWip()">
+            <option value="">All Categories</option>
+          </select>
+          <button class="btn bg bsm" onclick="loadWip()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Item</th><th>Category</th><th>Unit</th><th>Total Out (Store)</th><th>Dispatch Used</th><th>WIP Balance</th></tr></thead>
+            <tbody id="wip-tb"><tr class="lrow"><td colspan="6"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="wip-empty" class="empty" style="display:none"><div class="ei">🏭</div><div class="et">No WIP data</div></div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="page" id="page-items">
+      <div class="tb">
+        <div class="pt"><h1>Items</h1><p>Raw materials, components — reorder settings</p></div>
+        <div class="ta">
+          <input class="inp" id="item-search" placeholder="🔍 Search..." style="width:170px;" oninput="filterItems()">
+          <select class="inp cat-filter-select" id="item-cat-f" style="width:160px;" onchange="filterItems()">
+            <option value="">All Categories</option>
+          </select>
+          <button class="btn bp" onclick="openItemModal()">+ Add Item</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Item Name</th><th>Category</th><th>Unit</th><th>ADC</th><th>Lead Time</th><th>SF</th><th>MOQ</th><th>Max</th><th>ROP</th><th>MIT</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+            <tbody id="items-tb"><tr class="lrow"><td colspan="13"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="items-empty" class="empty" style="display:none"><div class="ei">📦</div><div class="et">No items</div><div class="es">Click + Add Item</div></div>
+      </div>
+    </div>
+
+    <!-- BOM MANAGER -->
+    <div class="page" id="page-bom">
+      <div class="tb">
+        <div class="pt"><h1>BOM Manager</h1><p>Models + BOM Master Sheet se — edit wahin karo</p></div>
+        <div class="ta">
+          <input class="inp" id="bom-search" placeholder="🔍 Search model..." style="width:200px;" oninput="filterBom()">
+          <button class="btn bg bsm" onclick="refreshMaster()">🔄 Refresh from Master</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>BOM Name</th><th>Alias</th><th>Produces</th><th>Components</th><th>Status</th><th></th></tr></thead>
+            <tbody id="bom-tb"><tr class="lrow"><td colspan="6"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="bom-empty" class="empty" style="display:none"><div class="ei">🔧</div><div class="et">No BOM models</div></div>
+      </div>
+    </div>
+
+    <!-- STOCK SUMMARY -->
+    <div class="page" id="page-stock">
+      <div class="tb">
+        <div class="pt"><h1>Stock Summary</h1><p>Category → Brand → Model — Live Stock</p></div>
+        <div class="ta">
+          <input class="inp" id="stock-search" placeholder="🔍 Search..." style="width:170px;" oninput="filterStock()">
+          <select class="inp cat-filter-select" id="stock-cat-f" style="width:140px;" onchange="filterStock()">
+            <option value="">All Categories</option>
+          </select>
+          <select class="inp" id="stock-status-f" style="width:120px;" onchange="filterStock()">
+            <option value="">All Status</option><option>Critical</option><option>Reorder</option><option>OK</option>
+          </select>
+          <button class="btn bg bsm" onclick="loadStock()">↻ Refresh</button>
+          <button class="btn bg bsm" onclick="toggleStockView()" id="stock-view-btn">🌳 Tree View</button>
+        </div>
+      </div>
+      <div id="stock-tree" style="display:none;"></div>
+      <div class="card" id="stock-table-wrap">
+        <div class="tw"><table>
+            <thead><tr><th>Item Name</th><th>Category</th><th>Brand</th><th>Unit</th><th>ROP</th><th>MIT</th><th>Current Stock</th><th>Order Qty</th><th>Status</th></tr></thead>
+            <tbody id="stock-tb"><tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="stock-empty" class="empty" style="display:none"><div class="ei">📈</div><div class="et">No data</div></div>
+      </div>
+    </div>
+
+    <!-- REORDER -->
+    <div class="page" id="page-reorder">
+      <div class="tb">
+        <div class="pt"><h1>Reorder Sheet</h1><p>Items needing immediate restocking</p></div>
+        <div class="ta">
+          <button class="btn bp" onclick="openCreatePO()">📋 Create PO</button>
+          <button class="btn bg bsm" onclick="loadReorder()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="ro-content"><div class="empty"><div class="ei">⏳</div><div class="et">Loading...</div></div></div>
+    </div>
+
+    <!-- DAILY CLOSING -->
+    <div class="page" id="page-closing">
+      <div class="tb">
+        <div class="pt"><h1>Daily Closing</h1><p>End-of-day stock snapshot</p></div>
+        <div class="ta">
+          <button class="btn bg bsm" id="cl-tab-single" onclick="switchClTab('single')" style="border-color:var(--accent);color:var(--accent);">Single Day</button>
+          <button class="btn bg bsm" id="cl-tab-range" onclick="switchClTab('range')">Date Range</button>
+          <button class="btn bg bsm" id="cl-tab-heatmap" onclick="switchClTab('heatmap')">📅 Monthly Heatmap</button>
+        </div>
+      </div>
+      <div id="cl-single-wrap">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+          <input type="date" class="inp" id="cl-date" style="width:170px;">
+          <button class="btn bp" onclick="genClosing()">Generate</button>
+          <button class="btn bgn bsm" onclick="saveSnapshot()">💾 Save Snapshot</button>
+        </div>
+        <div id="cl-content"></div>
+      </div>
+      <div id="cl-range-wrap" style="display:none;">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:var(--muted);font-weight:600;">From</label>
+            <input type="date" class="inp" id="cl-from" style="width:160px;">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:var(--muted);font-weight:600;">To</label>
+            <input type="date" class="inp" id="cl-to" style="width:160px;">
+          </div>
+          <button class="btn bp" onclick="genHistory()">Show History</button>
+          <button class="btn bg bsm" onclick="exportHistoryCSV()">↓ Export CSV</button>
+        </div>
+        <div id="cl-history-content"></div>
+      </div>
+
+      <!-- Monthly Heatmap -->
+      <div id="cl-heatmap-wrap" style="display:none;">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:var(--muted);font-weight:600;">Month</label>
+            <input type="month" class="inp" id="hm-month" style="width:170px;">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:var(--muted);font-weight:600;">Category</label>
+            <select class="inp cat-filter-select" id="hm-cat" style="width:160px;">
+              <option value="">All Categories</option>
+              <option>Cells</option><option>BMS</option><option>Charger</option>
+            <option>Nickel/Busbar</option><option>Box</option><option>Wire</option>
+            <option>Consumables</option><option>Tools</option><option>Packaging</option>
+            </select>
+          </div>
+          <button class="btn bp" onclick="genHeatmap()">Generate</button>
+        </div>
+        <!-- Legend -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;background:#f8faff;padding:10px 14px;border-radius:8px;border:1px solid var(--border);">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);">LEGEND</span>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:14px;height:14px;border-radius:3px;background:#7c3aed;"></div><span style="font-size:11px;color:var(--t2);">&gt; Max Level</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:14px;height:14px;border-radius:3px;background:#f97316;"></div><span style="font-size:11px;color:var(--t2);">66–99% of Max</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:14px;height:14px;border-radius:3px;background:#eab308;"></div><span style="font-size:11px;color:var(--t2);">33–65% of Max</span></div>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:14px;height:14px;border-radius:3px;background:#ef4444;"></div><span style="font-size:11px;color:var(--t2);">&lt; 33% of Max</span></div>
+        </div>
+        <div id="hm-content"></div>
+      </div>
+    </div>
+
+    <!-- OPENING STOCK -->
+    <!-- ADC CALCULATE PAGE -->
+    <div class="page" id="page-adc">
+      <div class="tb">
+        <div class="pt"><h1>ADC Calculate</h1><p>Average Daily Consumption — date range se inward/outward breakdown</p></div>
+        <div class="ta">
+          <input type="date" class="inp" id="adc-from" style="width:145px;">
+          <span style="font-size:12px;color:var(--muted);">to</span>
+          <input type="date" class="inp" id="adc-to" style="width:145px;">
+          <select class="inp cat-filter-select" id="adc-cat" style="width:150px;">
+            <option value="">All Categories</option>
+          </select>
+          <button class="btn bp bsm" onclick="loadADC()">Generate</button>
+          <button class="btn bg bsm" id="adc-pdf-btn" onclick="downloadADCPdf()" style="display:none;">⬇ Download PDF</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Item</th><th>Category</th><th>Unit</th>
+            <th>Total Inward</th><th>Total Outward</th><th>Days</th>
+            <th style="background:#fef3c7;color:#b45309;">ADC</th>
+          </tr></thead>
+          <tbody id="adc-tb"><tr class="lrow"><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Date range select karke Generate dabao</td></tr></tbody>
+        </table></div>
+        <div id="adc-empty" class="empty" style="display:none"><div class="ei">📉</div><div class="et">No data for this range</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-opening">
+      <div class="tb">
+        <div class="pt"><h1>Opening Stock</h1><p>Set opening stock — one time setup</p></div>
+        <div class="ta"><button class="btn bp" onclick="saveOpeningStock()">💾 Save Opening Stock</button></div>
+      </div>
+      <div style="background:var(--amber-l);border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--amber);">
+  🔒 <b>One-time setup</b> — Opening stock ek baar save hone ke baad <b>lock ho jaata hai</b>, dobara change nahi hoga. Sirf woh items save honge jo abhi tak set nahi hain.
+</div>
+      <!-- Category Filter -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:600;color:var(--muted);">Category:</label>
+        <select class="inp cat-filter-select" id="opening-cat-f" style="width:180px;" onchange="filterOpeningStock()">
+          <option value="">All Categories</option>
+          <option>Cells</option><option>BMS</option><option>Charger</option>
+            <option>Nickel/Busbar</option><option>Box</option><option>Wire</option>
+            <option>Consumables</option><option>Tools</option><option>Packaging</option>
+        </select>
+        <span id="opening-count" style="font-size:12px;color:var(--muted);"></span>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Item Name</th><th>SKU Code</th><th>Unit</th><th>Opening Qty</th><th>Remarks</th></tr></thead>
+            <tbody id="opening-tb"><tr class="lrow"><td colspan="5"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+<!-- INDENT / PO -->
+    <div class="page" id="page-indent">
+      <div class="tb">
+        <div class="pt"><h1>Purchase Orders</h1><p>Track purchase orders & receive materials</p></div>
+        <div class="ta">
+          <select class="inp" id="indent-status-f" style="width:140px;" onchange="loadIndents()">
+            <option value="">All</option>
+            <option value="Pending">Pending</option>
+            <option value="Partial">Partial</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+          <thead><tr>
+            <th>PO ID</th>
+            <th>Date</th>
+            <th>Supplier</th>
+            <th>Expected</th>
+            <th>Status</th>
+            <th>Items</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="indent-tb"><tr class="lrow"><td colspan="7"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="indent-empty" class="empty" style="display:none">
+          <div class="ei">📋</div>
+          <div class="et">No POs yet</div>
+          <div class="es">Reorder page se Create PO karo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATERIAL REQUESTS -->
+    <div class="page" id="page-requests">
+      <div class="tb">
+        <div class="pt"><h1>Material Requests</h1><p>Requests from production — review and issue material</p></div>
+        <div class="ta">
+          <select class="inp" id="req-status-f" style="width:140px;" onchange="loadRequests()">
+            <option value="Pending">Pending</option><option value="">All</option>
+            <option value="Closed">Closed</option><option value="Cancelled">Cancelled</option>
+          </select>
+          <button class="btn bg bsm" onclick="loadRequests()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Time</th><th>Item</th><th>Qty</th><th>Unit</th><th>Department</th><th>Requested By</th><th>Remarks</th><th>Status</th><th></th></tr></thead>
+            <tbody id="req-tb"><tr class="lrow"><td colspan="10"><span class="loader"></span></td></tr></tbody>
+        </table></div>
+        <div id="req-empty" class="empty" style="display:none"><div class="ei">🔔</div><div class="et">Koi pending request nahi</div></div>
+      </div>
+    </div>
+
+  <!-- STOCK LEDGER -->
+    <div class="page" id="page-ledger">
+      <div class="tb">
+        <div class="pt"><h1>Stock Ledger</h1><p>Item-wise running balance — opening se abhi tak</p></div>
+        <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select class="inp cat-filter-select" id="ldg-cat" style="width:160px;" onchange="filterLedgerItems()"><option value="">All Categories</option></select>
+          <select class="inp" id="ldg-item" style="width:220px;" onchange="renderLedger()"><option value="">-- Select Item --</option></select>
+          <input type="date" class="inp" id="ldg-from" style="width:145px;" onchange="renderLedger()">
+          <span style="font-size:12px;color:var(--muted);">to</span>
+          <input type="date" class="inp" id="ldg-to" style="width:145px;" onchange="renderLedger()">
+          <button class="btn bg bsm" onclick="clearLedgerDates()">All Dates</button>
+          <button class="btn bp bsm" onclick="printLedger()">🖨 Print</button>
+        </div>
+      </div>
+      <div id="ldg-summary"></div>
+      <div class="card">
+        <div class="tw"><table>
+          <thead><tr><th>Date</th><th>Type</th><th>Particulars</th><th>IN</th><th>OUT</th><th>Balance</th></tr></thead>
+          <tbody id="ldg-tb"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Item select karo</td></tr></tbody>
+        </table></div>
+        <div id="ldg-empty" class="empty" style="display:none"><div class="ei">📒</div><div class="et">No entries in this range</div></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<div id="toast"></div>
+
+<!-- INWARD MODAL -->
+<div class="ov" id="inward-modal">
+  <div class="modal">
+    <div class="mh"><h2>📥 New Inward Entry</h2><button class="mclose" onclick="closeM('inward-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fi full">
+          <label class="inp-label">Category *</label>
+          <select class="inp cat-select" id="in-cat" onchange="filterInwardItems()">
+            <option value="">-- Select Category --</option>
+            <option>Cells</option><option>BMS</option><option>Charger</option>
+            <option>Nickel/Busbar</option><option>Box</option><option>Wire</option>
+            <option>Consumables</option><option>Tools</option><option>Packaging</option>
+          </select>
+        </div>
+        <div class="fi full">
+          <label class="inp-label">Item *</label>
+          <select class="inp" id="in-item" onchange="updInwardInfo()">
+            <option value="">-- Select Category first --</option>
+          </select>
+        </div>
+        <div class="fi full" id="in-stock-info" style="display:none"><div class="stock-info">Stock: <strong id="in-cs">—</strong> &nbsp;|&nbsp; ROP: <strong id="in-rp">—</strong> &nbsp;|&nbsp; In Transit: <strong id="in-mit">—</strong></div><div id="in-item-pic"></div></div>
+        <div class="fi"><label class="inp-label">Quantity *</label><input class="inp" id="in-qty" type="number" min="1" placeholder="0"></div>
+        <div class="fi"><label class="inp-label">Date 🔒</label><input class="inp" id="in-date" type="date" readonly style="background:var(--s2);color:var(--muted);cursor:not-allowed;"></div>
+        <div class="fi full">
+          <label class="inp-label">Purpose *</label>
+          <div style="display:flex;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;flex:1;" id="in-purpose-rm">
+              <input type="radio" name="in-purpose" value="Raw Material" checked onchange="updInwardPurpose()"> 📦 Raw Material
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;flex:1;" id="in-purpose-fp">
+              <input type="radio" name="in-purpose" value="From Production" onchange="updInwardPurpose()"> 🔄 From Production
+            </label>
+          </div>
+        </div>
+        <div class="fi" id="in-supplier-wrap"><label class="inp-label">Supplier</label><input class="inp" id="in-supplier" placeholder="Supplier name"></div>
+        <div class="fi"><label class="inp-label">Invoice / PO No.</label><input class="inp" id="in-invoice" placeholder="INV-001"></div>
+        <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="in-by" placeholder="Ajay"></div>
+        <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="in-remarks" placeholder="Optional"></div>
+        <div class="fi full">
+          <label class="inp-label">Stock Photo <span style="font-size:10px;color:var(--muted);">(optional — max 3)</span></label>
+          <div class="in-photo-row">
+            <div id="in-photo-list" class="in-photo-list"></div>
+            <label class="in-photo-add" id="in-photo-add">📷<br>Add Photo
+              <input type="file" id="in-photo" accept="image/*" multiple style="display:none;" onchange="addInwardPhotos(this)">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('inward-modal')">Cancel</button><button class="btn bgn" id="in-btn" onclick="saveInward()">Save Inward</button></div>
+  </div>
+</div>
+
+<!-- OUTWARD MODAL -->
+<div class="ov" id="outward-modal">
+  <div class="modal">
+    <div class="mh"><h2>📤 New Outward Entry</h2><button class="mclose" onclick="closeM('outward-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fi full">
+          <label class="inp-label">Category *</label>
+          <select class="inp cat-select" id="out-cat" onchange="filterOutwardItems()">
+            <option value="">-- Select Category --</option>
+            <option>Cells</option><option>BMS</option><option>Charger</option>
+            <option>Nickel/Busbar</option><option>Box</option><option>Wire</option>
+            <option>Consumables</option><option>Tools</option><option>Packaging</option>
+          </select>
+        </div>
+        <div class="fi full">
+          <label class="inp-label">Item *</label>
+          <select class="inp" id="out-item" onchange="updOutwardInfo()">
+            <option value="">-- Select Category first --</option>
+          </select>
+        </div>
+        <div class="fi full" id="out-stock-info" style="display:none"><div class="stock-info">Available: <strong id="out-cs">—</strong> &nbsp;|&nbsp; ROP: <strong id="out-rp">—</strong></div><div id="out-item-pic"></div></div>
+        <div class="fi full">
+          <label class="inp-label">Purpose *</label>
+          <div style="display:flex;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;flex:1;" id="out-purpose-prod">
+              <input type="radio" name="out-purpose" value="Production" checked> 🏭 Production
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;flex:1;" id="out-purpose-repair">
+              <input type="radio" name="out-purpose" value="Repair/Other"> 🔧 Repair / Other
+            </label>
+          </div>
+        </div>
+        <div class="fi"><label class="inp-label">Quantity *</label><input class="inp" id="out-qty" type="number" min="1" placeholder="0"></div>
+        <div class="fi"><label class="inp-label">Date 🔒</label><input class="inp" id="out-date" type="date" readonly style="background:var(--s2);color:var(--muted);cursor:not-allowed;"></div>
+        <div class="fi"><label class="inp-label">Department *</label>
+          <select class="inp" id="out-dept">
+            <option value="">Select Department</option>
+            <option>Volt Wing</option><option>Ampere Wing</option><option>Volt x Ampere Wing</option>
+            <option>Mega Grid</option><option>Cathodic Wing</option><option>Future Cell</option>
+            <option>Phoenix Wing</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fi"><label class="inp-label">Issued To</label><input class="inp" id="out-issuedto" placeholder="Person name"></div>
+        <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="out-by" placeholder="Ajay"></div>
+        <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="out-remarks" placeholder="Optional"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('outward-modal')">Cancel</button><button class="btn brd" id="out-btn" onclick="saveOutward()">Save Outward</button></div>
+  </div>
+</div>
+
+<!-- DISPATCH MODAL -->
+<div class="ov" id="dispatch-modal">
+  <div class="modal modal-lg">
+    <div class="mh"><h2>🚚 New Dispatch</h2><button class="mclose" onclick="closeM('dispatch-modal')">✕</button></div>
+    <div class="mb">
+
+      <!-- STEP 1: Choose type -->
+      <div id="dis-type-step">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;">What are you dispatching?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <button onclick="selectDispatchType('battery')" style="padding:20px;border:2px solid var(--border);border-radius:12px;background:#f8faff;cursor:pointer;transition:all .15s;text-align:center;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:8px;">🔋</div>
+            <div style="font-size:14px;font-weight:700;color:var(--navy);">Battery</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">BOM based dispatch</div>
+          </button>
+          <button onclick="selectDispatchType('charger')" style="padding:20px;border:2px solid var(--border);border-radius:12px;background:#f8faff;cursor:pointer;transition:all .15s;text-align:center;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:8px;">🔌</div>
+            <div style="font-size:14px;font-weight:700;color:var(--navy);">Charger</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">Direct WIP dispatch</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2A: Battery (BOM) -->
+      <div id="dis-battery-step" style="display:none;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <button onclick="resetDispatchType()" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;">← Back</button>
+          <span style="font-size:13px;font-weight:700;color:var(--navy);">🔋 Battery Dispatch</span>
+        </div>
+        <div class="fg">
+          <div class="fi full"><label class="inp-label">BOM Model *</label><select class="inp" id="dis-bom" onchange="updDispatchPreview()"></select></div>
+          <div class="fi"><label class="inp-label">Qty to Produce *</label><input class="inp" id="dis-qty" type="number" min="1" placeholder="1" oninput="updDispatchPreview()"></div>
+          <div class="fi"><label class="inp-label">Date *</label><input class="inp" id="dis-date" type="date"></div>
+          <div class="fi"><label class="inp-label">Dispatch To</label><input class="inp" id="dis-to" placeholder="Customer / Stock"></div>
+          <div class="fi"><label class="inp-label">Order Ref</label><input class="inp" id="dis-ref" placeholder="ORD-001"></div>
+          <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="dis-by" placeholder="Sandeep"></div>
+          <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="dis-remarks" placeholder="Optional"></div>
+        </div>
+        <div id="dis-preview"></div>
+      </div>
+
+      <!-- STEP 2B: Charger (Direct) -->
+      <div id="dis-charger-step" style="display:none;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <button onclick="resetDispatchType()" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;">← Back</button>
+          <span style="font-size:13px;font-weight:700;color:var(--navy);">🔌 Charger Dispatch</span>
+        </div>
+        <div class="fg">
+          <div class="fi full">
+            <label class="inp-label">Charger Item * <span style="font-size:10px;color:var(--muted);">(sirf WIP mein available items)</span></label>
+            <select class="inp" id="dd-item" onchange="updDirectDispatchInfo()">
+              <option value="">-- Select Charger --</option>
+            </select>
+          </div>
+          <div class="fi full" id="dd-wip-info" style="display:none;">
+            <div class="stock-info">WIP Available: <strong id="dd-wip-qty" style="color:var(--purple);">—</strong> &nbsp;|&nbsp; Unit: <strong id="dd-wip-unit">—</strong></div>
+          </div>
+          <div class="fi"><label class="inp-label">Qty to Dispatch *</label><input class="inp" id="dd-qty" type="number" min="1" placeholder="0" oninput="updDirectDispatchQty()"></div>
+          <div class="fi"><label class="inp-label">Date *</label><input class="inp" id="dd-date" type="date"></div>
+          <div class="fi"><label class="inp-label">Dispatch To * <span style="color:var(--red);">*</span></label><input class="inp" id="dd-to" placeholder="Customer name"></div>
+          <div class="fi"><label class="inp-label">Invoice No.</label><input class="inp" id="dd-invoice" placeholder="INV-001"></div>
+          <div class="fi"><label class="inp-label">Order Ref</label><input class="inp" id="dd-ref" placeholder="ORD-001"></div>
+          <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="dd-by" placeholder="Sandeep"></div>
+          <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="dd-remarks" placeholder="Optional"></div>
+        </div>
+        <!-- Confirm summary -->
+        <div id="dd-summary" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;"></div>
+        <div id="dd-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;color:var(--red);font-weight:600;"></div>
+      </div>
+
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('dispatch-modal')">Cancel</button>
+      <button class="btn bp" id="dis-btn" onclick="saveDispatch()" style="display:none;">Confirm Battery Dispatch</button>
+      <button class="btn bp" id="dd-btn" onclick="saveDirectDispatch()" style="display:none;">Confirm Charger Dispatch</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM MODAL -->
+<div class="ov" id="item-modal">
+  <div class="modal modal-lg">
+    <div class="mh"><h2 id="im-title">Add Item</h2><button class="mclose" onclick="closeM('item-modal')">✕</button></div>
+    <div class="mb">
+      <div style="margin-bottom:16px;">
+        <label class="inp-label">Step 1 — Category *</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;" id="cat-grid">
+          <button type="button" class="cat-btn" onclick="selectCat('Cells')">🔋 Cells</button>
+          <button type="button" class="cat-btn" onclick="selectCat('BMS')">⚡ BMS</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Charger')">🔌 Charger</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Nickel/Busbar')">🪙 Nickel/Busbar</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Box')">📦 Box</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Wire')">🔩 Wire</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Consumables')">🧰 Consumables</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Tools')">🔧 Tools</button>
+          <button type="button" class="cat-btn" onclick="selectCat('Packaging')">📦 Packaging</button>
+          </div>
+      </div>
+      <div id="brand-section" style="display:none;margin-bottom:16px;">
+        <label class="inp-label">Step 2 — Brand / Type *</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;" id="brand-grid"></div>
+        <input class="inp" id="f-brand-custom" placeholder="Or type custom..." style="margin-top:8px;display:none;" oninput="updItemName()">
+      </div>
+      <div id="model-section" style="display:none;margin-bottom:16px;">
+        <label class="inp-label">Step 3 — Model / Specification *</label>
+        <input class="inp" id="f-model" placeholder="e.g. 24S 40Amp, 100AH, 12.8V 5A..." oninput="updItemName()" style="margin-top:6px;">
+      </div>
+      <div id="name-preview" style="display:none;margin-bottom:16px;">
+        <div style="background:var(--accent-l);border:1px solid #c7d9ff;border-radius:8px;padding:10px 14px;">
+          <div style="font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Item Name (Auto)</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);" id="f-name-preview">—</div>
+          <input type="hidden" id="f-name">
+          <input type="hidden" id="f-max-val" value="0">
+          <input type="hidden" id="f-rop-val" value="0">
+        </div>
+      </div>
+      <div id="item-details" style="display:none;">
+        <div style="height:1px;background:var(--border);margin:16px 0;"></div>
+        <div class="fg">
+          <div class="fi"><label class="inp-label">Unit</label>
+            <select class="inp unit-select" id="f-unit" oninput="updROP()">
+              <option value="Pcs">Pcs</option><option value="Kg">Kg</option><option value="g">g</option>
+              <option value="L">L</option><option value="ml">ml</option><option value="Roll">Roll</option>
+              <option value="Set">Set</option><option value="m">m</option><option value="Bucket">Bucket</option><option value="Meter">Meter</option>
+            </select>
+          </div>
+          <div class="fi"><label class="inp-label">ADC (Daily use)</label><input class="inp" id="f-adc" type="number" min="0" placeholder="0" oninput="updROP()"></div>
+          <div class="fi"><label class="inp-label">Lead Time (Days)</label><input class="inp" id="f-lt" type="number" min="0" placeholder="0" oninput="updROP()"></div>
+          <div class="fi"><label class="inp-label">Safety Factor</label><input class="inp" id="f-sf" type="number" min="1" step="0.1" placeholder="1.2" oninput="updROP()"></div>
+          <div class="fi full"><label class="inp-label">Material In Transit</label><input class="inp" id="f-mit" type="number" min="0" placeholder="0"></div>
+          <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="f-remarks" placeholder="Optional"></div>
+          <div class="fi full"><label class="inp-label">Description</label><textarea class="inp" id="f-desc" rows="2" placeholder="Size, colour, connector type, pehchaan..."></textarea></div>
+          <div class="fi full">
+            <label class="inp-label">Photo</label>
+            <div style="display:flex;gap:12px;align-items:center;">
+              <img id="f-img-prev" class="item-thumb lg" style="display:none;" alt="">
+              <input type="file" id="f-img" accept="image/*" class="inp" onchange="previewItemImg(this)">
+            </div>
+          </div>
+        </div>
+        <div class="rop-box" style="margin-top:14px;">
+          <div class="rl">Reorder Point = ADC × Lead Time × Safety Factor</div>
+          <div class="rv" id="rop-prev">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('item-modal')">Cancel</button><button class="btn bp" id="im-btn" onclick="saveItem()">Save Item</button></div>
+  </div>
+</div>
+
+<!-- BOM ADD MODAL -->
+<div class="ov" id="bom-add-modal">
+  <div class="modal">
+    <div class="mh"><h2>+ New BOM Model</h2><button class="mclose" onclick="closeM('bom-add-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fi full"><label class="inp-label">BOM Name *</label><input class="inp" id="bm-name" placeholder="e.g. 60V 30AH LFP Smart"></div>
+        <div class="fi"><label class="inp-label">Alias / Code</label><input class="inp" id="bm-alias" placeholder="6030LFP"></div>
+        <div class="fi"><label class="inp-label">Item To Produce</label><input class="inp" id="bm-produces" placeholder="LITPAX EV BATTERY 60V 30AH"></div>
+        <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="bm-remarks" placeholder="Optional"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('bom-add-modal')">Cancel</button><button class="btn bp" id="bm-btn" onclick="saveBomModel()">Save</button></div>
+  </div>
+</div>
+
+<!-- BOM EDIT MODAL -->
+<div class="ov" id="bom-edit-modal">
+  <div class="modal modal-lg">
+    <div class="mh"><h2 id="bom-edit-title">Edit BOM</h2><button class="mclose" onclick="closeM('bom-edit-modal')">✕</button></div>
+    <div class="mb">
+      <div style="margin-bottom:12px;font-size:12px;color:var(--muted);">Enter component quantities (per 1 unit)</div>
+      <div id="bom-rows-wrap"></div>
+      <button class="btn bg bsm" style="margin-top:8px;" onclick="addBomRow()">+ Add Component</button>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('bom-edit-modal')">Cancel</button><button class="btn bp" id="bom-edit-btn" onclick="saveBomItems()">Save BOM</button></div>
+  </div>
+</div>
+
+<!-- INDENT MODAL -->
+<div class="ov" id="indent-modal">
+  <div class="modal">
+    <div class="mh"><h2>📋 New Indent / PO</h2><button class="mclose" onclick="closeM('indent-modal')">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <div class="fi full"><label class="inp-label">Item *</label><select class="inp" id="ind-item"></select></div>
+        <div class="fi"><label class="inp-label">Qty *</label><input class="inp" id="ind-qty" type="number" min="1" placeholder="0"></div>
+        <div class="fi"><label class="inp-label">Date *</label><input class="inp" id="ind-date" type="date"></div>
+        <div class="fi"><label class="inp-label">Supplier</label><input class="inp" id="ind-supplier" placeholder="Supplier name"></div>
+        <div class="fi"><label class="inp-label">Expected Date</label><input class="inp" id="ind-exp" type="date"></div>
+        <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="ind-remarks" placeholder="Optional"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('indent-modal')">Cancel</button><button class="btn bp" id="ind-btn" onclick="saveIndent()">Save Indent</button></div>
+  </div>
+</div>
+
+<!-- RECEIVE INDENT MODAL -->
+<div class="ov" id="receive-modal">
+  <div class="modal">
+    <div class="mh"><h2>✅ Receive Material</h2><button class="mclose" onclick="closeM('receive-modal')">✕</button></div>
+    <div class="mb">
+      <div id="recv-info" style="background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:10px 14px;margin-bottom:14px;font-size:13px;"></div>
+      <div class="fg">
+        <div class="fi"><label class="inp-label">Received Qty *</label><input class="inp" id="recv-qty" type="number" min="1" placeholder="0"></div>
+  <div class="fi"><label class="inp-label">Received Date 🔒</label><input class="inp" id="recv-m-date" type="date" readonly style="background:var(--s2);color:var(--muted);cursor:not-allowed;"></div>
+        <div class="fi full"><label class="inp-label">Invoice No.</label><input class="inp" id="recv-invoice" placeholder="INV-001"></div>
+        <div class="fi full"><label class="inp-label">Supplier / Party</label><input class="inp" id="recv-supplier" placeholder="Supplier name"></div>
+        <div class="fi full"><label class="inp-label">Recorded By</label><input class="inp" id="recv-by" placeholder="Ajay"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('receive-modal')">Cancel</button><button class="btn bgn" id="recv-btn" onclick="confirmReceive()">Receive & Add to Stock</button></div>
+  </div>
+</div>
+
+<!-- CREATE PO MODAL -->
+<div class="ov" id="create-po-modal">
+  <div class="modal modal-lg">
+    <div class="mh"><h2>📋 Create Purchase Order</h2><button class="mclose" onclick="closeM('create-po-modal')">✕</button></div>
+    <div class="mb">
+      <div style="background:#fff7ed;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);">
+        ⚠ Reorder / Critical items ki list hai — quantity edit karo phir Create PO karo
+      </div>
+      <div style="margin-bottom:12px;">
+        <button class="btn bg bsm" onclick="addManualPOItem()">+ Add Item Manually</button>
+      </div>
+      <!-- Common fields -->
+      <div class="fg" style="margin-bottom:14px;">
+        <div class="fi"><label class="inp-label">Supplier (Optional)</label><input class="inp" id="po-supplier" placeholder="Supplier name"></div>
+        <div class="fi"><label class="inp-label">Expected Date (Optional)</label><input class="inp" id="po-exp-date" type="date"></div>
+      </div>
+      <div id="po-items-list"></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('create-po-modal')">Cancel</button>
+      <button class="btn bp" id="po-btn" onclick="saveCreatePO()">✓ Create PO</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ADD PO ITEM MODAL -->
+<div class="ov" id="add-po-item-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="mh">
+      <h2>Add Item to PO</h2>
+      <button class="mc-x" onclick="closeM('add-po-item-modal')">✕</button>
+    </div>
+    <div class="mb">
+      <input type="hidden" id="add-poi-id">
+      <div class="fg">
+        <label class="fl">Category</label>
+        <select class="inp cat-select" id="add-poi-cat" onchange="filterAddPOItems()">
+          <option value="">-- Select Category --</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-top:12px;">
+        <label class="fl">Item</label>
+        <select class="inp" id="add-poi-item">
+          <option value="">-- Select Category first --</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-top:12px;">
+        <label class="fl">Qty</label>
+        <input class="inp" id="add-poi-qty" type="number" min="1" placeholder="Enter quantity">
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" id="add-poi-btn" onclick="saveAddPOItem()">Add Item</button>
+      <button class="btn brd" onclick="closeM('add-po-item-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DISPATCH MODAL -->
+<div class="ov" id="edit-dispatch-modal">
+  <div class="modal">
+    <div class="mh"><h2>✏️ Edit Dispatch</h2><button class="mclose" onclick="closeM('edit-dispatch-modal')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="edit-dis-id">
+      <div class="fg">
+        <div class="fi full"><label class="inp-label">BOM Model / Item</label><input class="inp" id="edit-dis-model" readonly style="background:var(--s2);color:var(--muted);"></div>
+        <div class="fi"><label class="inp-label">Qty *</label><input class="inp" id="edit-dis-qty" type="number" min="1"></div>
+        <div class="fi"><label class="inp-label">Date *</label><input class="inp" id="edit-dis-date" type="date"></div>
+        <div class="fi"><label class="inp-label">Dispatch To</label><input class="inp" id="edit-dis-to" placeholder="Customer / Stock"></div>
+        <div class="fi"><label class="inp-label">Order Ref</label><input class="inp" id="edit-dis-ref" placeholder="ORD-001"></div>
+        <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="edit-dis-remarks" placeholder="Optional"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('edit-dispatch-modal')">Cancel</button>
+      <button class="btn bp" onclick="saveEditDispatch()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+  <!-- RENAME ITEM MODAL -->
+<div class="ov" id="rename-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="mh"><h2>✏️ Rename Item</h2><button class="mclose" onclick="closeM('rename-modal')">✕</button></div>
+    <div class="mb">
+      <div style="background:#fff7ed;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);">
+        ⚠ Naam saari sheets me badlega — Inward, Outward, Dispatch, BOM, sab jagah. Stock aur history safe rahegi.
+      </div>
+      <div class="fg">
+        <div class="fi full">
+          <label class="inp-label">Purana Naam</label>
+          <input class="inp" id="rn-old" readonly style="background:var(--s2);color:var(--muted);">
+        </div>
+        <div class="fi full">
+          <label class="inp-label">Naya Naam *</label>
+          <input class="inp" id="rn-new" placeholder="Naya item naam">
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('rename-modal')">Cancel</button>
+      <button class="btn bp" id="rn-btn" onclick="saveRename()">Rename Everywhere</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM VIEW MODAL -->
+<div class="ov" id="item-view" onclick="if(event.target===this)closeM('item-view')">
+  <div class="modal" style="max-width:520px;">
+    <div class="mh"><h2 id="iv-name">Item</h2><button class="mclose" onclick="closeM('item-view')">✕</button></div>
+    <div class="mb">
+      <img id="iv-img" class="iv-img" alt="">
+      <div id="iv-noimg" class="iv-noimg">📦</div>
+      <div id="iv-meta" style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;"></div>
+      <div id="iv-desc" style="margin-top:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;"></div>
+    </div>
+  </div>
+</div>
+<!-- PHOTO GALLERY MODAL -->
+<div class="ov" id="photo-view" onclick="if(event.target===this)closeM('photo-view')">
+  <div class="modal" style="max-width:640px;">
+    <div class="mh"><h2 id="pv-title">Photos</h2><button class="mclose" onclick="closeM('photo-view')">✕</button></div>
+    <div class="mb">
+      <div class="pv-stage">
+        <button class="pv-nav" id="pv-prev" onclick="pvMove(-1)">‹</button>
+        <img id="pv-img" class="iv-img" alt="">
+        <button class="pv-nav" id="pv-next" onclick="pvMove(1)">›</button>
+      </div>
+      <div id="pv-meta" style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js"></script>
+<script src="app.js?v=50"></script>
+<script src="../suite-bridge.js"></script>
+</body>
+</html>
