@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LitpaxERP</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="hamburger" onclick="toggleSidebar()" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="brand-mark">L</div>
+    <div class="brand-name">Litpax<span>ERP</span></div>
+  </div>
+  <div class="topbar-mid">
+    <div class="page-title" id="pageTitle">Orders</div>
+    <div class="page-sub" id="pageSub">Sales order management</div>
+  </div>
+  <div class="topbar-right">
+    <button id="btnCreateLead" class="btn btn-primary" onclick="goToLeadTracker()" style="display:none;margin-right:10px;">+ Create Lead</button>
+    <button id="btnDealerCheck" class="btn" onclick="goToDealerCheck()" style="display:none;margin-right:10px;">🔍 Dealer Check</button>
+    <div class="user-pill">
+      <div class="user-av" id="userAv">D</div>
+      <div>
+        <div class="user-nm" id="userNm">Darpan</div>
+        <div class="user-rl" id="userRl">Admin</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="app-body">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-sec" id="sec-sales">Sales</div>
+  <div class="nav-item" onclick="nav('admindashboard',this)" id="nav-admindashboard"><span class="nav-icon">🧭</span>Dashboard</div>
+  <div class="nav-item active" onclick="nav('orders',this)" id="nav-orders"><span class="nav-icon">📋</span>Orders</div>
+  <div class="nav-item" onclick="navOrdersFiltered('pending',this)" id="nav-pendingorders"><span class="nav-icon">⏳</span>Pending Orders</div>
+  <div class="nav-item" onclick="navOrdersFiltered('completed',this)" id="nav-completedorders"><span class="nav-icon">✅</span>Completed Orders</div>
+  <div class="nav-item" onclick="nav('mydashboard',this)" id="nav-mydashboard"><span class="nav-icon">📊</span>My Dashboard</div>
+  <div class="nav-sec" id="sec-tracking">Tracking</div>
+  <div class="nav-item" onclick="nav('crm',this)" id="nav-crm"><span class="nav-icon">🎯</span>CRM Tracker</div>
+  <div class="nav-item" onclick="nav('production',this)" id="nav-production"><span class="nav-icon">⚙️</span>Production</div>
+    <div class="nav-item" onclick="nav('batteryexchange',this)" id="nav-batteryexchange" style="display:none;"><span class="nav-icon">🔋</span>Advance Battery Replacement</div>
+  <div class="nav-item" onclick="nav('dispatch',this)" id="nav-dispatch"><span class="nav-icon">🚚</span>Dispatch</div>
+  <div class="nav-item" onclick="nav('deliverychallan',this)" id="nav-deliverychallan"><span class="nav-icon">📄</span>Delivery Challan</div>
+    <div class="nav-item" onclick="window.open('MaterialProd/','_blank')" id="nav-materialprod"><span class="nav-icon">📦</span>Material vs Production</div>
+  <div class="nav-sec" id="sec-master">Master Data</div>
+  <div class="nav-item" onclick="nav('customers',this)" id="nav-customers"><span class="nav-icon">👥</span>Customers</div>
+  <div class="nav-item" onclick="nav('products',this)" id="nav-products"><span class="nav-icon">⚡</span>Products</div>
+  <div class="nav-item" onclick="nav('suppliers',this)" id="nav-suppliers"><span class="nav-icon">🏭</span>Suppliers</div>
+  <div class="nav-sec" id="sec-finance">Finance</div>
+  <div class="nav-item" onclick="nav('accounts',this)" id="nav-accounts"><span class="nav-icon">💰</span>Accounts</div>
+  <div class="nav-sec" id="sec-admin">Admin</div>
+  <div class="nav-item" onclick="nav('users',this)" id="nav-users"><span class="nav-icon">🔐</span>Users</div>
+  <div class="sidebar-foot"><div class="sidebar-ver">LitpaxERP v3.0</div></div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ===== ADMIN DASHBOARD PAGE ===== -->
+<div class="page" id="page-admindashboard">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head" style="flex-wrap:wrap;gap:10px;">
+      <div class="card-title">📅 Date Range</div>
+      <div class="card-actions" style="flex-wrap:wrap;gap:8px;align-items:center;">
+        <button class="btn btn-sm ad-range-btn" id="ad-range-today-btn" onclick="setAdDateRange('today')">Today</button>
+        <button class="btn btn-sm ad-range-btn" id="ad-range-thismonth-btn" onclick="setAdDateRange('thismonth')">This Month</button>
+        <button class="btn btn-sm ad-range-btn" id="ad-range-lastmonth-btn" onclick="setAdDateRange('lastmonth')">Last Month</button>
+        <button class="btn btn-sm ad-range-btn" id="ad-range-thisyear-btn" onclick="setAdDateRange('thisyear')">This Year</button>
+        <button class="btn btn-sm btn-primary ad-range-btn" id="ad-range-all-btn" onclick="setAdDateRange('all')">All Time</button>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 2px;"></span>
+        <input class="form-control" type="date" id="ad-from-date" style="width:140px;padding:6px 8px;font-size:12px;" onchange="applyAdDateFilter()">
+        <span style="color:var(--text3);font-size:12px;">to</span>
+        <input class="form-control" type="date" id="ad-to-date" style="width:140px;padding:6px 8px;font-size:12px;" onchange="applyAdDateFilter()">
+      </div>
+    </div>
+  </div>
+  <div style="font-size:11px;font-weight:650;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Sales Overview</div>
+  <div class="stats-row">
+    <div class="stat c-blue"><div class="stat-lbl">Total Orders</div><div class="stat-val" id="ad-orders">0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Total Order Value</div><div class="stat-val" id="ad-value" style="font-size:16px;">₹0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">Total Qty</div><div class="stat-val" id="ad-qty">0</div></div>
+    <div class="stat c-purple"><div class="stat-lbl">Avg Order Value</div><div class="stat-val" id="ad-avg" style="font-size:16px;">₹0</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:650;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">Production Status</div>
+  <div class="stats-row">
+    <div class="stat c-blue"><div class="stat-lbl">Pending</div><div class="stat-val" id="ad-prod-pending">0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">In Progress</div><div class="stat-val" id="ad-prod-inprog">0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Completed</div><div class="stat-val" id="ad-prod-done">0</div></div>
+    <div class="stat c-red"><div class="stat-lbl">Delayed</div><div class="stat-val" id="ad-prod-delayed">0</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:650;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">Finance Overview</div>
+  <div class="stats-row">
+    <div class="stat c-green"><div class="stat-lbl">Total Received</div><div class="stat-val" id="ad-received" style="font-size:16px;">₹0</div></div>
+    <div class="stat c-red"><div class="stat-lbl">Balance Due</div><div class="stat-val" id="ad-balance" style="font-size:16px;">₹0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">Payment Pending Orders</div><div class="stat-val" id="ad-paypending">0</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head"><div class="card-title">Sales Person Performance</div></div>
+    <div id="ad-salesperson-list" style="padding:4px 0;"><div class="loading"><div class="spin"></div></div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head"><div class="card-title">Recent Orders</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Sales Person</th><th>Value</th><th>Order Status</th><th>Payment Status</th></tr></thead>
+        <tbody id="ad-recent-orders"><tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ORDERS PAGE ===== -->
+<div class="page active" id="page-orders">
+  <div class="pipeline" id="ordersPipeline">
+    <div class="pipe-node active" onclick="filterOrders('all',this)"><div class="pipe-icon">📋</div><div class="pipe-count" id="pc-all">0</div><div class="pipe-lbl">All</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterOrders('pending',this)"><div class="pipe-icon">⏳</div><div class="pipe-count" id="pc-pending">0</div><div class="pipe-lbl">Pending</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterOrders('completed',this)"><div class="pipe-icon">✅</div><div class="pipe-count" id="pc-completed">0</div><div class="pipe-lbl">Completed</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterOrders('advance',this)"><div class="pipe-icon">💰</div><div class="pipe-count" id="pc-adv">0</div><div class="pipe-lbl">Advance</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterOrders('dispatched',this)"><div class="pipe-icon">🚚</div><div class="pipe-count" id="pc-dis">0</div><div class="pipe-lbl">Dispatched</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Sales Orders</div>
+      <div class="card-actions">
+        <input class="search-input" id="orderSearch" placeholder="Search order / customer..." oninput="searchOrders()" style="width:200px;padding:6px 10px;font-size:12px;">
+        <button class="btn btn-primary" onclick="openModal('orderModal')">+ New Order</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Order ID</th><th>Date</th><th>Sales Person</th><th>Customer</th><th>City</th>
+          <th>Total Qty</th><th>Total Value (GST)</th><th>Payment Mode</th><th>Order Status</th>
+          <th>Payment Status</th><th>Corridor</th><th>Assigned CRM</th><th>Final Status</th><th>Action</th>
+        </tr></thead>
+        <tbody id="ordersTable"><tr><td colspan="13"><div class="loading"><div class="spin"></div> Loading...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CRM PAGE ===== -->
+<div class="page" id="page-crm">
+  <div class="stats-row">
+    <div class="stat c-blue"><div class="stat-lbl">Total Orders</div><div class="stat-val" id="crm-total">0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">In Production</div><div class="stat-val" id="crm-prod">0</div></div>
+    <div class="stat c-purple"><div class="stat-lbl">Pending Dispatch</div><div class="stat-val" id="crm-dispatch">0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Payment Received</div><div class="stat-val" id="crm-paid">0</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">CRM Tracker</div>
+      <div class="card-actions">
+        <input class="search-input" placeholder="Search..." id="crmSearch" oninput="searchCRM()" style="width:180px;padding:6px 10px;font-size:12px;">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Sr</th><th>Item ID</th><th>Order ID</th><th>Order Date</th><th>Customer</th><th>Customer No</th>
+          <th>Sales Person</th><th>Payment Mode</th><th>Plan Payment Date</th><th>Payment Status</th><th>Plan Dispatch Date</th><th>💰</th>
+          <th>Product Type</th><th>Product Model</th><th>Qty</th><th>Billed</th>
+          <th>Prod Start Actual</th><th>Prod Complete Actual</th><th>Prod Delay</th>
+          <th>Payment Plan</th><th>Payment Actual</th><th>Payment Delay</th>
+          <th>Dispatch Plan</th><th>Dispatch Actual</th><th>Dispatch Delay</th>
+          <th>Billing Actual</th>
+          <th>Remarks</th>
+          <th>Update</th>
+        </tr></thead>
+        <tbody id="crmTable"><tr><td colspan="32"><div class="loading"><div class="spin"></div> Loading...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PRODUCTION PAGE ===== -->
+<div class="page" id="page-production">
+  <div class="stats-row">
+    <div class="stat c-blue"><div class="stat-lbl">Total Orders</div><div class="stat-val" id="prod-total">0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">In Progress</div><div class="stat-val" id="prod-inprog">0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Completed</div><div class="stat-val" id="prod-done">0</div></div>
+    <div class="stat c-red"><div class="stat-lbl">Delayed</div><div class="stat-val" id="prod-delayed">0</div></div>
+  </div>
+  <div class="pipeline" id="prodPipeline">
+    <div class="pipe-node active" onclick="filterProduction('all',this)"><div class="pipe-icon">📋</div><div class="pipe-count" id="ppc-all">0</div><div class="pipe-lbl">All</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterProduction('pending',this)"><div class="pipe-icon">⏳</div><div class="pipe-count" id="ppc-pending">0</div><div class="pipe-lbl">Pending</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterProduction('inprogress',this)"><div class="pipe-icon">⚙️</div><div class="pipe-count" id="ppc-inprog">0</div><div class="pipe-lbl">In Progress</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterProduction('completed',this)"><div class="pipe-icon">✅</div><div class="pipe-count" id="ppc-completed">0</div><div class="pipe-lbl">Completed</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Production Tracker</div>
+      <button class="btn btn-primary" onclick="openPlannedSlip()" style="display:flex;align-items:center;gap:6px;">🖨️ Print Slip</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Sr</th><th>Item ID</th><th>Order ID</th><th>Order Date</th><th>Customer</th>
+          <th>Charger Model</th><th>Charger Qty</th><th>Sales Person</th><th>Assigned CRM</th>
+          <th>Sales Remarks</th><th>Product Model</th><th>Battery Type</th><th>Qty (Produced/Total)</th><th>Pending</th><th>Billed</th>
+          <th>Prod Start Actual</th><th>Prod Complete Actual</th><th>Prod Delay</th>
+          <th>Status</th><th>Remarks</th><th>Action</th>
+        </tr></thead>
+        <tbody id="prodTable"><tr><td colspan="21"><div class="loading"><div class="spin"></div> Loading...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <!-- ===== DISPATCH PAGE ===== -->
+<div class="page" id="page-dispatch">
+  <div class="stats-row">
+    <div class="stat c-blue"><div class="stat-lbl">Total Items</div><div class="stat-val" id="dsp-total">0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">Ready to Dispatch</div><div class="stat-val" id="dsp-ready">0</div></div>
+    <div class="stat c-purple"><div class="stat-lbl">Partial Dispatched</div><div class="stat-val" id="dsp-partial">0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Fully Dispatched</div><div class="stat-val" id="dsp-done">0</div></div>
+  </div>
+  <div class="pipeline" id="dspPipeline">
+    <div class="pipe-node active" onclick="filterDispatch('all',this)"><div class="pipe-icon">📋</div><div class="pipe-count" id="dpc-all">0</div><div class="pipe-lbl">All</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterDispatch('waiting',this)"><div class="pipe-icon">⏳</div><div class="pipe-count" id="dpc-waiting">0</div><div class="pipe-lbl">Waiting</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterDispatch('ready',this)"><div class="pipe-icon">📦</div><div class="pipe-count" id="dpc-ready">0</div><div class="pipe-lbl">Ready</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterDispatch('partial',this)"><div class="pipe-icon">🔄</div><div class="pipe-count" id="dpc-partial">0</div><div class="pipe-lbl">Partial</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterDispatch('done',this)"><div class="pipe-icon">🚚</div><div class="pipe-count" id="dpc-done">0</div><div class="pipe-lbl">Dispatched</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Dispatch Queue</div>
+      <div class="card-actions">
+        <input class="search-input" id="dspSearch" placeholder="Search order / customer..." oninput="searchDispatch()" style="width:200px;padding:6px 10px;font-size:12px;">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Sr</th><th>Item ID</th><th>Order ID</th><th>Order Date</th><th>Customer</th><th>City</th>
+          <th>⚡ Charger Model</th><th>Charger Qty</th>
+          <th>💰 Payment</th><th>Plan Dispatch</th>
+          <th>Product Model</th><th>Battery Type</th><th>Qty</th><th>Produced</th><th>Billed</th>
+          <th>Dispatched</th><th>Pending</th><th>Status</th><th>Action</th>
+        </tr></thead>
+        <tbody id="dispatchTable"><tr><td colspan="17"><div class="loading"><div class="spin"></div> Loading...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+  
+<!-- ===== DELIVERY CHALLAN PAGE ===== -->
+<div class="page" id="page-deliverychallan" style="padding-bottom:60px;">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">📄 Create Delivery Challan</div>
+      <div class="card-actions">
+        <span style="font-size:12px;color:var(--text3);">Challans Made: <b id="dc-count" style="color:var(--accent);">0</b></span>
+      </div>
+    </div>
+    <div style="padding:4px 2px;">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px;">
+        <div class="form-group" style="flex:1;min-width:240px;margin:0;">
+          <label class="form-label">Order ID <span class="req-mark">*</span></label>
+          <input class="form-control" id="dc-orderid" list="dc-orderlist" placeholder="Order ID select karo ya type karo" onkeydown="if(event.key==='Enter'){event.preventDefault();fetchChallanOrder();}">
+          <datalist id="dc-orderlist"></datalist>
+        </div>
+        <button class="btn btn-primary" onclick="fetchChallanOrder()" style="height:38px;">🔍 Fetch Items</button>
+      </div>
+      <div id="dc-order-meta" style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;"></div>
+    </div>
+  </div>
+
+  <div class="card" id="dc-items-wrap" style="display:none;margin-top:16px;">
+    <div class="card-head"><div class="card-title">Select Items & Enter Challan Qty</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:44px;">✓</th><th>Item ID</th><th>Product</th><th>Battery</th>
+          <th>Total Qty</th><th>Sent</th><th>Pending</th>
+          <th style="width:110px;">Challan Qty</th><th style="width:120px;">Amount (₹)</th><th>Particulars</th>
+        </tr></thead>
+        <tbody id="dc-item-rows"></tbody>
+      </table>
+    </div>
+    <div style="padding:14px 4px 4px;border-top:1px solid var(--border);margin-top:10px;">
+      <div class="form-grid">
+        <div class="form-group form-full"><label class="form-label">Name &amp; Address <span class="req-mark">*</span></label><textarea class="form-control" id="dc-address" style="min-height:64px;" placeholder="Ship-to name & address"></textarea></div>
+        <div class="form-group"><label class="form-label">Bill No</label><input class="form-control" id="dc-billno" placeholder="Bill / Invoice no"></div>
+        <div class="form-group"><label class="form-label">Note</label><input class="form-control" id="dc-note" placeholder="e.g. Replacement / Warranty"></div>
+        <div class="form-group"><label class="form-label">Date (optional)</label><input class="form-control" type="date" id="dc-date"></div>
+      </div>
+      <div style="text-align:right;margin-top:12px;">
+        <button class="btn btn-primary" id="dc-save-btn" onclick="submitChallan()">💾 Save &amp; Print Challan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head"><div class="card-title">📄 Recent Challans</div></div>
+    <div id="dcRecent" style="padding:6px 4px;"><div class="loading"><div class="spin"></div></div></div>
+  </div>
+</div>
+
+<!-- ===== ADVANCE BATTERY REPLACEMENT PAGE ===== -->
+<div class="page" id="page-batteryexchange">
+  <iframe
+    src="https://litpax-technology.github.io/Battery-Exchange-Tracker/"
+    style="width:100%;height:calc(100vh - 120px);border:none;border-radius:12px;background:#fff;"
+    title="Advance Battery Replacement"></iframe>
+</div>
+
+<!-- ===== MY DASHBOARD PAGE ===== -->
+<div class="page" id="page-mydashboard">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head" style="flex-wrap:wrap;gap:10px;">
+      <div class="card-title">📅 Date Range</div>
+      <div class="card-actions" style="flex-wrap:wrap;gap:8px;align-items:center;">
+        <button class="btn btn-sm my-range-btn" id="my-range-today-btn" onclick="setMyDateRange('today')">Today</button>
+        <button class="btn btn-sm my-range-btn" id="my-range-thismonth-btn" onclick="setMyDateRange('thismonth')">This Month</button>
+        <button class="btn btn-sm my-range-btn" id="my-range-lastmonth-btn" onclick="setMyDateRange('lastmonth')">Last Month</button>
+        <button class="btn btn-sm my-range-btn" id="my-range-thisyear-btn" onclick="setMyDateRange('thisyear')">This Year</button>
+        <button class="btn btn-sm btn-primary my-range-btn" id="my-range-all-btn" onclick="setMyDateRange('all')">All Time</button>
+        <span style="width:1px;height:20px;background:var(--border);margin:0 2px;"></span>
+        <input class="form-control" type="date" id="my-from-date" style="width:140px;padding:6px 8px;font-size:12px;" onchange="applyMyDateFilter()">
+        <span style="color:var(--text3);font-size:12px;">to</span>
+        <input class="form-control" type="date" id="my-to-date" style="width:140px;padding:6px 8px;font-size:12px;" onchange="applyMyDateFilter()">
+      </div>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat c-teal"><div class="stat-lbl">Total Sale</div><div class="stat-val" id="my-total-sale" style="font-size:16px;">₹0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">Pending Sale</div><div class="stat-val" id="my-pending-sale" style="font-size:16px;">₹0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Completed Sale</div><div class="stat-val" id="my-completed-sale" style="font-size:16px;">₹0</div></div>
+    <div class="stat c-blue"><div class="stat-lbl">Total Orders</div><div class="stat-val" id="my-total-orders">0</div></div>
+    <div class="stat c-red"><div class="stat-lbl">Pending Orders</div><div class="stat-val" id="my-pending-orders">0</div></div>
+    <div class="stat c-purple"><div class="stat-lbl">Completed Orders</div><div class="stat-val" id="my-completed-orders">0</div></div>
+  </div>
+  <div id="myDashboardContent" style="display:none;"></div>
+</div>
+
+<!-- ===== CUSTOMERS PAGE ===== -->
+<div class="page" id="page-customers">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Customers</div><button class="btn btn-primary" onclick="openModal('custModal')">+ Add Customer</button></div>
+    <div class="table-wrap">
+      <table id="custTableEl">
+        <thead id="custTableHead"><tr><th>ID</th><th>Company</th><th>Contact</th><th>Phone</th><th>GSTIN</th><th>City</th><th>Credit Days</th><th>Docs</th></tr></thead>
+        <tbody id="custTable"><tr><td colspan="8"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PRODUCTS PAGE ===== -->
+<div class="page" id="page-products">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Products</div><button class="btn btn-primary" onclick="openModal('prodModal')">+ Add Product</button></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>ID</th><th>Product Name</th><th>Category</th><th>Sale Price</th><th>HSN</th><th>GST%</th><th>Unit</th></tr></thead>
+      <tbody id="productTable"><tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUPPLIERS PAGE ===== -->
+<div class="page" id="page-suppliers">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Suppliers</div><button class="btn btn-primary" onclick="openModal('suppModal')">+ Add Supplier</button></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>ID</th><th>Company</th><th>Contact</th><th>Phone</th><th>GSTIN</th><th>City</th></tr></thead>
+      <tbody id="suppTable"><tr><td colspan="6"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USERS PAGE ===== -->
+<div class="page" id="page-users">
+  <div class="card">
+    <div class="card-head"><div class="card-title">Users & Access</div><button class="btn btn-primary" onclick="openModal('userModal')">+ Add User</button></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Role</th><th>Active</th></tr></thead>
+      <tbody id="usersTable"><tr><td colspan="5"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNTS PAGE ===== -->
+<div class="page" id="page-accounts">
+  <div class="stats-row">
+    <div class="stat c-blue"><div class="stat-lbl">Total Items</div><div class="stat-val" id="acc-total">0</div></div>
+    <div class="stat c-green"><div class="stat-lbl">Total Orders</div><div class="stat-val" id="acc-orders">0</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">Total Qty</div><div class="stat-val" id="acc-qty">0</div></div>
+    <div class="stat c-purple"><div class="stat-lbl">With Charger</div><div class="stat-val" id="acc-charger">0</div></div>
+  </div>
+  <div class="pipeline" id="accPipeline">
+    <div class="pipe-node active" onclick="filterAccounts('all',this)"><div class="pipe-icon">📋</div><div class="pipe-count" id="apc-all">0</div><div class="pipe-lbl">All</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterAccounts('pending',this)"><div class="pipe-icon">⏳</div><div class="pipe-count" id="apc-pending">0</div><div class="pipe-lbl">Pending</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterAccounts('inprogress',this)"><div class="pipe-icon">⚙️</div><div class="pipe-count" id="apc-inprog">0</div><div class="pipe-lbl">In Progress</div></div>
+    <div class="pipe-sep">›</div>
+    <div class="pipe-node" onclick="filterAccounts('completed',this)"><div class="pipe-icon">✅</div><div class="pipe-count" id="apc-completed">0</div><div class="pipe-lbl">Completed</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">Accounts</div>
+      <div class="card-actions">
+        <input class="search-input" id="accSearch" placeholder="Search order / customer..." oninput="searchAccounts()" style="width:200px;padding:6px 10px;font-size:12px;">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Sr</th><th>Item ID</th><th>Order ID</th><th>Order Date</th><th>Customer</th>
+          <th>Sales Person</th><th>Assigned CRM</th>
+          <th>Order Value</th><th>Received</th><th>Balance</th><th>Transport</th>
+          <th>Charger Model</th><th>Charger Qty</th><th>Slips</th>
+          <th>Product Model</th><th>Battery Type</th><th>Price Type</th><th>Rate (Ex GST)</th><th>Qty (Produced/Total)</th><th>Pending</th><th>Billed</th><th>Production</th><th>Bill</th>
+        </tr></thead>
+        <tbody id="accountsTable"><tr><td colspan="14"><div class="loading"><div class="spin"></div> Loading...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end app-body -->
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ===== NEW ORDER MODAL ===== -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">New Sales Order</div><button class="modal-close" onclick="closeModal('orderModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-section">Order Details</div>
+        <div class="form-group"><label class="form-label">Date</label><input class="form-control" type="date" id="o-date"></div>
+        <div class="form-group"><label class="form-label">Sales Person Name</label>
+          <select class="form-control" id="o-sales">
+            <option value="">Select Sales Person</option>
+            <option>Mohit</option><option>Vijay</option><option>Sahil</option><option>Sneha</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Customer Name</label><input class="form-control" id="o-cust" placeholder="Customer name" list="custSuggestions" oninput="onCustNameInput()" autocomplete="off"><datalist id="custSuggestions"></datalist></div>
+        <div class="form-group"><label class="form-label">Customer Phone</label><input class="form-control" id="o-phone" placeholder="Phone number"></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="o-city" placeholder="City"></div>
+        <div class="form-group"><label class="form-label">Corridor</label>
+          <select class="form-control" id="o-priority">
+            <option value="">Select Corridor</option>
+            <option>Normal</option><option>VIP</option>
+          </select>
+        </div>
+        <div class="form-section">Payment & Pricing</div>
+        <div class="form-group" id="perWattField" style="display:none;"></div>
+        <div class="form-group"><label class="form-label">Payment Mode</label>
+          <select class="form-control" id="o-paymode">
+            <option value="">Select Payment Mode</option>
+            <option>Advance</option><option>Credit</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Plan Payment Date</label><input class="form-control" type="date" id="o-planpay"></div>
+        <div class="form-group"><label class="form-label">Order Status</label>
+          <select class="form-control" id="o-status">
+            <option value="">Select Status</option>
+            <optgroup label="Advance">
+              <option>Advance - Order Received</option><option>Advance - In Processing</option>
+              <option>Advance - Ready for Dispatch</option><option>Advance - Dispatched</option>
+            </optgroup>
+            <optgroup label="PDC">
+              <option>PDC - Order Received</option><option>PDC - In Processing</option>
+              <option>PDC - Ready for Dispatch</option><option>PDC - Dispatched</option>
+              <option>PDC - Delay Reminder</option>
+            </optgroup>
+            <optgroup label="Credit">
+              <option>Credit - Order Received</option><option>Credit - In Progressing</option>
+              <option>Credit - Ready for Dispatch</option><option>Credit - Dispatched</option>
+              <option>Credit - Delay Reminder</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Payment Status</label>
+          <select class="form-control" id="o-paystatus">
+            <option value="">Select Payment Status</option>
+            <option>Advance Pending</option><option>Advance Received</option>
+            <option>Request Full Payment</option><option>Paid</option>
+            <option>PDC</option><option>Credit</option><option>Pending</option>
+          </select>
+        </div>
+        <div class="form-section">Addresses (for Delivery Challan)</div>
+        <div class="form-group form-full"><label class="form-label">Billing Address</label><textarea class="form-control" id="o-billing" placeholder="Billing address"></textarea></div>
+        <div class="form-group form-full"><label class="form-label">Shipping Address</label><textarea class="form-control" id="o-shipping" placeholder="Shipping address (challan pe yahi jayega)"></textarea></div>
+        <div class="form-section">Dispatch & Delivery</div>
+        <div class="form-group"><label class="form-label">Suggested Transport</label><input class="form-control" id="o-transport" placeholder="Transport name"></div>
+        <div class="form-group"><label class="form-label">Plan Dispatch Date</label><input class="form-control" type="date" id="o-plandispatch"></div>
+        <div class="form-group"><label class="form-label">Transportation Charges</label><input class="form-control" type="number" id="o-transchg" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Assigned CRM</label>
+          <select class="form-control" id="o-crm" onchange="autoFillCRM()">
+            <option value="">Select CRM</option>
+            <option>Kamal</option><option>Self</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Final Status</label><input class="form-control" id="o-finalstatus" placeholder="Final status"></div>
+        <div class="form-group form-full"><label class="form-label">Order Remarks</label><textarea class="form-control" id="o-remarks" placeholder="Any remarks..."></textarea></div>
+      </div>
+
+      <!-- ORDER ITEMS -->
+      <div style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">📦 Order Items</div>
+          <span id="currentOrderBadge" style="display:none;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);padding:3px 10px;border-radius:10px;border:1px solid #C7D2FE;"></span>
+        </div>
+        <div id="savedItemsList" style="display:none;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+          <div style="padding:8px 14px;background:var(--success-dim);border-bottom:1px solid var(--success-b);font-size:11px;font-weight:600;color:var(--success);text-transform:uppercase;letter-spacing:0.4px;">✓ Saved Items</div>
+          <div id="savedItemsTable" style="padding:8px 0;"></div>
+        </div>
+        <div id="itemsBody" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div style="margin-top:10px;">
+          <button id="saveAddMoreBtn" onclick="saveAndAddMore()" style="width:100%;padding:11px;background:var(--success-dim);border:1.5px solid var(--success-b);border-radius:10px;color:var(--success);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;" onmouseover="this.style.background='#DCFCE7'" onmouseout="this.style.background='var(--success-dim)'">
+            ✓ Save + Add More Item
+          </button>
+        </div>
+
+        <!-- CHARGER SECTION -->
+        <div style="margin-top:12px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);">⚡ Charger (Optional)</div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);">
+              <input type="checkbox" id="chargerCheck" onchange="toggleCharger()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+              Add Charger
+            </label>
+          </div>
+          <div id="savedChargersList" style="display:none;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;"></div>
+          <div id="chargerFields" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Charger Model</label>
+                <input class="form-control" id="charger-model" placeholder="e.g. 48V 5A Charger" style="font-size:13px;">
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Qty</label>
+                <input class="form-control" id="charger-qty" type="number" placeholder="0" oninput="calcCharger()" style="font-size:13px;">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Per Unit Price (₹)</label>
+                <input class="form-control" id="charger-price" type="number" placeholder="0" oninput="calcCharger()" style="font-size:13px;">
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px;">Total + 5% GST (₹)</label>
+                <input class="form-control" id="charger-total" readonly placeholder="Auto" style="background:var(--warning-dim);color:var(--warning);font-weight:600;font-size:13px;">
+              </div>
+            </div>
+            <button onclick="saveAndAddMoreCharger()" style="width:100%;padding:9px;background:var(--warning-dim);border:1.5px solid var(--warning-b);border-radius:8px;color:var(--warning);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">
+              ✓ Save + Add More Charger
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--accent-dim);border-radius:10px;border:1px solid #C7D2FE;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;">Total Qty</span>
+            <span style="font-size:18px;font-weight:700;color:var(--text);" id="totalQtyDisplay">0</span>
+          </div>
+          <div style="width:1px;height:28px;background:#C7D2FE;"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;">Total Amount</span>
+            <span style="font-size:18px;font-weight:700;color:var(--accent);" id="totalAmtDisplay">₹0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('orderModal')">Cancel</button>
+      <button class="btn btn-primary" id="submitOrderBtn" onclick="submitOrder()">Create Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER TRACK MODAL -->
+<div class="modal-overlay" id="orderTrackModal">
+  <div class="modal" style="max-width:1000px;">
+    <div class="modal-head">
+      <div class="modal-title" id="trackModalTitle">🔍 Track Order</div>
+      <button class="modal-close" onclick="closeModal('orderTrackModal')">✕</button>
+    </div>
+    <input type="hidden" id="ot-orderid">
+    <datalist id="ot-orderlist"></datalist>
+    <div class="modal-body" id="ot-result" style="padding:16px;">
+      <div class="loading"><div class="spin"></div> History load ho rahi hai...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="orderDetailModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title" id="detailOrderID">Order Details</div><button class="modal-close" onclick="closeModal('orderDetailModal')">✕</button></div>
+    <div class="modal-body" id="orderDetailBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('orderDetailModal')">Close</button>
+       <button class="btn btn-success" id="detailPaySlipBtn" onclick="openPayDrawerFromDetail()">💳 Payment Slips</button>
+      <button class="btn btn-primary" id="editOrderBtn" onclick="openEditOrder()">✏️ Edit Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE CRM MODAL -->
+<div class="modal-overlay" id="crmUpdateModal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-head"><div class="modal-title">Update CRM Record</div><button class="modal-close" onclick="closeModal('crmUpdateModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Order ID</label><input class="form-control" id="cu-orderid" readonly></div>
+        <div class="form-group"><label class="form-label">Current Stage</label><input class="form-control" id="cu-stage" placeholder="Current stage"></div>
+        <div class="form-group"><label class="form-label">Next Stage</label><input class="form-control" id="cu-nextstage" placeholder="Next stage"></div>
+        <div class="form-group"><label class="form-label">Follow-up With</label><input class="form-control" id="cu-followup" placeholder="Person name"></div>
+        <div class="form-section">Production</div>
+        <div class="form-group"><label class="form-label">Prod Start Plan</label><input class="form-control" type="date" id="cu-ps-plan"></div>
+        <div class="form-group"><label class="form-label">Prod Start Actual</label><input class="form-control" type="date" id="cu-ps-actual"></div>
+        <div class="form-group"><label class="form-label">Prod Complete Plan</label><input class="form-control" type="date" id="cu-pc-plan"></div>
+        <div class="form-group"><label class="form-label">Prod Complete Actual</label><input class="form-control" type="date" id="cu-pc-actual"></div>
+        <div class="form-group"><label class="form-label">Production Delay</label><input class="form-control" id="cu-prod-delay" placeholder="Reason if any"></div>
+        <div class="form-section">Payment & Dispatch</div>
+        <div class="form-group"><label class="form-label">Payment Received Plan</label><input class="form-control" type="date" id="cu-pay-plan"></div>
+        <div class="form-group"><label class="form-label">Payment Received Actual</label><input class="form-control" type="date" id="cu-pay-actual"></div>
+        <div class="form-group"><label class="form-label">Payment Delay</label><input class="form-control" id="cu-pay-delay" placeholder="Reason if any"></div>
+        <div class="form-group"><label class="form-label">Dispatch Plan</label><input class="form-control" type="date" id="cu-disp-plan"></div>
+        <div class="form-group"><label class="form-label">Dispatch Actual</label><input class="form-control" type="date" id="cu-disp-actual"></div>
+        <div class="form-group"><label class="form-label">Dispatch Delay</label><input class="form-control" id="cu-disp-delay" placeholder="Reason if any"></div>
+        <div class="form-group form-full"><label class="form-label">Remarks</label><textarea class="form-control" id="cu-remarks" placeholder="Remarks..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('crmUpdateModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCRMUpdate()">Update CRM</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE PRODUCTION MODAL -->
+<div class="modal-overlay" id="prodUpdateModal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-head"><div class="modal-title">Update Production</div><button class="modal-close" onclick="closeModal('prodUpdateModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Order ID</label><input class="form-control" id="pu-orderid" readonly><input type="hidden" id="pu-itemid"></div>
+        <div class="form-group"><label class="form-label">Product Model</label><input class="form-control" id="pu-model" placeholder="Product model"></div>
+        <div class="form-group"><label class="form-label">Battery Type</label><input class="form-control" id="pu-btype" placeholder="Battery type"></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-control" id="pu-status" style="background:var(--surface2);color:var(--text3);" disabled>
+            <option>Pending</option><option>In Progress</option><option>Completed</option><option>Delayed</option>
+          </select>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">Auto: Pending Qty 0 → Completed | Start Actual ya Produced Qty → In Progress</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+            <input type="checkbox" id="pu-sa-chk" onchange="toggleProdDate('sa')" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;">
+            Production Started
+          </label>
+          <input class="form-control" type="date" id="pu-sa">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+            <input type="checkbox" id="pu-ca-chk" onchange="toggleProdDate('ca')" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;">
+            Production Completed
+          </label>
+          <input class="form-control" type="date" id="pu-ca">
+        </div>
+        <div class="form-group"><label class="form-label">Production Delay</label>
+          <select class="form-control" id="pu-delay">
+            <option value="">No Delay</option>
+            <option>Material Unavailable</option>
+            <option>Raw Material Quality Issue</option>
+            <option>Worker Absent</option>
+            <option>Machine Breakdown</option>
+            <option>Power Outage</option>
+            <option>Cell Shortage</option>
+            <option>BMS Unavailable</option>
+            <option>Wiring Issue</option>
+            <option>Quality Check Failed</option>
+            <option>Rework Required</option>
+            <option>Customer Request - Hold</option>
+            <option>Customer Request - Change</option>
+            <option>Transport Delay</option>
+            <option>Packaging Issue</option>
+            <option>Testing Failed</option>
+            <option>Approval Pending</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group form-full"><label class="form-label">Remarks</label><textarea class="form-control" id="pu-remarks"></textarea></div>
+        <!-- Produced Qty Section -->
+        <div class="form-section">Production Quantity</div>
+        <div class="form-group">
+          <label class="form-label">Total Qty</label>
+          <div style="padding:8px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-size:13px;font-weight:600;color:var(--text);" id="pu-total-qty">—</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Already Produced</label>
+          <input class="form-control" type="number" id="pu-produced-qty" placeholder="0" oninput="calcProdQty()" style="background:var(--success-dim);border-color:var(--success-b);color:var(--success);font-weight:600;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pending</label>
+          <div style="padding:8px 11px;background:var(--warning-dim);border:1px solid var(--warning-b);border-radius:7px;font-size:13px;font-weight:600;color:var(--warning);" id="pu-pending-qty">—</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('prodUpdateModal')">Cancel</button>
+      <button class="btn btn-primary" id="prodUpdateBtn" onclick="submitProdUpdate()">Update Production</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER MODAL -->
+<div class="modal-overlay" id="custModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head"><div class="modal-title">Add Customer</div><button class="modal-close" onclick="closeModal('custModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Company Name</label><input class="form-control" id="c-name" placeholder="Company name"></div>
+        <div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" id="c-contact" placeholder="Name"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="c-phone" placeholder="Phone"></div>
+        <div class="form-group"><label class="form-label">GSTIN</label><input class="form-control" id="c-gst" placeholder="GSTIN"></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="c-city" placeholder="City"></div>
+        <div class="form-group"><label class="form-label">Credit Days</label><input class="form-control" type="number" id="c-credit" placeholder="30"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('custModal')">Cancel</button><button class="btn btn-primary" onclick="submitCust()">Add</button></div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="prodModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head"><div class="modal-title">Add Product</div><button class="modal-close" onclick="closeModal('prodModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Product ID</label><input class="form-control" id="p-id" placeholder="P-001"></div>
+        <div class="form-group"><label class="form-label">Product Name</label><input class="form-control" id="p-name" placeholder="Product name"></div>
+        <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="p-cat" placeholder="Cell / Pack / Module"></div>
+        <div class="form-group"><label class="form-label">Sale Price (₹)</label><input class="form-control" type="number" id="p-price" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">HSN Code</label><input class="form-control" id="p-hsn" placeholder="HSN"></div>
+        <div class="form-group"><label class="form-label">GST %</label><input class="form-control" type="number" id="p-gst" placeholder="18"></div>
+        <div class="form-group"><label class="form-label">Unit</label><input class="form-control" id="p-unit" placeholder="pcs / kg"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('prodModal')">Cancel</button><button class="btn btn-primary" onclick="submitProduct()">Add</button></div>
+  </div>
+</div>
+
+<!-- SUPPLIER MODAL -->
+<div class="modal-overlay" id="suppModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head"><div class="modal-title">Add Supplier</div><button class="modal-close" onclick="closeModal('suppModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Supplier ID</label><input class="form-control" id="s-id" placeholder="S-001"></div>
+        <div class="form-group"><label class="form-label">Company Name</label><input class="form-control" id="s-name" placeholder="Company name"></div>
+        <div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" id="s-contact" placeholder="Name"></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="s-phone" placeholder="Phone"></div>
+        <div class="form-group"><label class="form-label">GSTIN</label><input class="form-control" id="s-gst" placeholder="GSTIN"></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="s-city" placeholder="City"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('suppModal')">Cancel</button><button class="btn btn-primary" onclick="submitSupp()">Add</button></div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-head"><div class="modal-title">Add User</div><button class="modal-close" onclick="closeModal('userModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">User ID</label><input class="form-control" id="u-id" placeholder="U006"></div>
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="u-name" placeholder="Full name"></div>
+        <div class="form-group"><label class="form-label">Username</label><input class="form-control" id="u-uname" placeholder="username"></div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-control" type="password" id="u-pass" placeholder="Password"></div>
+        <div class="form-group form-full"><label class="form-label">Role</label>
+          <select class="form-control" id="u-role">
+            <option>Admin</option><option>Sales</option><option>Production</option><option>Accounts</option><option>Dispatch</option><option>CRM</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('userModal')">Cancel</button><button class="btn btn-primary" onclick="submitUser()">Add</button></div>
+  </div>
+</div>
+
+<!-- PAYMENT DRAWER -->
+<div class="pay-drawer-overlay" id="payDrawerOverlay" onclick="closePayDrawer()"></div>
+<div class="pay-drawer" id="payDrawer">
+  <div class="pay-drawer-head">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div class="pay-drawer-title" id="payDrawerTitle">💳 Payment Slips</div>
+        <div class="pay-drawer-sub" id="payDrawerSub"></div>
+      </div>
+      <button onclick="closePayDrawer()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px;">✕</button>
+    </div>
+  </div>
+  <div class="pay-drawer-body">
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Uploaded Payments</div>
+    <div id="payDrawerSlips"><div class="loading"><div class="spin"></div></div></div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:20px;margin-bottom:8px;">Upload New Proof</div>
+    <div class="form-group" style="margin-bottom:10px;">
+  <label class="form-label">Slip Details (Optional)</label>
+  <textarea class="form-control" id="paySlipNote" placeholder="e.g. ₹50,000 NEFT advance — HDFC se, UTR 123456" style="min-height:56px;font-size:12.5px;"></textarea>
+</div>
+    <div class="upload-zone" id="payUploadZone" onclick="document.getElementById('paySlipInput').click()">
+      <input type="file" id="paySlipInput" accept="image/*,.pdf" style="display:none;" onchange="onPaySlipSelect()">
+      <div id="payUploadPrompt">
+        <div style="font-size:28px;margin-bottom:8px;">📎</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text2);">Click to choose file</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Image ya PDF — max 4MB</div>
+      </div>
+      <div id="payFilePreview" style="display:none;">
+        <div id="payFileThumb"></div>
+        <div id="payFileName" style="font-size:12px;font-weight:500;color:var(--success);margin-top:8px;"></div>
+      </div>
+    </div>
+    <div id="payUploadStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
+  </div>
+  <div class="pay-drawer-foot">
+    <button id="payUploadBtn" onclick="uploadPaySlip()" class="btn btn-primary" style="width:100%;padding:11px;" disabled>
+      ⬆ Upload Payment Proof
+    </button>
+  </div>
+</div>
+
+<!-- CUSTOMER DOCS MODAL -->
+<div class="modal-overlay" id="custDocsModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-title" id="custDocsTitle">Customer Documents</div>
+      <button class="modal-close" onclick="closeModal('custDocsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--surface2);border:2px dashed var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">GST Certificate, PAN Card, ya koi bhi document</div>
+        <label class="btn btn-sm" style="cursor:pointer;background:var(--accent-dim);color:var(--accent);border-color:#C7D2FE;">
+          📎 File Choose karo
+          <input type="file" id="custDocFileInput" accept=".pdf,image/*" style="display:none;" onchange="previewCustDoc()">
+        </label>
+        <div id="custDocPreviewWrap" style="display:none;margin-top:10px;">
+          <div id="custDocPreview"></div>
+          <button class="btn btn-sm btn-success" id="custDocUploadBtn" onclick="uploadCustDoc()" style="margin-top:8px;display:none;">⬆ Upload</button>
+        </div>
+        <div id="custDocStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
+      </div>
+      <div id="custDocsList"><div class="loading"><div class="spin"></div></div></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('custDocsModal')">Close</button></div>
+  </div>
+</div>
+
+<!-- BATTERY SPEC MODAL -->
+<div class="modal-overlay" id="batterySpecModal">
+  <div class="modal" style="max-width:840px;">
+    <div class="modal-head">
+      <div class="modal-title" id="batterySpecTitle">Battery Spec</div>
+      <button class="modal-close" onclick="closeModal('batterySpecModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Kis battery pe kaunsa Sticker / BMS jayega — customer-wise. Rows add/edit karo, phir Save.</div>
+      <div class="table-wrap" style="border:1px solid var(--border);border-radius:10px;">
+        <table id="specTable">
+          <thead id="specThead"></thead>
+          <tbody id="specTbody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="addSpecRow()">+ Add Row</button>
+        <button class="btn btn-sm" onclick="openSpecColumns()" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);">⚙️ Columns</button>
+      </div>
+      <div id="specStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('batterySpecModal')">Cancel</button>
+      <button class="btn btn-primary" id="specSaveBtn" onclick="saveBatterySpec()">💾 Save Spec</button>
+    </div>
+  </div>
+</div>
+
+  <!-- BATTERY SPEC COLUMNS MODAL -->
+<div class="modal-overlay" id="specColsModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <div class="modal-title">⚙️ Manage Columns</div>
+      <button class="modal-close" onclick="closeModal('specColsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Column rename karo ya naya add karo. Save karte hi sab customers ke liye lag jayega. (Rename pe purana data naye naam ke neeche aa jayega.)</div>
+      <div id="specColsList"></div>
+      <button class="btn btn-sm btn-primary" onclick="addSpecColInput()" style="margin-top:8px;">+ Add Column</button>
+      <div id="specColsStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('specColsModal')">Cancel</button>
+      <button class="btn btn-primary" id="specColsSaveBtn" onclick="saveSpecColumns()">💾 Save Columns</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ORDER MODAL -->
+<div class="modal-overlay" id="editOrderModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit Order</div><button class="modal-close" onclick="closeModal('editOrderModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-section">Order Details</div>
+        <div class="form-group"><label class="form-label">Order ID</label><input class="form-control" id="e-orderid" readonly></div>
+        <div class="form-group"><label class="form-label">Customer Name</label><input class="form-control" id="e-cust" placeholder="Customer name"></div>
+        <div class="form-group"><label class="form-label">Customer Phone</label><input class="form-control" id="e-phone" placeholder="Phone"></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="e-city" placeholder="City"></div>
+        <div class="form-group"><label class="form-label">Corridor</label>
+          <select class="form-control" id="e-priority">
+            <option value="">Select</option><option>Normal</option><option>VIP</option>
+          </select>
+        </div>
+        <div class="form-section">Payment & Status</div>
+        <div class="form-group"><label class="form-label">Payment Mode</label>
+          <select class="form-control" id="e-paymode">
+            <option value="">Select</option><option>Advance</option><option>Credit</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Order Status</label>
+          <select class="form-control" id="e-status">
+            <option value="">Select</option>
+            <optgroup label="Advance">
+              <option>Advance - Order Received</option><option>Advance - In Processing</option>
+              <option>Advance - Ready for Dispatch</option><option>Advance - Dispatched</option>
+            </optgroup>
+            <optgroup label="PDC">
+              <option>PDC - Order Received</option><option>PDC - In Processing</option>
+              <option>PDC - Ready for Dispatch</option><option>PDC - Dispatched</option>
+              <option>PDC - Delay Reminder</option>
+            </optgroup>
+            <optgroup label="Credit">
+              <option>Credit - Order Received</option><option>Credit - In Progressing</option>
+              <option>Credit - Ready for Dispatch</option><option>Credit - Dispatched</option>
+              <option>Credit - Delay Reminder</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Payment Status</label>
+          <select class="form-control" id="e-paystatus">
+            <option value="">Select</option>
+            <option>Advance Pending</option><option>Advance Received</option>
+            <option>Request Full Payment</option><option>Paid</option>
+            <option>PDC</option><option>Credit</option><option>Pending</option>
+          </select>
+        </div>
+        <div class="form-section">Addresses (for Delivery Challan)</div>
+        <div class="form-group form-full"><label class="form-label">Billing Address</label><textarea class="form-control" id="e-billing" placeholder="Billing address"></textarea></div>
+        <div class="form-group form-full"><label class="form-label">Shipping Address</label><textarea class="form-control" id="e-shipping" placeholder="Shipping address"></textarea></div>
+        <div class="form-section">Dispatch & Other</div>
+        <div class="form-group"><label class="form-label">Suggested Transport</label><input class="form-control" id="e-transport" placeholder="Transport"></div>
+        <div class="form-group"><label class="form-label">Plan Dispatch Date</label><input class="form-control" type="date" id="e-plandispatch"></div>
+        <div class="form-group"><label class="form-label">Transportation Charges</label><input class="form-control" type="number" id="e-transchg" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Assigned CRM</label>
+          <select class="form-control" id="e-crm">
+            <option value="">Select</option><option>Kamal</option><option>Self</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Final Status</label><input class="form-control" id="e-finalstatus" placeholder="Final status"></div>
+        <div class="form-group form-full"><label class="form-label">Order Remarks</label><textarea class="form-control" id="e-remarks"></textarea></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">📦 Order Items</div>
+          <button class="btn btn-sm btn-primary" onclick="addEditItemRow()">+ Add Item</button>
+        </div>
+        <div id="editItemsBody"></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3);">* Existing items edit karo ya naye add karo</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('editOrderModal')">Cancel</button>
+      <button class="btn btn-primary" id="submitEditBtn" onclick="submitEditOrder()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAYMENT ENTRY MODAL (CRM) ===== -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-title">💰 Payment Entry</div>
+      <button class="modal-close" onclick="closeModal('paymentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:16px;margin-bottom:16px;padding:12px 14px;background:var(--accent-dim);border-radius:10px;border:1px solid #C7D2FE;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Order ID</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;" id="pm-orderid-display"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Customer</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);" id="pm-cust-display"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Order Value</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);" id="pm-orderval-display">—</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Total Received</div>
+          <div style="font-size:16px;font-weight:700;color:var(--success);" id="pm-total-received">₹0</div>
+          <div style="font-size:11px;color:var(--text3);">Balance: <span id="pm-balance" style="font-weight:600;color:var(--error);">—</span></div>
+        </div>
+      </div>
+      <div id="pm-payments-list" style="max-height:180px;overflow-y:auto;margin-bottom:16px;"></div>
+      <div style="border-top:2px solid var(--border);padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">+ New Payment Entry</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-control" type="number" id="pm-amount" placeholder="Enter amount"></div>
+          <div class="form-group"><label class="form-label">Date</label><input class="form-control" type="date" id="pm-date"></div>
+          <div class="form-group"><label class="form-label">Mode</label>
+            <select class="form-control" id="pm-mode">
+              <option value="">Select Mode</option>
+              <option>NEFT</option><option>RTGS</option><option>UPI</option>
+              <option>Cheque</option><option>Cash</option><option>IMPS</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Reference No</label><input class="form-control" id="pm-ref" placeholder="UTR / Cheque no"></div>
+          <div class="form-group form-full"><label class="form-label">Remarks</label><input class="form-control" id="pm-remarks" placeholder="Optional"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label class="btn btn-info" style="cursor:pointer;margin:0;">
+          📎 Upload Screenshot
+          <input type="file" id="pm-slip-input" accept="image/*,.pdf" style="display:none;" onchange="onPmSlipSelect()">
+        </label>
+        <span id="pm-slip-name" style="font-size:12px;color:var(--text3);"></span>
+        <button id="pm-slip-upload-btn" class="btn btn-success" style="display:none;" onclick="uploadPmSlipNow()">⬆ Upload</button>
+        <span id="pm-slip-status" style="font-size:12px;display:none;"></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="closeModal('paymentModal')">Close</button>
+        <button class="btn btn-primary" id="pm-submit-btn" onclick="submitPayment()">+ Add Payment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- ===== DELETE ORDER MODAL ===== -->
+<div class="modal-overlay" id="deleteOrderModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head">
+      <div class="modal-title">🗑️ Delete Order Permanently</div>
+      <button class="modal-close" onclick="closeModal('deleteOrderModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--error-dim);border:1px solid var(--error-b);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--error);">
+        ⚠️ Ye action <b>permanent</b> hai aur wapas nahi ho sakta. Order <b id="del-order-id-display"></b> ka poora data — Sales, CRM, Production, Accounts, Payments, Billings, Dispatch — sabhi jagah se hamesha ke liye delete ho jayega.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm karne ke liye Order ID type karo</label>
+        <input class="form-control" id="del-order-id-input" placeholder="e.g. ORD-0014" oninput="onDeleteOrderIdInput()" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('deleteOrderModal')">Cancel</button>
+      <button class="btn btn-danger" id="del-order-btn" disabled onclick="submitDeleteOrder()">🗑️ Delete Permanently</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VIEW PAYMENTS MODAL (Accounts) ===== -->
+<div class="modal-overlay" id="viewPaymentsModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-head">
+      <div class="modal-title">💰 Payment Summary</div>
+      <button class="modal-close" onclick="closeModal('viewPaymentsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--accent-dim);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Order ID</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;" id="vp-orderid"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Order Value</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);" id="vp-orderval"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Customer</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);" id="vp-custname"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--success-dim);border:1px solid var(--success-b);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:10px;color:var(--success);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;margin-bottom:4px;">Total Received</div>
+          <div style="font-size:20px;font-weight:700;color:var(--success);" id="vp-total">₹0</div>
+        </div>
+        <div style="background:var(--error-dim);border:1px solid var(--error-b);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:10px;color:var(--error);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;margin-bottom:4px;">Balance Due</div>
+          <div style="font-size:20px;font-weight:700;color:var(--error);" id="vp-balance">—</div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Payment Entries</div>
+      <div id="vp-list" style="max-height:280px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('viewPaymentsModal')">Close</button></div>
+  </div>
+</div>
+
+
+<!-- ===== BILLING MODAL (Accounts) ===== -->
+<div class="modal-overlay" id="billingModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-title">🧾 Create Billing Entry</div>
+      <button class="modal-close" onclick="closeModal('billingModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--accent-dim);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Order ID</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;" id="bl-orderid-display"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Item ID</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;" id="bl-itemid-display"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:0.4px;">Product</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);" id="bl-product-display"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:var(--info-dim);border:1px solid var(--info-b);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--info);text-transform:uppercase;font-weight:600;">Total Qty</div>
+          <div style="font-size:18px;font-weight:700;color:var(--info);" id="bl-total-qty">0</div>
+        </div>
+        <div style="background:var(--success-dim);border:1px solid var(--success-b);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--success);text-transform:uppercase;font-weight:600;">Produced</div>
+          <div style="font-size:18px;font-weight:700;color:var(--success);" id="bl-produced-qty">0</div>
+        </div>
+        <div style="background:var(--warning-dim);border:1px solid var(--warning-b);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--warning);text-transform:uppercase;font-weight:600;">Already Billed</div>
+          <div style="font-size:18px;font-weight:700;color:var(--warning);" id="bl-billed-qty">0</div>
+        </div>
+      </div>
+      <div id="bl-history" style="margin-bottom:14px;max-height:150px;overflow-y:auto;"></div>
+      <div style="border-top:2px solid var(--border);padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">+ New Billing Entry</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Invoice No</label><input class="form-control" id="bl-invoice-no" placeholder="INV-001"></div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+              <input type="checkbox" id="bl-fms-chk" onchange="toggleBillingFMS()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;">
+              Invoice Date <span style="font-size:10px;color:var(--text3);font-weight:400;">(tick → FMS Done)</span>
+            </label>
+            <input class="form-control" type="date" id="bl-invoice-date">
+          </div>
+          <div class="form-group"><label class="form-label">Billed Qty</label><input class="form-control" type="number" id="bl-billed-qty-input" placeholder="0"></div>
+          <div class="form-group"><label class="form-label">Invoice Amount (₹)</label><input class="form-control" type="number" id="bl-invoice-amount" placeholder="0"></div>
+          <div class="form-group form-full"><label class="form-label">Remarks</label><input class="form-control" id="bl-remarks" placeholder="Optional"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('billingModal')">Close</button>
+      <button class="btn btn-primary" id="bl-submit-btn" onclick="submitBilling()">🧾 Save Billing</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ===== DISPATCH MODAL ===== -->
+<div class="modal-overlay" id="dispatchModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-title">🚚 Dispatch Entry</div>
+      <button class="modal-close" onclick="closeModal('dispatchModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="background:var(--accent-dim);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;">Order ID</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;" id="dsp-orderid-display"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;">Item ID</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;" id="dsp-itemid-display"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;">Product</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);" id="dsp-product-display"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+        <div style="background:var(--info-dim);border:1px solid var(--info-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--info);text-transform:uppercase;font-weight:600;">Total Qty</div>
+          <div style="font-size:16px;font-weight:700;color:var(--info);" id="dsp-m-total">0</div>
+        </div>
+        <div style="background:var(--success-dim);border:1px solid var(--success-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--success);text-transform:uppercase;font-weight:600;">Produced</div>
+          <div style="font-size:16px;font-weight:700;color:var(--success);" id="dsp-m-produced">0</div>
+        </div>
+        <div style="background:var(--purple-dim);border:1px solid var(--purple-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--purple);text-transform:uppercase;font-weight:600;">Billed</div>
+          <div style="font-size:16px;font-weight:700;color:var(--purple);" id="dsp-m-billed">0</div>
+        </div>
+        <div style="background:var(--warning-dim);border:1px solid var(--warning-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--warning);text-transform:uppercase;font-weight:600;">Dispatched</div>
+          <div style="font-size:16px;font-weight:700;color:var(--warning);" id="dsp-m-dispatched">0</div>
+        </div>
+      </div>
+      <div id="dsp-pay-warning" style="display:none;margin-bottom:12px;padding:9px 12px;background:var(--error-dim);border:1px solid var(--error-b);border-radius:8px;font-size:12px;color:var(--error);font-weight:500;"></div>
+      <div id="dsp-history" style="margin-bottom:12px;max-height:150px;overflow-y:auto;"></div>
+      <div style="border-top:2px solid var(--border);padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">+ New Dispatch Entry</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Dispatch Qty <span class="req-mark">*</span></label><input class="form-control" type="number" id="dsp-qty" placeholder="0"></div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+              <input type="checkbox" id="dsp-fms-chk" onchange="toggleDispatchFMS()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;">
+              Dispatch Date <span class="req-mark">*</span> <span style="font-size:10px;color:var(--text3);font-weight:400;">(tick → FMS Done)</span>
+            </label>
+            <input class="form-control" type="date" id="dsp-date">
+          </div>
+          <div class="form-group"><label class="form-label">Transport Name <span class="req-mark">*</span></label><input class="form-control" id="dsp-transport" placeholder="Transport name"></div>
+          <div class="form-group"><label class="form-label">Vehicle No</label><input class="form-control" id="dsp-vehicle" placeholder="HR-XX-XXXX"></div>
+          <div class="form-group"><label class="form-label">LR / Bilty No</label><input class="form-control" id="dsp-lr" placeholder="LR number"></div>
+          <div class="form-group"><label class="form-label">Driver No</label><input class="form-control" id="dsp-driver" placeholder="Phone"></div>
+          <div class="form-group form-full"><label class="form-label">Remarks</label><input class="form-control" id="dsp-remarks" placeholder="Optional"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('dispatchModal')">Close</button>
+      <button class="btn btn-primary" id="dsp-submit-btn" onclick="submitDispatch()">🚚 Save Dispatch</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ===== PLANNED PRODUCTION SLIP MODAL ===== -->
+<div class="modal-overlay" id="plannedSlipModal">
+  <div class="modal" style="max-width:840px;">
+    <div class="modal-head">
+      <div class="modal-title">🖨️ Planned Production Slip</div>
+      <button class="modal-close" onclick="closeModal('plannedSlipModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="form-group"><label class="form-label">Plan Date <span class="req-mark">*</span></label><input class="form-control" type="date" id="ps-plan-date"></div>
+        <div class="form-group"><label class="form-label">Search</label><input class="form-control" id="ps-search" placeholder="Customer / Order / Item / Model..." oninput="renderPlannedPicker()"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);">Pending Items</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;">
+          <input type="checkbox" id="ps-select-all" onchange="togglePlannedSelectAll()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;">
+          Select all (filtered)
+        </label>
+      </div>
+      <div class="table-wrap" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;">
+        <table>
+          <thead><tr>
+            <th style="width:36px;"></th><th>Order ID</th><th>Item ID</th><th>Customer</th>
+            <th>Product Model</th><th>Battery Type</th><th>Charger Model</th><th>Charger Qty</th><th>Total</th><th>Produced</th><th>Pending</th><th style="width:110px;">Planned Qty</th>
+          </tr></thead>
+          <tbody id="ps-picker-body"><tr><td colspan="10"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;padding:10px 14px;background:var(--accent-dim);border:1px solid #C7D2FE;border-radius:10px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Selected</span><span style="font-size:16px;font-weight:700;color:var(--text);" id="ps-sel-count">0</span></div>
+        <div style="width:1px;height:24px;background:#C7D2FE;"></div>
+        <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Total Planned Qty</span><span style="font-size:16px;font-weight:700;color:var(--accent);" id="ps-sel-qty">0</span></div>
+      </div>
+      <div id="ps-material-check" style="display:none;margin-top:12px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('plannedSlipModal')">Cancel</button>
+      <button class="btn btn-primary" id="ps-confirm-btn" onclick="confirmPlannedSlip()">✓ Confirm & Generate Slip</button>
+    </div>
+  </div>
+</div>
+<!-- ===== DELIVERY CHALLAN MODAL ===== -->
+<div class="modal-overlay" id="challanModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <div class="modal-title">📄 New Delivery Challan</div>
+      <button class="modal-close" onclick="closeModal('challanModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="background:var(--accent-dim);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;">Order ID</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;" id="ch-orderid-display"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;">Item ID</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);font-family:'JetBrains Mono',monospace;" id="ch-itemid-display"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;">Product</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);" id="ch-product-display"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+        <div style="background:var(--info-dim);border:1px solid var(--info-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--info);text-transform:uppercase;font-weight:600;">Total Qty</div>
+          <div style="font-size:16px;font-weight:700;color:var(--info);" id="ch-m-total">0</div>
+        </div>
+        <div style="background:var(--warning-dim);border:1px solid var(--warning-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--warning);text-transform:uppercase;font-weight:600;">Already Sent</div>
+          <div style="font-size:16px;font-weight:700;color:var(--warning);" id="ch-m-sent">0</div>
+        </div>
+        <div style="background:var(--success-dim);border:1px solid var(--success-b);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--success);text-transform:uppercase;font-weight:600;">Pending</div>
+          <div style="font-size:16px;font-weight:700;color:var(--success);" id="ch-m-pending">0</div>
+        </div>
+      </div>
+      <div id="ch-history" style="margin-bottom:12px;max-height:140px;overflow-y:auto;"></div>
+      <div style="border-top:2px solid var(--border);padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Challan Details</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Challan Qty <span class="req-mark">*</span></label><input class="form-control" type="number" id="ch-qty" placeholder="0"></div>
+          <div class="form-group"><label class="form-label">Amount (₹)</label><input class="form-control" type="number" id="ch-amount" placeholder="0"></div>
+          <div class="form-group form-full"><label class="form-label">Name & Address <span class="req-mark">*</span></label><textarea class="form-control" id="ch-address" style="min-height:70px;" placeholder="Ship-to name & address"></textarea></div>
+          <div class="form-group form-full"><label class="form-label">Particulars</label><input class="form-control" id="ch-particulars" placeholder="Product description"></div>
+          <div class="form-group form-full"><label class="form-label">Note</label><input class="form-control" id="ch-note" placeholder="e.g. Replacement / Warranty"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('challanModal')">Cancel</button>
+      <button class="btn btn-primary" id="ch-submit-btn" onclick="submitChallan()">💾 Save & Print Challan</button>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js"></script>
+<script src="app.js?v=3.1"></script>
+<script src="../suite-bridge.js"></script>
+</body>
+</html>
