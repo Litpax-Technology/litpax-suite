@@ -1,0 +1,1762 @@
+/* =========================================================
+ * Litpax SMS — Application Logic
+ * ========================================================= */
+
+const State = {
+  user: null,
+  token: null,
+  config: { lists:{}, settings:{} },
+  vendors: [], vendorMaterials: [], items: [], orders: [], orderItems: [], receiving: [], followups: [], transport: [], transportFollowups: [],
+  imsPOs: [], diary: [],
+  view: 'dashboard'
+};
+
+/* ---------- JSONP ---------- */
+const NO_ALL = ['getAll','login','getIMSPendingPOs','addNote','setNoteStatus'];
+function api(params){
+  return new Promise((resolve, reject)=>{
+    if(!CONFIG.API_URL || CONFIG.API_URL.indexOf('PASTE_') === 0){
+      return reject(new Error('API_URL not set in config.js'));
+    }
+    const cb = 'jsonp_' + Date.now() + '_' + Math.floor(Math.random()*1e5);
+    const script = document.createElement('script');
+    const timer = setTimeout(()=>{ cleanup(); reject(new Error('Request timed out')); }, CONFIG.REQUEST_TIMEOUT || 30000);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; if(script.parentNode) script.parentNode.removeChild(script); }
+    window[cb] = (res)=>{
+      cleanup();
+      if(!(res && res.ok)) return reject(new Error((res && res.error) || 'Unknown error'));
+      let data = res.data;
+      if(data && data.__all){ applyAll(data.__all); State._freshAt = Date.now(); data = data.result; }
+      resolve(data);
+    };
+    if(State.token && !params.token) params.token = State.token;
+    if(params.action && !NO_ALL.includes(params.action)) params.withAll = '1';
+    const qs = Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');
+    script.src = CONFIG.API_URL + '?' + qs + '&callback=' + cb;
+    script.onerror = ()=>{ cleanup(); reject(new Error('Network error — check deployment access = Anyone')); };
+    document.body.appendChild(script);
+  });
+}
+
+/* ---------- Helpers ---------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const todayStr = ()=>{ const d=new Date(); return d.toISOString().slice(0,10); };
+const money = n => '₹' + (Number(n)||0).toLocaleString('en-IN');
+function vendorName(id){ const v=State.vendors.find(x=>x.VendorID==id); return v?v.Name:id; }
+function cfgList(name, fb){ const a=State.config.lists[name]; return (a && a.length)?a:(fb||[]); }
+const PAGE_SIZE = 100;
+function capNote(total, cols){
+  return total>PAGE_SIZE
+    ? `<tr><td colspan="${cols}" class="cap-note">Showing latest ${PAGE_SIZE} of ${total} — use search / filters to find older records.</td></tr>`
+    : '';
+}
+function itemNames(){ const it=State.items||[]; return it.length? it.map(i=>i.Item) : (State.config.lists.MaterialList||[]); }
+function catIcon(cat){
+  const m={'Cells':'🔋','BMS':'⚡','Charger':'🔌','Nickel/Busbar':'🟠','Box':'📦','IOT':'📡','Inverter':'🔧','Wire':'🧵','Consumables':'🧰','Tools':'🛠️','Packaging':'📦','Casing':'🧱','Hardware':'🔩'};
+  return m[cat]||'📦';
+}
+
+function toast(msg, type='info'){
+  const ic = type==='success'?'✓':type==='error'?'!':'i';
+  const el = document.createElement('div');
+  el.className = 'toast '+type;
+  el.innerHTML = `<span class="t-ic">${ic}</span><span>${esc(msg)}</span>`;
+  $('#toastWrap').appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),250); }, 3200);
+}
+
+function openModal(title, bodyHTML){
+  $('#modalTitle').textContent = title;
+  $('#modalBody').innerHTML = bodyHTML;
+  $('#modalBackdrop').classList.remove('hidden');
+}
+function closeModal(){ $('#modalBackdrop').classList.add('hidden'); $('#modalBody').innerHTML=''; }
+
+/* ---------- Tag helpers ---------- */
+function tagClass(t){
+  const k = String(t||'').toLowerCase();
+  return k==='preferred'?'tag-preferred':k==='blacklisted'?'tag-blacklisted':k==='trial'?'tag-trial':'tag-approved';
+}
+function vendorTagFor(vendorId, material){
+  const m = State.vendorMaterials.find(x=>x.VendorID==vendorId && x.Material==material);
+  return m ? m.Tag : '';
+}
+function vendorsForMaterial(material){
+  return State.vendorMaterials.filter(x=>x.Material==material)
+    .map(x=>({ ...x, Name: vendorName(x.VendorID) }));
+}
+
+/* ---------- Order calculations ---------- */
+function orderItemsOf(po){ return State.orderItems.filter(i=>i.PO_No==po); }
+function receivingOf(po){ return State.receiving.filter(r=>r.PO_No==po); }
+function orderedQtyMaterial(po,mat){ return orderItemsOf(po).filter(i=>i.Material==mat).reduce((a,i)=>a+(Number(i.OrderedQty)||0),0); }
+function receivedQtyMaterial(po,mat){ return receivingOf(po).filter(r=>r.Material==mat).reduce((a,r)=>a+(Number(r.ReceivedQty)||0),0); }
+function orderProgress(po){
+  const ord = orderItemsOf(po).reduce((a,i)=>a+(Number(i.OrderedQty)||0),0);
+  const rec = receivingOf(po).reduce((a,r)=>a+(Number(r.ReceivedQty)||0),0);
+  return { ordered:ord, received:rec, pct: ord>0?Math.min(100,Math.round(rec/ord*100)):0 };
+}
+function isOverdue(o){
+  const exp = o.RevisedExpectedDate || o.OriginalExpectedDate;
+  if(!exp) return false;
+  const done = o.Status==='Fully Received' || o.Status==='Closed' || o.Status==='Cancelled';
+  return !done && String(exp) < todayStr();
+}
+function statusBadge(s){
+  const map = {'Ordered':'b-blue','Partially Received':'b-amber','Fully Received':'b-green','Closed':'b-gray','Cancelled':'b-red'};
+  return `<span class="badge ${map[s]||'b-gray'}">${esc(s)}</span>`;
+}
+
+/* =========================================================
+ *  AUTH
+ * ========================================================= */
+async function doLogin(){
+  const pin = $('#pinInput').value.trim();
+  const err = $('#loginError'); err.textContent='';
+  if(!pin){ err.textContent='Please enter your PIN'; return; }
+  const btn = $('#loginBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const u = await api({ action:'login', pin });
+    State.user = u;
+    State.token = u.token;
+    try{ sessionStorage.setItem('sms_session', JSON.stringify(u)); }catch(e){}
+    $('#loginScreen').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    $('#userName').textContent = u.Name;
+    $('#userRole').textContent = u.Role;
+    $('#userAvatar').textContent = (u.Name||'A').charAt(0).toUpperCase();
+    await loadAll();
+    applyRoleNav();
+    switchView(allowedViews()[0] || 'dashboard');
+    loadIMSPOsBackground();
+  }catch(e){
+    err.textContent = e.message;
+  }finally{
+    btn.disabled=false; btn.textContent='Sign In';
+  }
+}
+
+async function resumeSession(u){
+  State.user = u;
+  State.token = u.token;
+  $('#loginScreen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#userName').textContent = u.Name;
+  $('#userRole').textContent = u.Role;
+  $('#userAvatar').textContent = (u.Name||'A').charAt(0).toUpperCase();
+  try{
+    await loadAll();
+    applyRoleNav();
+    switchView(allowedViews()[0] || 'dashboard');
+    loadIMSPOsBackground();
+  }catch(e){
+    // token expire/invalid → session hata ke login screen
+    try{ sessionStorage.removeItem('sms_session'); }catch(_){}
+    $('#app').classList.add('hidden');
+    $('#loginScreen').classList.remove('hidden');
+    setTimeout(()=>$('#pinInput').focus(), 100);
+  }
+}
+
+function applyAll(d){
+  State.config = d.config || {lists:{},settings:{}};
+  State.vendors = d.vendors||[];
+  State.vendorMaterials = d.vendorMaterials||[];
+  State.items = d.items||[];
+  State.orders = d.orders||[];
+  State.orderItems = d.orderItems||[];
+  State.receiving = d.receiving||[];
+  State.followups = d.followups||[];
+  State.transport = d.transport||[];
+  State.transportFollowups = d.transportFollowups||[];
+  State.diary = d.diary||[];
+  updateDiaryBadge();
+}
+async function loadAll(force){
+  // save ke response me fresh data aa chuka hai → dobara server call skip
+  if(!force && State._freshAt && Date.now()-State._freshAt < 5000){ State._freshAt = 0; return; }
+  applyAll(await api({ action:'getAll' }));
+}
+
+// IMS POs background mein — login ka wait nahi
+function loadIMSPOsBackground(){
+  api({ action:'getIMSPendingPOs' })
+    .then(d => { State.imsPOs = d || []; if(State.view==='imspo') render(); })
+    .catch(() => { State.imsPOs = []; });
+}
+async function refresh(){
+  const r = $('#refreshBtn'); r.classList.add('spinning');
+  try{ await loadAll(true); render(); loadIMSPOsBackground(); }
+  catch(e){ toast(e.message,'error'); }
+  finally{ setTimeout(()=>r.classList.remove('spinning'),600); }
+}
+
+/* =========================================================
+ *  ROUTER
+ * ========================================================= */
+const TITLES = {dashboard:'Dashboard',orders:'Orders',receiving:'Receiving',followups:'Follow-ups',vendors:'Vendors',masters:'Masters',imspo:'From IMS',transport:'Consignments',tracking:'Tracking',freight:'Freight'};
+const ROLE_VIEWS = {
+  Admin:     ['dashboard','orders','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
+  Purchase:  ['dashboard','orders','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
+  Transport: ['transport','tracking','freight']
+};
+function allowedViews(){ const r=State.user&&State.user.Role; return ROLE_VIEWS[r] || ROLE_VIEWS.Admin; }
+function applyRoleNav(){
+  const allow=allowedViews();
+  $$('.nav-item').forEach(n=> n.style.display = allow.includes(n.dataset.view)?'':'none');
+  const wrap=$('#poSearchWrap'); if(wrap) wrap.style.display = allow.includes('orders') ? '' : 'none';
+  const sb=$('#stickerBtn'); if(sb) sb.style.display = allow.includes('orders') ? '' : 'none';
+  const db=$('#diaryBtn'); if(db) db.style.display = allow.includes('orders') ? '' : 'none';
+}
+function poSearch(){
+  const q=($('#poSearch').value||'').toLowerCase().trim();
+  const box=$('#poSearchResults');
+  if(!q){ box.innerHTML=''; box.classList.remove('show'); return; }
+  const matches=State.orders.filter(o=>String(o.PO_No).toLowerCase().includes(q)||vendorName(o.VendorID).toLowerCase().includes(q))
+    .sort((a,b)=>String(b.PO_No).localeCompare(String(a.PO_No))).slice(0,8);
+  if(!matches.length){ box.innerHTML='<div class="po-sr-empty">No matching PO</div>'; box.classList.add('show'); return; }
+  box.innerHTML=matches.map(o=>`<div class="po-sr-item" onclick="pickPO('${esc(o.PO_No)}')">
+    <b>${esc(o.PO_No)}</b><span>${esc(vendorName(o.VendorID))} · ${statusBadge(o.Status)}</span></div>`).join('');
+  box.classList.add('show');
+}
+function pickPO(po){ $('#poSearch').value=''; $('#poSearchResults').classList.remove('show'); openPODetail(po); }
+function poSearchEnter(e){ if(e.key==='Enter'){ const first=$('#poSearchResults .po-sr-item'); if(first) first.click(); } }
+function switchView(v){
+  if(!allowedViews().includes(v)) return;
+  State.view = v;
+  $$('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===v));
+  $('#viewTitle').textContent = TITLES[v]||'';
+  closeSidebar();
+  render();
+}
+function render(){
+  const root = $('#viewRoot');
+  root.style.animation='none'; void root.offsetWidth; root.style.animation='fadeIn .35s ease';
+  ({dashboard:renderDashboard,orders:renderOrders,receiving:renderReceiving,followups:renderFollowups,vendors:renderVendors,masters:renderMasters,imspo:renderIMSPOs,transport:renderTransport,tracking:renderTracking,freight:renderFreight}[State.view])();
+}
+
+/* =========================================================
+ *  DASHBOARD
+ * ========================================================= */
+function renderDashboard(){
+  const active = State.orders.filter(o=>o.Status==='Ordered'||o.Status==='Partially Received');
+  const overdue = State.orders.filter(isOverdue);
+  const followDue = State.followups.filter(f=>f.NextFollowUpDate && String(f.NextFollowUpDate) <= todayStr());
+  const monthSpend = State.orders
+    .filter(o=>String(o.Date||'').slice(0,7)===todayStr().slice(0,7) && o.Status!=='Cancelled')
+    .reduce((a,o)=>a+(Number(o.TotalAmount)||0),0);
+
+  const recent = [...State.orders].sort((a,b)=>String(b.Date||'').localeCompare(String(a.Date||''))).slice(0,6);
+
+  $('#viewRoot').innerHTML = `
+    <div class="stat-grid">
+      ${statCard('Active Orders', active.length, 'Ordered + partially received', '', 0)}
+      ${statCard('Overdue', overdue.length, 'Past expected date', overdue.length?'danger':'good', 1)}
+      ${statCard('Follow-ups Due', followDue.length, 'Due today or earlier', followDue.length?'warn':'good', 2)}
+      ${statCard('This Month Spend', money(monthSpend), 'Ordered value', 'good', 3)}
+    </div>
+
+    ${overdue.length ? `
+    <div class="panel">
+      <div class="panel-head"><h3>⚠ Overdue Orders</h3></div>
+      <div class="panel-body flush"><div class="table-wrap"><table>
+        <thead><tr><th>PO No</th><th>Vendor</th><th>Expected</th><th>Progress</th><th>Status</th></tr></thead>
+        <tbody>${overdue.map(o=>{const p=orderProgress(o);return `<tr>
+          <td class="row-strong">${esc(o.PO_No)}</td><td>${esc(vendorName(o.VendorID))}</td>
+          <td><span class="badge b-red pulse">${esc(o.RevisedExpectedDate||o.OriginalExpectedDate)}</span></td>
+          <td>${progBar(p)}</td><td>${statusBadge(o.Status)}</td></tr>`;}).join('')}</tbody>
+      </table></div></div>
+    </div>`:''}
+
+    <div class="panel">
+      <div class="panel-head"><h3>Recent Orders</h3>
+        <button class="link-btn" onclick="switchView('orders')">View all →</button></div>
+      <div class="panel-body flush">
+        ${recent.length? `<div class="table-wrap"><table>
+          <thead><tr><th>PO No</th><th>Date</th><th>Vendor</th><th>Amount</th><th>Progress</th><th>Status</th></tr></thead>
+          <tbody>${recent.map(o=>{const p=orderProgress(o);return `<tr>
+            <td class="row-strong">${esc(o.PO_No)}</td><td>${esc(o.Date)}</td><td>${esc(vendorName(o.VendorID))}</td>
+            <td class="mono">${money(o.TotalAmount)}</td><td>${progBar(p)}</td><td>${statusBadge(o.Status)}</td></tr>`;}).join('')}</tbody>
+        </table></div>` : emptyState('No orders yet','Create your first purchase order')}
+      </div>
+    </div>`;
+  animateCounts();
+}
+function statCard(label,value,hint,cls,i){
+  return `<div class="stat-card ${cls}" style="animation-delay:${i*70}ms">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value" data-count="${typeof value==='number'?value:''}">${typeof value==='number'?'0':value}</div>
+    <div class="stat-hint">${hint}</div></div>`;
+}
+function animateCounts(){
+  $$('.stat-value[data-count]').forEach(el=>{
+    const target=Number(el.dataset.count); if(!target){el.textContent=el.dataset.count||el.textContent;return;}
+    let cur=0; const step=Math.max(1,Math.round(target/24));
+    const t=setInterval(()=>{cur+=step; if(cur>=target){cur=target;clearInterval(t);} el.textContent=cur;},22);
+  });
+}
+function progBar(p){
+  return `<div style="display:flex;align-items:center;gap:8px">
+    <div class="prog ${p.pct>=100?'full':''}"><span style="width:${p.pct}%"></span></div>
+    <span style="font-size:12px;color:var(--muted)">${p.received}/${p.ordered}</span></div>`;
+}
+function emptyState(t,s){return `<div class="empty"><span class="emoji">◇</span><div class="row-strong">${t}</div><div>${s||''}</div></div>`;}
+
+/* =========================================================
+ *  ORDERS
+ * ========================================================= */
+function renderOrders(){
+  const statuses = State.config.lists.StatusOptions || [];
+  $('#viewRoot').innerHTML = `
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="openNewOrder()">+ New Order</button>
+      <div class="spacer"></div>
+    </div>
+    <div class="filters">
+      <input class="search-box" id="oSearch" placeholder="Search PO or vendor..." oninput="renderOrderTable()">
+      <select id="oStatus" onchange="renderOrderTable()">
+        <option value="">All statuses</option>
+        ${statuses.map(s=>`<option>${esc(s)}</option>`).join('')}
+      </select>
+      <select id="oVendor" onchange="renderOrderTable()">
+        <option value="">All vendors</option>
+        ${State.vendors.map(v=>`<option value="${esc(v.VendorID)}">${esc(v.Name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="panel"><div class="panel-body flush"><div class="table-wrap"><table>
+      <thead><tr><th></th><th>PO No</th><th>Date</th><th>Vendor</th><th>Expected</th><th>Amount</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+      <tbody id="orderTbody"></tbody>
+    </table></div></div></div>`;
+  renderOrderTable();
+}
+
+function orderMaterialsSummary(po){
+  const its = orderItemsOf(po);
+  if(!its.length) return '';
+  const MAX = 3;
+  const parts = its.slice(0, MAX).map(i=>{
+    const qty = i.OrderedQty ? ` <span class="mat-qty">${esc(i.OrderedQty)}${i.Unit?' '+esc(i.Unit):''}</span>` : '';
+    return `<span class="mat-chip">${esc(i.Material)}${qty}</span>`;
+  });
+  const more = its.length > MAX ? `<span class="mat-chip mat-more">+${its.length-MAX} more</span>` : '';
+  return `<div class="order-mats">${parts.join('')}${more}</div>`;
+}
+
+function renderOrderTable(){
+  const q=($('#oSearch')?.value||'').toLowerCase();
+  const fs=$('#oStatus')?.value||''; const fv=$('#oVendor')?.value||'';
+  let list=[...State.orders].sort((a,b)=>String(b.PO_No).localeCompare(String(a.PO_No)));
+  list=list.filter(o=>{
+    const okQ=!q||String(o.PO_No).toLowerCase().includes(q)||vendorName(o.VendorID).toLowerCase().includes(q);
+    return okQ && (!fs||o.Status===fs) && (!fv||o.VendorID==fv);
+  });
+  const tb=$('#orderTbody');
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="9">${emptyState('No matching orders','')}</td></tr>`; return; }
+  const _t=list.length;
+  tb.innerHTML=list.slice(0,PAGE_SIZE).map(o=>{
+    const p=orderProgress(o); const od=isOverdue(o);
+    const exp=o.RevisedExpectedDate||o.OriginalExpectedDate||'—';
+    return `<tr onclick="toggleDetail(this,'${esc(o.PO_No)}')">
+      <td><span class="expand-ic">▸</span></td>
+      <td class="row-strong">${esc(o.PO_No)}</td>
+      <td>${esc(o.Date)}</td>
+      <td>${esc(vendorName(o.VendorID))}${orderMaterialsSummary(o.PO_No)}</td>
+      <td>${od?`<span class="badge b-red pulse">${esc(exp)}</span>`:esc(exp)}</td>
+      <td class="mono">${money(o.TotalAmount)}</td>
+      <td>${progBar(p)}</td>
+      <td>${statusBadge(o.Status)}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="link-btn" onclick="openPODetail('${esc(o.PO_No)}')">Details</button>
+        ${(o.Status==='Ordered'||o.Status==='Partially Received')?`<button class="btn btn-light btn-sm" onclick="openReceiving('${esc(o.PO_No)}')">Receive</button>`:''}
+      </td></tr>`;
+  }).join('')+capNote(_t,9);
+}
+function toggleDetail(row,po){
+  const next=row.nextElementSibling;
+  if(next && next.classList.contains('detail-row')){ next.remove(); row.classList.remove('open'); return; }
+  $$('.detail-row').forEach(r=>r.remove()); $$('#orderTbody tr').forEach(r=>r.classList.remove('open'));
+  row.classList.add('open');
+  const items=orderItemsOf(po), recs=receivingOf(po), fups=State.followups.filter(f=>f.PO_No==po);
+  const cons=(State.transport||[]).filter(t=>t.PO_No==po);
+  const tr=document.createElement('tr'); tr.className='detail-row';
+  tr.innerHTML=`<td class="detail-cell" colspan="9"><div class="detail-inner">
+    <h4>Items</h4>
+    <table class="mini-table"><tbody>
+      ${items.map(i=>{const rec=receivedQtyMaterial(po,i.Material);const pend=(Number(i.OrderedQty)||0)-rec;
+        return `<tr><td>${esc(i.Material)}</td><td>${esc(i.OrderedQty)} ${esc(i.Unit||'')}</td>
+        <td>Received: <b>${rec}</b></td><td>Pending: <b style="color:${pend>0?'var(--amber)':'var(--green)'}">${pend}</b></td>
+        <td class="mono">${money(i.Amount)}</td></tr>`;}).join('')}
+    </tbody></table>
+    ${recs.length?`<h4>Receiving History</h4><table class="mini-table"><tbody>
+      ${recs.map(r=>`<tr><td>${esc(r.GRN_No)}</td><td>${esc(r.Material)}</td><td>Recv ${esc(r.ReceivedQty)}</td>
+      <td>Acc ${esc(r.AcceptedQty)} / Rej ${esc(r.RejectedQty)}</td><td>${esc(r.ReceivedDate)}</td></tr>`).join('')}
+    </tbody></table>`:''}
+    <h4>Transport</h4>
+    ${cons.length?`<table class="mini-table"><tbody>
+      ${cons.map(t=>`<tr>
+        <td class="row-strong">${esc(t.ConsignmentID)}</td>
+        <td>${esc(t.Transporter||'')}${t.LR_No?` · LR ${esc(t.LR_No)}`:''}</td>
+        <td>${transitBadge(t.TransitStatus)}</td>
+        <td>${t.CurrentLocation?esc(t.CurrentLocation):''}${t.ETA?` · ETA ${esc(t.ETA)}`:''}</td>
+        <td>${t.FreightAmount?money(t.FreightAmount):'—'}${t.FreightStatus?` · ${esc(t.FreightStatus)}`:''}</td>
+        <td><button class="link-btn" onclick="openTracking('${esc(t.ConsignmentID)}')">Track</button></td>
+      </tr>`).join('')}
+    </tbody></table>`:'<div style="color:var(--muted);font-size:12.5px;padding:2px 0 6px">No transport added for this order yet.</div>'}
+    ${fups.length?`<h4>Follow-ups</h4><table class="mini-table"><tbody>
+      ${fups.map(f=>`<tr><td>${esc(f.Date)}</td><td>${esc(f.Type)}</td><td>${esc(f.SpokenWith||'')}</td>
+      <td>${esc(f.Outcome||'')}</td><td>Next: ${esc(f.NextFollowUpDate||'—')}</td></tr>`).join('')}
+    </tbody></table>`:''}
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      ${(State.orders.find(o=>o.PO_No==po).Status!=='Closed'&&State.orders.find(o=>o.PO_No==po).Status!=='Cancelled')?`
+        <button class="btn btn-light btn-sm" onclick="openEditOrder('${esc(po)}')">✎ Edit</button>
+        <button class="btn btn-light btn-sm" onclick="openReceiving('${esc(po)}')">+ Receive</button>
+        <button class="btn btn-light btn-sm" onclick="openFollowUp('${esc(po)}')">+ Follow-up</button>
+        <button class="btn btn-light btn-sm" onclick="openConsignment('','${esc(po)}')">+ Transport</button>
+        <button class="btn btn-light btn-sm" onclick="changeStatus('${esc(po)}','Closed')">Close</button>
+        <button class="btn btn-danger btn-sm" onclick="changeStatus('${esc(po)}','Cancelled')">Cancel</button>`:''}
+    </div>
+  </div></td>`;
+  row.after(tr);
+}
+
+/* ----- New Order modal ----- */
+let itemRows=0;
+let selectedVendorId='';
+
+function openNewOrder(){
+  openModal('New Purchase Order', `
+    <h4 class="mini-head">Items</h4>
+    <div class="table-wrap"><table class="mini-table split-table" id="soRows">
+      <thead><tr><th>Material</th><th>Qty</th><th>Unit</th><th>Vendor</th><th>Rate</th><th>Expected</th><th></th></tr></thead>
+      <tbody id="soBody"></tbody>
+    </table></div>
+    <button class="btn btn-light btn-sm" onclick="addSplitRow()" style="margin-top:10px">+ Add Item</button>
+    <p class="masters-note">Ek hi item alag-alag vendor ko dena ho to use dobara add karo aur qty baant do. Har vendor ka alag order banega.</p>
+    <div class="order-total">Total: <span id="soTotal" class="mono">₹0</span></div>
+    <h4 class="mini-head" style="margin-top:16px">Details</h4>
+    <div class="form-grid">
+      <div class="field"><label>Order Date</label><input type="date" id="soDate" value="${todayStr()}"></div>
+      <div class="field"><label>Priority</label><select id="soPriority"><option>Normal</option><option>High</option><option>Urgent</option></select></div>
+      <div class="field"><label>Remarks</label><input id="soRemarks" placeholder="Optional"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="soSave" onclick="saveSplitOrder()">Create Order(s)</button>
+    </div>`);
+  soRowSeq=0; $('#soBody').innerHTML=''; addSplitRow();
+}
+
+let soRowSeq=0;
+function soVendorOptions(material, selected){
+  const active = State.vendors.filter(v=>v.Status!=='Inactive');
+  let def = selected||'';
+  if(!def){ const pref=active.find(v=>String(vendorTagFor(v.VendorID,material)).toLowerCase()==='preferred'); def=pref?pref.VendorID:''; }
+  return `<option value="">Vendor…</option>` + active.map(v=>{
+    const tag=vendorTagFor(v.VendorID,material);
+    const blk=String(tag).toLowerCase()==='blacklisted';
+    return `<option value="${esc(v.VendorID)}" ${v.VendorID===def?'selected':''} ${blk?'disabled':''}>${esc(v.Name)}${tag?` · ${esc(tag)}`:''}</option>`;
+  }).join('');
+}
+function addSplitRow(material){
+  const tb=$('#soBody');
+  const tr=document.createElement('tr'); tr.className='so-row';
+  tr.innerHTML=`
+    <td><select class="so-mat" onchange="soMatChanged(this)"><option value="">Select</option>${materialOptions()}</select></td>
+    <td><input type="number" min="0" step="any" class="so-qty" oninput="soRecalc()"></td>
+    <td><select class="so-unit"><option value="">—</option>${unitOptions()}</select></td>
+    <td><select class="so-vendor"><option value="">Vendor…</option></select></td>
+    <td><input type="number" min="0" step="any" class="so-rate" oninput="soRecalc()"></td>
+    <td><input type="date" class="so-exp"></td>
+    <td><button class="rm" title="Remove" onclick="this.closest('tr').remove();soRecalc()">✕</button></td>`;
+  tb.appendChild(tr);
+  if(material){ const s=tr.querySelector('.so-mat'); s.value=material; soMatChanged(s); }
+}
+function soMatChanged(sel){
+  const tr=sel.closest('.so-row'), mat=sel.value;
+  const opt=sel.selectedOptions[0], unit=opt?opt.dataset.unit:'';
+  const us=tr.querySelector('.so-unit');
+  if(unit){ if(![...us.options].some(o=>o.value===unit)) us.add(new Option(unit,unit)); us.value=unit; }
+  tr.querySelector('.so-vendor').innerHTML = soVendorOptions(mat,'');
+  soRecalc();
+}
+function soRecalc(){
+  let t=0;
+  $$('#soRows .so-row').forEach(r=>{ t+=(Number(r.querySelector('.so-qty').value)||0)*(Number(r.querySelector('.so-rate').value)||0); });
+  const el=$('#soTotal'); if(el) el.textContent=money(t);
+}
+async function saveSplitOrder(){
+  const items=$$('#soRows .so-row').map(r=>({
+    Material:r.querySelector('.so-mat').value, OrderedQty:r.querySelector('.so-qty').value,
+    Unit:r.querySelector('.so-unit').value, VendorID:r.querySelector('.so-vendor').value,
+    Rate:r.querySelector('.so-rate').value, ExpectedDate:r.querySelector('.so-exp').value
+  })).filter(i=>i.Material);
+  if(!items.length) return toast('Add at least one item','error');
+  for(const it of items){
+    if(!it.VendorID) return toast('Vendor select karo ('+it.Material+')','error');
+    if(!(Number(it.OrderedQty)>0)) return toast('Qty > 0 ('+it.Material+')','error');
+    if(String(vendorTagFor(it.VendorID,it.Material)).toLowerCase()==='blacklisted')
+      return toast('Vendor blacklisted for '+it.Material,'error');
+  }
+  const btn=$('#soSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const res=await api({action:'addSplitOrder', Date:$('#soDate').value, Priority:$('#soPriority').value,
+      Remarks:$('#soRemarks').value, CreatedBy:State.user.Name, items:JSON.stringify(items)});
+    toast('Order(s) bane: '+(res.created||[]).map(c=>c.PO_No).join(', '),'success');
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Create Order(s)'; }
+}
+
+function materialOptions(){
+  const items=State.items||[];
+  if(!items.length){ return (State.config.lists.MaterialList||[]).map(m=>`<option>${esc(m)}</option>`).join(''); }
+  const byCat={};
+  items.forEach(i=>{ const c=i.Category||'Other'; (byCat[c]=byCat[c]||[]).push(i); });
+  return Object.keys(byCat).sort().map(cat=>
+    `<optgroup label="${esc(cat)}">${byCat[cat].map(i=>`<option value="${esc(i.Item)}" data-unit="${esc(i.Unit||'')}">${esc(i.Item)}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+function unitOptions(){ return (State.config.lists.Units||[]).map(u=>`<option>${esc(u)}</option>`).join(''); }
+function itemPicked(sel){
+  const opt=sel.selectedOptions[0];
+  const unit=opt?opt.dataset.unit:'';
+  const row=sel.closest('.item-row');
+  if(unit && row){
+    const us=row.querySelector('[data-f="unit"]');
+    if(us){ if(![...us.options].some(o=>o.value===unit)) us.add(new Option(unit,unit)); us.value=unit; }
+  }
+  itemsChanged();
+}
+function addItemRow(){
+  const id=++itemRows;
+  const row=document.createElement('div'); row.className='item-row'; row.dataset.id=id;
+  row.innerHTML=`
+    <div class="field"><label>Material</label>
+      <select data-f="material" onchange="itemPicked(this)"><option value="">Select</option>${materialOptions()}</select></div>
+    <div class="field"><label>Qty</label><input type="number" min="0" step="any" data-f="qty" oninput="recalcTotal()"></div>
+    <div class="field"><label>Unit</label><select data-f="unit"><option value="">—</option>${unitOptions()}</select></div>
+    <div class="field"><label>Rate</label><input type="number" min="0" step="any" data-f="rate" oninput="recalcTotal()"></div>
+    <button class="rm" onclick="this.closest('.item-row').remove();itemsChanged()" title="Remove">✕</button>`;
+  $('#itemRows').appendChild(row);
+}
+function itemsChanged(){ recalcTotal(); updateVendorPicker(); }
+function collectItems(){
+  return $$('#itemRows .item-row').map(r=>({
+    Material:r.querySelector('[data-f="material"]').value,
+    OrderedQty:r.querySelector('[data-f="qty"]').value,
+    Unit:r.querySelector('[data-f="unit"]').value,
+    Rate:r.querySelector('[data-f="rate"]').value
+  }));
+}
+function recalcTotal(){
+  const t=collectItems().reduce((a,i)=>a+((Number(i.OrderedQty)||0)*(Number(i.Rate)||0)),0);
+  const el=$('#noTotal'); if(el) el.textContent=money(t);
+}
+function addedMaterials(){ return [...new Set(collectItems().map(i=>i.Material).filter(Boolean))]; }
+
+/* Vendor picker driven by the items added above */
+function updateVendorPicker(){
+  const wrap=$('#vendorPicker'); if(!wrap) return;
+  const mats=addedMaterials();
+  if(!mats.length){
+    wrap.innerHTML='<div class="vp-empty">Add items above to see the vendors who supply them.</div>';
+    selectedVendorId=''; return;
+  }
+  const active=State.vendors.filter(v=>v.Status!=='Inactive');
+  const cands=active.map(v=>{
+    const perMat=mats.map(m=>({material:m, tag:vendorTagFor(v.VendorID,m)}));
+    const supplies=perMat.filter(x=>x.tag).length;
+    return {
+      v, perMat, supplies,
+      blacklisted:perMat.some(x=>String(x.tag).toLowerCase()==='blacklisted'),
+      preferred:perMat.some(x=>String(x.tag).toLowerCase()==='preferred')
+    };
+  }).filter(c=>c.supplies>0)
+    .sort((a,b)=> (b.preferred-a.preferred) || (b.supplies-a.supplies) || (a.blacklisted-b.blacklisted));
+
+  const manualDropdown=`<div class="vp-more">
+      <select id="vpManual" onchange="selectVendor(this.value)">
+        <option value="">Other vendor…</option>
+        ${active.map(v=>`<option value="${esc(v.VendorID)}" ${v.VendorID==selectedVendorId?'selected':''}>${esc(v.Name)}</option>`).join('')}
+      </select></div>`;
+
+  if(!cands.length){
+    wrap.innerHTML=`<div class="vp-empty">No vendor is mapped to these materials yet. Pick one manually (or map materials in the Vendors tab).</div>${manualDropdown}`;
+    return;
+  }
+  wrap.innerHTML = cands.map(c=>{
+    const tagsHtml=c.perMat.map(x=> x.tag
+      ? `<span class="badge ${tagClass(x.tag)}">${esc(x.material)}: ${esc(x.tag)}</span>`
+      : `<span class="badge b-gray" style="opacity:.55">${esc(x.material)}: —</span>`).join('');
+    return `<div class="vp-card ${selectedVendorId==c.v.VendorID?'sel':''} ${c.blacklisted?'dis':''}"
+        ${c.blacklisted?'':`onclick="selectVendor('${esc(c.v.VendorID)}')"`}>
+      <div class="vp-top">
+        <span class="vp-name">${esc(c.v.Name)}</span>
+        ${c.preferred?'<span class="badge b-green">Preferred</span>':''}
+        ${c.blacklisted?'<span class="badge b-red">Blacklisted</span>':''}
+        <span class="vp-cover">${c.supplies}/${mats.length} items</span>
+      </div>
+      <div class="vp-tags">${tagsHtml}</div>
+    </div>`;
+  }).join('') + manualDropdown;
+}
+function selectVendor(id){
+  if(!id) return;
+  const bad=addedMaterials().filter(m=>String(vendorTagFor(id,m)).toLowerCase()==='blacklisted');
+  if(bad.length){ toast('Vendor is blacklisted for: '+bad.join(', '),'error'); return; }
+  selectedVendorId=id;
+  updateVendorPicker();
+}
+async function saveOrder(){
+  const items=collectItems().filter(i=>i.Material);
+  if(!items.length) return toast('Add at least one item','error');
+  if(!selectedVendorId) return toast('Select a vendor','error');
+  for(const it of items){
+    if(!(Number(it.OrderedQty)>0)) return toast('Quantity must be greater than 0 ('+it.Material+')','error');
+    if(String(vendorTagFor(selectedVendorId,it.Material)).toLowerCase()==='blacklisted')
+      return toast('Vendor is blacklisted for '+it.Material,'error');
+  }
+  const date=$('#noDate').value, exp=$('#noExp').value;
+  if(exp && exp<date) return toast('Expected date cannot be before order date','error');
+  const btn=$('#noSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const res=await api({action:'addOrder',VendorID:selectedVendorId,Date:date,ExpectedDate:exp,
+      Priority:$('#noPriority').value,CreatedBy:State.user.Name,Remarks:$('#noRemarks').value,
+      LeadTime:$('#noLeadTime').value,
+      items:JSON.stringify(items)});
+    toast('Order '+res.PO_No+' created','success');
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Create Order'; }
+}
+
+/* ----- Edit Order (full) ----- */
+let editPO=null;
+function openEditOrder(po){
+  const o=State.orders.find(x=>x.PO_No==po); if(!o){ toast('PO not found','error'); return; }
+  if(o.Status==='Closed'||o.Status==='Cancelled'){ toast('Closed/Cancelled PO edit nahi ho sakta','error'); return; }
+  editPO=po;
+  selectedVendorId=o.VendorID;
+  const exp=o.RevisedExpectedDate||o.OriginalExpectedDate||'';
+  openModal('Edit PO — '+po, `
+    <h4 class="mini-head">1 · Items</h4>
+    <div id="itemRows"></div>
+    <button class="btn btn-light btn-sm" onclick="addItemRow()">+ Add Item</button>
+    <div class="order-total">Total: <span id="noTotal" class="mono">₹0</span></div>
+
+    <h4 class="mini-head" style="margin-top:20px">2 · Select Vendor</h4>
+    <div id="vendorPicker" class="vendor-picker"></div>
+
+    <h4 class="mini-head" style="margin-top:20px">3 · Details</h4>
+    <div class="form-grid">
+      <div class="field"><label>Order Date</label><input type="date" id="noDate" value="${esc(o.Date||todayStr())}"></div>
+      <div class="field"><label>Expected Receiving Date</label><input type="date" id="noExp" value="${esc(exp)}"></div>
+      <div class="field"><label>Priority</label>
+        <select id="noPriority">${['Normal','High','Urgent'].map(x=>`<option ${o.Priority===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>Lead Time (days)</label>
+        <input type="number" min="0" id="noLeadTime" value="0" placeholder="0"></div>
+      <div class="field"><label>Remarks</label><input id="noRemarks" value="${esc(o.Remarks||'')}" placeholder="Optional note"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="noSave" onclick="saveEditOrder()">Save Changes</button>
+    </div>`);
+  // existing items pre-fill
+  itemRows=0; $('#itemRows').innerHTML='';
+  const its=orderItemsOf(po);
+  its.forEach(it=>{
+    addItemRow();
+    const row=$('#itemRows').lastElementChild;
+    row.querySelector('[data-f="material"]').value=it.Material;
+    row.querySelector('[data-f="qty"]').value=it.OrderedQty;
+    const us=row.querySelector('[data-f="unit"]');
+    if(it.Unit){ if(![...us.options].some(x=>x.value===it.Unit)) us.add(new Option(it.Unit,it.Unit)); us.value=it.Unit; }
+    row.querySelector('[data-f="rate"]').value=it.Rate;
+  });
+  if(!its.length) addItemRow();
+  recalcTotal(); updateVendorPicker();
+}
+
+async function saveEditOrder(){
+  const items=collectItems().filter(i=>i.Material);
+  if(!items.length) return toast('Add at least one item','error');
+  if(!selectedVendorId) return toast('Select a vendor','error');
+  for(const it of items){
+    if(!(Number(it.OrderedQty)>0)) return toast('Quantity must be greater than 0 ('+it.Material+')','error');
+    if(String(vendorTagFor(selectedVendorId,it.Material)).toLowerCase()==='blacklisted')
+      return toast('Vendor is blacklisted for '+it.Material,'error');
+  }
+  const date=$('#noDate').value, exp=$('#noExp').value;
+  if(exp && exp<date) return toast('Expected date cannot be before order date','error');
+  const btn=$('#noSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    await api({action:'updateOrder',PO_No:editPO,VendorID:selectedVendorId,Date:date,ExpectedDate:exp,
+      Priority:$('#noPriority').value,Remarks:$('#noRemarks').value,LeadTime:$('#noLeadTime').value,
+      items:JSON.stringify(items)});
+    toast('PO '+editPO+' updated','success');
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save Changes'; }
+}
+
+/* ----- Receiving ----- */
+function openReceiving(po){
+  const items=orderItemsOf(po).map(i=>{
+    const pend=(Number(i.OrderedQty)||0)-receivedQtyMaterial(po,i.Material);
+    return {mat:i.Material,unit:i.Unit,pend};
+  }).filter(i=>i.pend>0);
+  if(!items.length){ toast('Nothing pending on this order','info'); return; }
+  openModal('Receive — '+po, `
+    <div class="form-grid one">
+      <div class="field"><label>Material <span class="req">*</span></label>
+        <select id="rvMat" onchange="rvMatChanged()">
+          <option value="">Select material</option>
+          ${items.map(i=>`<option value="${esc(i.mat)}" data-pend="${i.pend}">${esc(i.mat)} — pending ${i.pend} ${esc(i.unit||'')}</option>`).join('')}
+        </select><span class="hint" id="rvPend"></span></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Received Qty <span class="req">*</span></label><input type="number" min="0" step="any" id="rvRecv" oninput="rvSplit()"></div>
+      <div class="field"><label>Received Date</label><input type="date" id="rvDate" value="${todayStr()}"></div>
+      <div class="field"><label>Accepted Qty</label><input type="number" min="0" step="any" id="rvAcc"></div>
+      <div class="field"><label>Rejected Qty</label><input type="number" min="0" step="any" id="rvRej"></div>
+      <div class="field full"><label>Remarks</label><input id="rvRemarks" placeholder="Optional"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="rvSave" onclick="saveReceiving('${esc(po)}')">Save GRN</button>
+    </div>`);
+}
+function rvMatChanged(){
+  const opt=$('#rvMat').selectedOptions[0];
+  $('#rvPend').textContent = opt&&opt.value ? 'Pending: '+opt.dataset.pend : '';
+}
+function rvSplit(){ const v=$('#rvRecv').value; if(v!==''){ $('#rvAcc').value=v; $('#rvRej').value=0; } }
+async function saveReceiving(po){
+  const mat=$('#rvMat').value; if(!mat) return toast('Select material','error');
+  const recv=Number($('#rvRecv').value);
+  if(!(recv>0)) return toast('Received qty must be greater than 0','error');
+  const pend=Number($('#rvMat').selectedOptions[0].dataset.pend);
+  if(recv>pend) return toast('Only '+pend+' pending — cannot over-receive','error');
+  let acc=$('#rvAcc').value==='' ? recv : Number($('#rvAcc').value);
+  let rej=$('#rvRej').value==='' ? 0 : Number($('#rvRej').value);
+  if(acc+rej!==recv) return toast('Accepted + Rejected must equal Received','error');
+  const btn=$('#rvSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    await api({action:'addReceiving',PO_No:po,Material:mat,ReceivedQty:recv,AcceptedQty:acc,RejectedQty:rej,
+      ReceivedDate:$('#rvDate').value,ReceivedBy:State.user.Name,Remarks:$('#rvRemarks').value});
+    toast('Receiving recorded','success');
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save GRN'; }
+}
+
+/* ----- Follow-up ----- */
+function openFollowUp(po){
+  const types=cfgList('FollowUpTypes',['Call','Visit','Email','WhatsApp']);
+  openModal('Follow-up — '+po, `
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select id="fuType">${types.map(t=>`<option>${esc(t)}</option>`).join('')}</select></div>
+      <div class="field"><label>Date</label><input type="date" id="fuDate" value="${todayStr()}"></div>
+      <div class="field"><label>Spoken With</label><input id="fuWith" placeholder="Contact person"></div>
+      <div class="field"><label>Next Follow-up Date</label><input type="date" id="fuNext"></div>
+      <div class="field full"><label>New Promised Date (updates expected)</label><input type="date" id="fuRevised"></div>
+      <div class="field full"><label>Outcome</label><input id="fuOutcome" placeholder="e.g. Dispatching tomorrow"></div>
+      <div class="field full"><label>Remarks</label><textarea id="fuRemarks"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="fuSave" onclick="saveFollowUp('${esc(po)}')">Save Follow-up</button>
+    </div>`);
+}
+async function saveFollowUp(po){
+  const next=$('#fuNext').value;
+  if(next && next<todayStr()) return toast('Next follow-up date must be today or later','error');
+  const btn=$('#fuSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    await api({action:'addFollowUp',PO_No:po,Type:$('#fuType').value,Date:$('#fuDate').value,
+      SpokenWith:$('#fuWith').value,NextFollowUpDate:next,RevisedExpectedDate:$('#fuRevised').value,
+      Outcome:$('#fuOutcome').value,Remarks:$('#fuRemarks').value});
+    toast('Follow-up saved','success');
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save Follow-up'; }
+}
+async function changeStatus(po,status){
+  if(status==='Cancelled' && !confirm('Cancel order '+po+'?')) return;
+  try{ await api({action:'setStatus',PO_No:po,Status:status}); toast('Order '+status.toLowerCase(),'success'); await loadAll(); render(); }
+  catch(e){ toast(e.message,'error'); }
+}
+
+/* ----- Full 360° PO detail (items + receiving + transport + follow-ups) ----- */
+function openPODetail(po){
+  const o=State.orders.find(x=>x.PO_No==po); if(!o){ toast('PO not found','error'); return; }
+  const items=orderItemsOf(po), recs=receivingOf(po), fups=State.followups.filter(f=>f.PO_No==po);
+  const cons=(State.transport||[]).filter(t=>t.PO_No==po);
+  const p=orderProgress(po);
+  const consHtml = cons.length ? cons.map(t=>{
+    const tk=tfOf(t.ConsignmentID);
+    return `<div class="po-cons">
+      <div class="po-cons-head"><b>${esc(t.ConsignmentID)}</b> · ${esc(t.Transporter||'')} ${t.LR_No?`· LR ${esc(t.LR_No)}`:''} ${transitBadge(t.TransitStatus)}</div>
+      <div class="po-cons-sub">${t.CurrentLocation?`📍 ${esc(t.CurrentLocation)} `:''}${t.ETA?`· ETA ${esc(t.ETA)} `:''}${t.FreightAmount?`· Freight ${money(t.FreightAmount)} (${esc(t.FreightStatus||'')})`:''}</div>
+      ${tk.length?`<div class="po-cons-track">${tk.map(f=>`<div>${esc(f.Date)} — ${f.Location?esc(f.Location)+' ':''}${f.ETA?'· ETA '+esc(f.ETA)+' ':''}${f.Outcome?'· '+esc(f.Outcome):''}</div>`).join('')}</div>`:''}
+    </div>`;
+  }).join('') : '<div class="po-empty">No transport for this order yet.</div>';
+  openModal('PO '+po, `
+    <div class="po-head">
+      <div class="info-line"><span>Vendor</span><span>${esc(vendorName(o.VendorID))}</span></div>
+      <div class="info-line"><span>Status</span><span>${statusBadge(o.Status)}</span></div>
+      <div class="info-line"><span>Order Date</span><span>${esc(o.Date)}</span></div>
+      <div class="info-line"><span>Expected</span><span>${esc(o.RevisedExpectedDate||o.OriginalExpectedDate||'—')}</span></div>
+      <div class="info-line"><span>Total</span><span>${money(o.TotalAmount)}</span></div>
+      <div class="info-line"><span>Received</span><span>${p.received}/${p.ordered}</span></div>
+      ${o.Remarks?`<div class="info-line"><span>Remarks</span><span>${esc(o.Remarks)}</span></div>`:''}
+    </div>
+    <h4 class="mini-head" style="margin:16px 0 8px">Items</h4>
+    <table class="mini-table"><tbody>
+      ${items.map(i=>{const rec=receivedQtyMaterial(po,i.Material);const pend=(Number(i.OrderedQty)||0)-rec;
+        return `<tr><td>${esc(i.Material)}</td><td>${esc(i.OrderedQty)} ${esc(i.Unit||'')}</td><td>Recv ${rec}</td><td>Pend <b style="color:${pend>0?'var(--amber)':'var(--green)'}">${pend}</b></td><td class="mono">${money(i.Amount)}</td></tr>`;}).join('')}
+    </tbody></table>
+    ${recs.length?`<h4 class="mini-head" style="margin:16px 0 8px">Receiving</h4><table class="mini-table"><tbody>
+      ${recs.map(r=>`<tr><td>${esc(r.GRN_No)}</td><td>${esc(r.Material)}</td><td>Recv ${esc(r.ReceivedQty)}</td><td>Acc ${esc(r.AcceptedQty)}/Rej ${esc(r.RejectedQty)}</td><td>${esc(r.ReceivedDate)}</td></tr>`).join('')}
+    </tbody></table>`:''}
+    <h4 class="mini-head" style="margin:16px 0 8px">Transport</h4>
+    ${consHtml}
+    ${fups.length?`<h4 class="mini-head" style="margin:16px 0 8px">Follow-ups</h4><table class="mini-table"><tbody>
+      ${fups.map(f=>`<tr><td>${esc(f.Date)}</td><td>${esc(f.Type)}</td><td>${esc(f.Outcome||'')}</td><td>Next ${esc(f.NextFollowUpDate||'—')}</td></tr>`).join('')}
+    </tbody></table>`:''}
+    <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Close</button></div>`);
+}
+
+/* =========================================================
+ *  RECEIVING VIEW
+ * ========================================================= */
+function renderReceiving(){
+  const full=[...State.receiving].sort((a,b)=>String(b.GRN_No).localeCompare(String(a.GRN_No)));
+  const list=full.slice(0,PAGE_SIZE);
+  $('#viewRoot').innerHTML=`
+    <div class="panel"><div class="panel-head"><h3>Receiving History (GRN)</h3></div>
+    <div class="panel-body flush">${full.length?`<div class="table-wrap"><table>
+      <thead><tr><th>GRN</th><th>PO No</th><th>Material</th><th>Received</th><th>Accepted</th><th>Rejected</th><th>Date</th><th>By</th></tr></thead>
+      <tbody>${list.map(r=>`<tr>
+        <td class="row-strong">${esc(r.GRN_No)}</td><td>${esc(r.PO_No)}</td><td>${esc(r.Material)}</td>
+        <td class="mono">${esc(r.ReceivedQty)}</td>
+        <td><span class="badge b-green">${esc(r.AcceptedQty)}</span></td>
+        <td>${Number(r.RejectedQty)>0?`<span class="badge b-red">${esc(r.RejectedQty)}</span>`:'0'}</td>
+        <td>${esc(r.ReceivedDate)}</td><td>${esc(r.ReceivedBy||'')}</td></tr>`).join('')}${capNote(full.length,8)}</tbody>
+    </table></div>`:emptyState('No receiving records yet','')}</div></div>`;
+}
+
+/* =========================================================
+ *  FOLLOW-UPS VIEW
+ * ========================================================= */
+function renderFollowups(){
+  const full=[...State.followups].sort((a,b)=>String(b.Date||'').localeCompare(String(a.Date||'')));
+  const list=full.slice(0,PAGE_SIZE);
+  const due=full.filter(f=>f.NextFollowUpDate && String(f.NextFollowUpDate)<=todayStr());
+  $('#viewRoot').innerHTML=`
+    ${due.length?`<div class="panel"><div class="panel-head"><h3>⏰ Due Now</h3></div>
+      <div class="panel-body flush"><div class="table-wrap"><table>
+      <thead><tr><th>PO No</th><th>Next Date</th><th>Last Outcome</th><th></th></tr></thead>
+      <tbody>${due.map(f=>`<tr><td class="row-strong">${esc(f.PO_No)}</td>
+        <td><span class="badge b-amber">${esc(f.NextFollowUpDate)}</span></td><td>${esc(f.Outcome||'')}</td>
+        <td><button class="btn btn-light btn-sm" onclick="openFollowUp('${esc(f.PO_No)}')">Follow-up</button></td></tr>`).join('')}</tbody>
+      </table></div></div></div>`:''}
+    <div class="panel"><div class="panel-head"><h3>All Follow-ups</h3></div>
+    <div class="panel-body flush">${full.length?`<div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>PO No</th><th>Type</th><th>Spoken With</th><th>Outcome</th><th>Next</th></tr></thead>
+      <tbody>${list.map(f=>`<tr><td>${esc(f.Date)}</td><td class="row-strong">${esc(f.PO_No)}</td>
+        <td><span class="badge b-blue">${esc(f.Type)}</span></td><td>${esc(f.SpokenWith||'')}</td>
+        <td>${esc(f.Outcome||'')}</td><td>${esc(f.NextFollowUpDate||'—')}</td></tr>`).join('')}${capNote(full.length,6)}</tbody>
+    </table></div>`:emptyState('No follow-ups yet','')}</div></div>`;
+}
+
+/* =========================================================
+ *  VENDORS VIEW
+ * ========================================================= */
+function renderVendors(){
+  $('#viewRoot').innerHTML=`
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="openVendorForm()">+ Add Vendor</button>
+      <div class="spacer"></div>
+    </div>
+    <div class="filters">
+      <input class="search-box" id="vSearch" placeholder="Search vendor..." oninput="renderVendorTable()">
+      <select id="vItem" onchange="renderVendorTable()">
+        <option value="">All items</option>${materialOptions()}
+      </select>
+    </div>
+    <div id="vItemNote" class="v-item-note"></div>
+    <div class="panel"><div class="panel-body flush"><div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Materials &amp; Tags</th><th>Address</th><th>Phone</th><th>Terms</th><th>Status</th><th></th></tr></thead>
+      <tbody id="vendorTbody"></tbody>
+    </table></div></div></div>`;
+  renderVendorTable();
+}
+const TAG_RANK = {preferred:0, approved:1, trial:2, blacklisted:9};
+function vendorMapLink(v){
+  const ml = String(v.MapLink||'').trim();
+  if(/^https?:\/\//i.test(ml)) return ml;
+  const a = String(v.Address||'').trim();
+  return a ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a) : '';
+}
+function renderVendorTable(){
+  const q=($('#vSearch')?.value||'').toLowerCase();
+  const item=$('#vItem')?.value||'';
+  let list=State.vendors.filter(v=>!q||String(v.Name).toLowerCase().includes(q)||String(v.Category||'').toLowerCase().includes(q));
+  const mapOf=id=>State.vendorMaterials.find(m=>m.VendorID==id && m.Material==item);
+  const note=$('#vItemNote');
+  if(item){
+    list=list.filter(v=>mapOf(v.VendorID)).sort((a,b)=>
+      (TAG_RANK[String(mapOf(a.VendorID).Tag).toLowerCase()]??5) - (TAG_RANK[String(mapOf(b.VendorID).Tag).toLowerCase()]??5));
+    if(note) note.innerHTML=`<b>${esc(item)}</b> — ${list.length} vendor${list.length===1?'':'s'}`;
+  }else if(note) note.innerHTML='';
+  const tb=$('#vendorTbody');
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="9">${item
+      ? emptyState('Is item ka koi vendor mapped nahi','Vendor ke "Materials" me jaake map karo')
+      : emptyState('No vendors yet','Add your first vendor')}</td></tr>`;
+    return;
+  }
+  tb.innerHTML=list.map(v=>{
+    const maps=State.vendorMaterials.filter(m=>m.VendorID==v.VendorID);
+    let tags;
+    if(item){
+      const m=mapOf(v.VendorID);
+      tags=`<span class="badge ${tagClass(m.Tag)}">${esc(m.Tag)}</span>${m.LastRate?`<span class="mono v-rate">${money(m.LastRate)}</span>`:''}`
+        + (maps.length>1?`<div class="v-more">+${maps.length-1} other item${maps.length>2?'s':''}</div>`:'');
+    }else{
+      tags=maps.length?maps.map(m=>`<span class="badge ${tagClass(m.Tag)}" style="margin:2px 3px 2px 0">${esc(m.Material)}: ${esc(m.Tag)}</span>`).join(''):'<span style="color:var(--muted)">—</span>';
+    }
+    const link=vendorMapLink(v);
+    const addr=(v.Address||link)
+      ? `${v.Address?`<div class="v-addr">${esc(v.Address)}</div>`:''}${link?`<a class="v-map" href="${esc(link)}" target="_blank" rel="noopener">📍 Map</a>`:''}`
+      : '<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td class="row-strong">${esc(v.VendorID)}</td><td>${esc(v.Name)}</td><td>${esc(v.Category||'')}</td>
+      <td style="max-width:280px">${tags}</td><td>${addr}</td><td>${esc(v.Phone||'')}</td><td>${esc(v.PaymentTerms||'')}</td>
+      <td>${v.Status==='Inactive'?'<span class="badge b-gray">Inactive</span>':'<span class="badge b-green">Active</span>'}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="link-btn" onclick="openVendorForm('${esc(v.VendorID)}')">Edit</button>
+        <button class="link-btn" onclick="openMaterialMap('${esc(v.VendorID)}')">Materials</button></td></tr>`;
+  }).join('');
+}
+function openVendorForm(vendorId){
+  const v = vendorId ? State.vendors.find(x=>x.VendorID==vendorId) : null;
+  const cats=State.config.lists.VendorCategories||[]; const terms=State.config.lists.PaymentTerms||[];
+  const opt=(arr,sel)=>arr.map(c=>`<option ${c===sel?'selected':''}>${esc(c)}</option>`).join('');
+  openModal(v?'Edit Vendor':'Add Vendor', `
+    <div class="form-grid">
+      <div class="field"><label>Name <span class="req">*</span></label><input id="veName" value="${esc(v?v.Name:'')}"></div>
+      <div class="field"><label>Category</label><select id="veCat"><option value="">—</option>${opt(cats,v?v.Category:'')}</select></div>
+      <div class="field"><label>Contact Person</label><input id="veContact" value="${esc(v?v.Contact:'')}"></div>
+      <div class="field"><label>Phone</label><input id="vePhone" maxlength="10" inputmode="numeric" placeholder="10 digits" value="${esc(v?v.Phone:'')}"></div>
+      <div class="field"><label>GST</label><input id="veGst" value="${esc(v?v.GST:'')}"></div>
+      <div class="field"><label>Payment Terms</label><select id="veTerms"><option value="">—</option>${opt(terms,v?v.PaymentTerms:'')}</select></div>
+      <div class="field full"><label>Address</label><input id="veAddr" value="${esc(v?v.Address:'')}"></div>
+      <div class="field full"><label>Map Link (optional)</label><input id="veMap" placeholder="Google Maps link paste karo — khali chhodo to address se banega" value="${esc(v?(v.MapLink||''):'')}"></div>
+      ${v?`<div class="field"><label>Status</label><select id="veStatus">
+        <option ${v.Status!=='Inactive'?'selected':''}>Active</option>
+        <option ${v.Status==='Inactive'?'selected':''}>Inactive</option></select></div>`:''}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="veSave" onclick="saveVendor(${v?`'${esc(v.VendorID)}'`:''})">${v?'Save Changes':'Add Vendor'}</button>
+    </div>`);
+}
+async function saveVendor(vendorId){
+  const name=$('#veName').value.trim(); if(!name) return toast('Vendor name required','error');
+  const phone=$('#vePhone').value.trim();
+  if(phone && !/^\d{10}$/.test(phone)) return toast('Phone must be 10 digits','error');
+  const mapLink=$('#veMap').value.trim();
+  if(mapLink && !/^https?:\/\//i.test(mapLink)) return toast('Map link http se shuru hona chahiye','error');
+  const btn=$('#veSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  const fields={Name:name,Category:$('#veCat').value,Contact:$('#veContact').value,
+    Phone:phone,GST:$('#veGst').value,Address:$('#veAddr').value,PaymentTerms:$('#veTerms').value,MapLink:mapLink};
+  try{
+    if(vendorId){
+      fields.VendorID=vendorId; fields.action='updateVendor'; fields.Status=$('#veStatus').value;
+      await api(fields); toast('Vendor updated','success');
+    }else{
+      fields.action='addVendor'; fields.Status='Active';
+      await api(fields); toast('Vendor added','success');
+    }
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent=vendorId?'Save Changes':'Add Vendor'; }
+}
+
+/* ----- Material↔Vendor mapping with tags ----- */
+function openMaterialMap(vendorId){
+  const v=State.vendors.find(x=>x.VendorID==vendorId);
+  const maps=State.vendorMaterials.filter(m=>m.VendorID==vendorId);
+  const mats=itemNames(); const tags=cfgList('VendorTags',['Preferred','Approved','Trial','Blacklisted']);
+  openModal('Materials — '+(v?v.Name:vendorId), `
+    ${maps.length?`<div class="map-list">
+      <div class="map-row map-head"><span>Material</span><span>Tag</span><span>Last Rate</span><span>Remarks</span><span></span></div>
+      ${maps.map(m=>`<div class="map-row" data-mat="${esc(m.Material)}">
+        <span class="map-name">${esc(m.Material)}</span>
+        <select data-mf="tag">${tags.map(t=>`<option ${t===m.Tag?'selected':''}>${esc(t)}</option>`).join('')}</select>
+        <input data-mf="rate" type="number" min="0" step="any" value="${esc(m.LastRate||'')}" placeholder="Rate">
+        <input data-mf="remarks" value="${esc(m.Remarks||'')}" placeholder="Note">
+        <span class="map-btns">
+          <button class="btn btn-light btn-sm" onclick="saveMapEdit('${esc(vendorId)}','${esc(m.Material)}',this)">Save</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMap('${esc(vendorId)}','${esc(m.Material)}')">Delete</button>
+        </span>
+      </div>`).join('')}
+    </div>`:'<div class="empty" style="padding:16px"><span class="emoji">◇</span>No materials mapped yet</div>'}
+    <h4 style="margin:6px 0 10px;font-size:12px;color:var(--muted);text-transform:uppercase">Add Materials</h4>
+    <div class="table-wrap"><table class="mini-table split-table">
+      <thead><tr><th>Item</th><th>Tag</th><th>Last Rate</th><th>Remarks</th><th></th></tr></thead>
+      <tbody id="mmBody"></tbody>
+    </table></div>
+    <button class="btn btn-light btn-sm" onclick="addMMRow()" style="margin-top:10px">+ Add Row</button>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" id="mmSave" onclick="saveMap('${esc(vendorId)}')">Save All</button>
+    </div>`);
+  mmVendor = vendorId;
+  addMMRow();
+}
+
+/* ----- multi-row add: category-wise grouped dropdown ----- */
+let mmVendor = '';
+function mmMaterialOptions(vendorId){
+  const mapped = new Set(State.vendorMaterials.filter(m=>m.VendorID==vendorId).map(m=>m.Material));
+  const opt = name => `<option value="${esc(name)}" ${mapped.has(name)?'disabled':''}>${esc(name)}${mapped.has(name)?' ✓':''}</option>`;
+  const items = State.items||[];
+  if(!items.length) return itemNames().map(opt).join('');
+  const byCat = {};
+  items.forEach(i=>{ const c=i.Category||'Other'; (byCat[c]=byCat[c]||[]).push(i.Item); });
+  return Object.keys(byCat).sort().map(cat=>
+    `<optgroup label="${catIcon(cat)} ${esc(cat)}">${byCat[cat].sort((a,b)=>String(a).localeCompare(String(b))).map(opt).join('')}</optgroup>`
+  ).join('');
+}
+function addMMRow(){
+  const tags = cfgList('VendorTags',['Preferred','Approved','Trial','Blacklisted']);
+  const tr = document.createElement('tr'); tr.className='mm-row';
+  tr.innerHTML = `
+    <td><select class="mm-mat"><option value="">Select item</option>${mmMaterialOptions(mmVendor)}</select></td>
+    <td><select class="mm-tag">${tags.map(t=>`<option ${t==='Approved'?'selected':''}>${esc(t)}</option>`).join('')}</select></td>
+    <td><input type="number" min="0" step="any" class="mm-rate" placeholder="Rate"></td>
+    <td><input class="mm-rem" placeholder="Note"></td>
+    <td><button class="rm" title="Remove" onclick="this.closest('tr').remove()">✕</button></td>`;
+  $('#mmBody').appendChild(tr);
+}
+async function saveMap(vendorId){
+  const list = $$('#mmBody .mm-row').map(r=>({
+    Material: r.querySelector('.mm-mat').value,
+    Tag:      r.querySelector('.mm-tag').value,
+    LastRate: r.querySelector('.mm-rate').value,
+    Remarks:  r.querySelector('.mm-rem').value
+  })).filter(x=>x.Material);
+  if(!list.length) return toast('Kam se kam ek item select karo','error');
+  const seen = new Set();
+  for(const x of list){
+    if(seen.has(x.Material)) return toast('"'+x.Material+'" do baar select hai','error');
+    seen.add(x.Material);
+  }
+  const btn=$('#mmSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const r = await api({action:'addVendorMaterials', VendorID:vendorId, items:JSON.stringify(list)});
+    toast(r.added+' item(s) mapped'+(r.skipped&&r.skipped.length?' · '+r.skipped.length+' pehle se the':''),'success');
+    await loadAll(); openMaterialMap(vendorId);
+    if($('#vendorTbody')) renderVendorTable();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save All'; }
+}
+async function saveMapEdit(vendorId, material, btn){
+  const row=btn.closest('.map-row');
+  const tag=row.querySelector('[data-mf="tag"]').value;
+  const rate=row.querySelector('[data-mf="rate"]').value;
+  const remarks=row.querySelector('[data-mf="remarks"]').value;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    await api({action:'updateVendorMaterial',VendorID:vendorId,Material:material,Tag:tag,LastRate:rate,Remarks:remarks});
+    toast('Material updated','success'); await loadAll(); openMaterialMap(vendorId); renderVendorTable();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save'; }
+}
+async function deleteMap(vendorId, material){
+  if(!confirm('Remove "'+material+'" from this vendor?')) return;
+  try{
+    await api({action:'deleteVendorMaterial',VendorID:vendorId,Material:material});
+    toast('Material removed','success'); await loadAll(); openMaterialMap(vendorId); renderVendorTable();
+  }catch(e){ toast(e.message,'error'); }
+}
+
+/* =========================================================
+ *  MASTERS  (manage Config lists: items, units, etc.)
+ * ========================================================= */
+const MASTER_GROUPS = [
+  {key:'ItemCategories',   title:'Item Categories'},
+  {key:'Units',            title:'Units'},
+  {key:'VendorCategories', title:'Vendor Categories'},
+  {key:'PaymentTerms',     title:'Payment Terms'},
+  {key:'VendorTags',       title:'Vendor Tags'},
+  {key:'FollowUpTypes',    title:'Follow-up Types'},
+  {key:'Transporters',     title:'Transporters'}
+];
+function renderMasters(){
+  const items=[...(State.items||[])].sort((a,b)=>String(a.Category).localeCompare(String(b.Category))||String(a.Item).localeCompare(String(b.Item)));
+  const byCat={}; items.forEach(i=>{ const c=i.Category||'Other'; (byCat[c]=byCat[c]||[]).push(i); });
+  $('#viewRoot').innerHTML = `
+    <div class="section-actions"><button class="btn btn-primary" onclick="openItemForm()">+ Add Item</button>
+      <button class="btn btn-light" onclick="syncFromIMS()">⟳ Sync from IMS</button>
+      <div class="spacer"></div></div>
+    <div class="panel">
+      <div class="panel-head"><h3>Items</h3><span class="stat-hint">${items.length} item${items.length===1?'':'s'}</span></div>
+      <div class="panel-body">
+        ${items.length ? Object.keys(byCat).sort().map(cat=>`
+          <div class="item-cat-group">
+            <div class="item-cat-label">${catIcon(cat)} ${esc(cat)} <span style="color:var(--muted)">· ${byCat[cat].length}</span></div>
+            <div class="master-chips">
+              ${byCat[cat].map(i=>`<span class="master-chip">
+                <span>${esc(i.Item)}${i.Unit?` <em style="color:var(--muted);font-style:normal">· ${esc(i.Unit)}</em>`:''}</span>
+                <button title="Edit" data-i="${esc(i.Item)}" onclick="openItemForm(this.dataset.i)">✎</button>
+                <button title="Delete" data-i="${esc(i.Item)}" onclick="deleteItemMaster(this.dataset.i)">✕</button>
+              </span>`).join('')}
+            </div>
+          </div>`).join('') : emptyState('No items yet','Click "+ Add Item" to create your first item')}
+      </div>
+    </div>
+    <p class="masters-note">Below lists feed the dropdowns across the app. Changes save to the Config sheet instantly.</p>
+    ${MASTER_GROUPS.map(masterPanel).join('')}`;
+}
+
+let itemFormCat='';
+function openItemForm(itemName){
+  const editing = itemName ? (State.items||[]).find(x=>x.Item==itemName) : null;
+  itemFormCat = editing ? (editing.Category||'') : '';
+  const cats = State.config.lists.ItemCategories || [];
+  const units = State.config.lists.Units || [];
+  openModal(editing?'Edit Item':'Add Item', `
+    <p class="mini-head">Step 1 — Category <span class="req">*</span></p>
+    <div class="cat-grid" id="catGrid">
+      ${cats.map(c=>`<button type="button" class="cat-card ${c===itemFormCat?'sel':''}" data-c="${esc(c)}" onclick="pickCat(this)">${catIcon(c)} ${esc(c)}</button>`).join('')}
+    </div>
+    <p class="mini-head" style="margin-top:20px">Step 2 — Details</p>
+    <div class="form-grid">
+      <div class="field"><label>Item Name <span class="req">*</span></label><input id="itName" value="${editing?esc(editing.Item):''}"></div>
+      <div class="field"><label>Unit</label><select id="itUnit"><option value="">—</option>${units.map(u=>`<option ${editing&&editing.Unit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="itSave" onclick="saveItem(${editing?`'${esc(editing.Item)}'`:''})">Save Item</button>
+    </div>`);
+}
+function pickCat(btn){ itemFormCat=btn.dataset.c; $$('#catGrid .cat-card').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+async function saveItem(oldName){
+  const name=$('#itName').value.trim(); const unit=$('#itUnit').value;
+  if(!itemFormCat) return toast('Select a category','error');
+  if(!name) return toast('Item name required','error');
+  const btn=$('#itSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    if(oldName) await api({action:'updateItem',old:oldName,Item:name,Category:itemFormCat,Unit:unit});
+    else await api({action:'addItem',Item:name,Category:itemFormCat,Unit:unit});
+    toast(oldName?'Item updated':'Item added','success');
+    closeModal(); await loadAll(); renderMasters();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save Item'; }
+}
+async function deleteItemMaster(name){
+  if(!confirm('Delete "'+name+'"?')) return;
+  try{ await api({action:'deleteItem',Item:name}); toast('Item deleted','success'); await loadAll(); renderMasters(); }
+  catch(e){ toast(e.message,'error'); }
+}
+function masterPanel(g){
+  const items = State.config.lists[g.key] || [];
+  return `<div class="panel">
+    <div class="panel-head"><h3>${g.title}</h3><span class="stat-hint">${items.length} item${items.length===1?'':'s'}</span></div>
+    <div class="panel-body">
+      <div class="master-chips">
+        ${items.length ? items.map(v=>`<span class="master-chip">
+            <span>${esc(v)}</span>
+            <button title="Edit" onclick="editMaster('${g.key}',this)" data-v="${esc(v)}">✎</button>
+            <button title="Delete" onclick="deleteMaster('${g.key}',this)" data-v="${esc(v)}">✕</button>
+          </span>`).join('') : '<span class="stat-hint">None yet</span>'}
+      </div>
+      <div class="master-add">
+        <input id="add_${g.key}" placeholder="Add new…" onkeydown="if(event.key==='Enter')addMaster('${g.key}')">
+        <button class="btn btn-light btn-sm" onclick="addMaster('${g.key}')">+ Add</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function addMaster(list){
+  const inp=$('#add_'+list); const value=inp.value.trim();
+  if(!value) return;
+  inp.disabled=true;
+  try{ await api({action:'addConfigItem',list,value}); toast('Added','success'); await loadAll(); renderMasters(); }
+  catch(e){ toast(e.message,'error'); inp.disabled=false; }
+}
+async function editMaster(list, btn){
+  const oldV=btn.dataset.v;
+  const nv=prompt('Rename "'+oldV+'" to:', oldV); if(nv===null) return;
+  const value=nv.trim(); if(!value || value===oldV) return;
+  try{ await api({action:'updateConfigItem',list,old:oldV,value}); toast('Updated','success'); await loadAll(); renderMasters(); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function deleteMaster(list, btn){
+  const value=btn.dataset.v;
+  if(!confirm('Delete "'+value+'"?')) return;
+  try{ await api({action:'deleteConfigItem',list,value}); toast('Deleted','success'); await loadAll(); renderMasters(); }
+  catch(e){ toast(e.message,'error'); }
+}
+
+/* =========================================================
+ *  FROM IMS  (pending POs raised in IMS — read only)
+ * ========================================================= */
+function renderIMSPOs(){
+  const list = State.imsPOs || [];
+  $('#viewRoot').innerHTML = `
+    <div class="panel"><div class="panel-head">
+      <h3>IMS Pending POs</h3>
+      <span class="stat-hint">${list.length} PO${list.length===1?'':'s'}</span>
+    </div>
+    <div class="panel-body flush">${list.length ? list.map(po=>{
+      const st = po.ImportState||'none';
+      const stBadge = st==='full'
+        ? `<span class="badge b-green" style="margin-left:6px">Imported ✓${po.SMS_POs&&po.SMS_POs.length?' · '+po.SMS_POs.map(esc).join(', '):''}</span>`
+        : st==='partial'
+          ? `<span class="badge b-amber" style="margin-left:6px">Partial ${po.ImportedCount}/${po.TotalCount}</span>`
+          : '';
+      const btn = st==='full'
+        ? `<button class="btn btn-light btn-sm" disabled>Imported</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="openImportIMS('${esc(po.POID)}')">${st==='partial'?'Import remaining':'Import to Order'}</button>`;
+      return `
+      <div style="border-bottom:1px solid var(--border);padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <div class="row-strong">${esc(po.POID)}
+            <span class="badge ${po.Status==='Partial'?'b-amber':'b-blue'}" style="margin-left:6px">${esc(po.Status)}</span>
+            ${stBadge}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="font-size:12px;color:var(--muted)">${esc(po.Date||'')}${po.Supplier?' · '+esc(po.Supplier):''}</div>
+            ${btn}
+          </div>
+        </div>
+        <table class="mini-table" style="margin-top:8px"><tbody>
+          ${po.items.map(i=>{
+            const s=i.ImportState||'none';
+            const tick=s==='full'?'<span style="color:var(--green)">✓</span> ':'';
+            const info=s==='full'?'fully ordered':s==='partial'?`${i.OrderedQty}/${i.Qty} ordered · ${i.PendingQty} pending`:'pending';
+            const col=s==='full'?'var(--green)':s==='partial'?'var(--amber)':'var(--muted)';
+            return `<tr>
+              <td>${tick}${esc(i.Material)}</td>
+              <td>${esc(i.Qty)} ${esc(i.Unit||'')}</td>
+              <td style="color:${col};font-size:11px">${info}</td>
+            </tr>`;
+          }).join('')}
+        </tbody></table>
+      </div>`;
+    }).join('') : emptyState('No pending POs from IMS','')}
+    </div></div>`;
+}
+
+/* ----- Sync items + categories from IMS ----- */
+async function syncFromIMS(){
+  if(!confirm('IMS se items + categories sync karein?\n• Categories IMS jaisi ho jayengi (extra SMS categories hat sakti hain)\n• Items add/update honge, delete nahi.')) return;
+  toast('Syncing from IMS…','info');
+  try{
+    const r = await api({action:'syncFromIMS'});
+    toast(`Synced — ${r.added} added, ${r.updated} updated (${r.items} IMS items)`,'success');
+    await loadAll(); renderMasters();
+  }catch(e){ toast(e.message,'error'); }
+}
+
+/* ----- Import IMS PO -> SMS Order ----- */
+let importPOID = null;
+let impPending = {};
+function impVendorOptions(material){
+  const active = State.vendors.filter(v=>v.Status!=='Inactive');
+  const pref = active.find(v=>String(vendorTagFor(v.VendorID,material)).toLowerCase()==='preferred');
+  const def = pref ? pref.VendorID : '';
+  return `<option value="">Select vendor</option>` + active.map(v=>{
+    const tag=vendorTagFor(v.VendorID,material);
+    const blk=String(tag).toLowerCase()==='blacklisted';
+    return `<option value="${esc(v.VendorID)}" ${v.VendorID===def?'selected':''} ${blk?'disabled':''}>${esc(v.Name)}${tag?` · ${esc(tag)}`:''}</option>`;
+  }).join('');
+}
+function openImportIMS(poid){
+  const po = (State.imsPOs||[]).find(x=>x.POID==poid);
+  if(!po){ toast('IMS PO not found','error'); return; }
+  importPOID = poid;
+  impPending = {};
+  po.items.forEach(i=>{ impPending[i.Material] = Number(i.PendingQty)||0; });
+  const pending = po.items.filter(i=>Number(i.PendingQty)>0);
+  const done = po.items.filter(i=>Number(i.PendingQty)<=0 && Number(i.OrderedQty)>0);
+  openModal('Import '+poid+' → Order(s)', `
+    ${done.length?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Fully ordered: ${done.map(i=>esc(i.Material)).join(', ')}</div>`:''}
+    <h4 class="mini-head">Items — vendor, qty, rate</h4>
+    <div class="table-wrap"><table class="mini-table split-table" id="impRows">
+      <thead><tr><th>Item</th><th>Vendor</th><th>Qty</th><th>Rate</th><th>Expected</th><th></th></tr></thead>
+      <tbody id="impBody">
+        ${pending.map(i=>impRowHTML(i.Material, i.Unit, i.PendingQty, po.ExpectedDate, true)).join('')}
+      </tbody>
+    </table></div>
+    <div class="order-total" style="margin-top:10px">Total: <span id="impTotal" class="mono">₹0</span></div>
+    <div id="impExtra" class="imp-extra"></div>
+    <p class="masters-note">Kisi item ka "+" dabao to usi item ka aur vendor add karo (qty baant do). Alag vendor = alag order. Bachi qty pending rahegi.</p>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="field"><label>Order Date</label><input type="date" id="impDate" value="${todayStr()}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="impSave" onclick="saveImportIMS()">Create Order(s)</button>
+    </div>`);
+  impRecalc();
+}
+function impRowHTML(mat, unit, qty, exp, first){
+  return `<tr class="imp-row" data-mat="${esc(mat)}" data-unit="${esc(unit||'')}">
+    <td>${esc(mat)}<div style="font-size:11px;color:var(--muted)">${first?'pending '+esc(qty):'split'} ${esc(unit||'')}</div></td>
+    <td><select class="imp-vendor" onchange="impRecalc()">${impVendorOptions(mat)}</select></td>
+    <td><input type="number" min="0" step="any" class="imp-qty" value="${esc(qty)}" oninput="impRecalc()"></td>
+    <td><input type="number" min="0" step="any" class="imp-rate" placeholder="Rate" oninput="impRecalc()"></td>
+    <td><input type="date" class="imp-exp" value="${esc(exp||'')}"></td>
+    <td>${first
+      ? `<button class="rm" title="Split — isi item ka aur vendor" onclick="impSplit(this)">+</button>`
+      : `<button class="rm" title="Remove" onclick="this.closest('tr').remove();impRecalc()">✕</button>`}</td>
+  </tr>`;
+}
+function impSplit(btn){
+  const tr=btn.closest('.imp-row');
+  const t=document.createElement('template');
+  t.innerHTML=impRowHTML(tr.dataset.mat, tr.dataset.unit, 0, tr.querySelector('.imp-exp').value, false).trim();
+  tr.after(t.content.firstChild);
+  impRecalc();
+}
+function impRecalc(){
+  let t=0; const sum={};
+  $$('#impRows .imp-row').forEach(r=>{
+    if(!r.querySelector('.imp-vendor').value) return;
+    const q=Number(r.querySelector('.imp-qty').value)||0;
+    t += (Number(r.querySelector('.imp-rate').value)||0)*q;
+    sum[r.dataset.mat]=(sum[r.dataset.mat]||0)+q;
+  });
+  const el=$('#impTotal'); if(el) el.textContent=money(t);
+  const ex=$('#impExtra');
+  if(ex){
+    const lines=Object.keys(sum).filter(m=>sum[m]>(impPending[m]||0))
+      .map(m=>`${esc(m)}: requirement ${impPending[m]||0}, order ${sum[m]} → <b>Extra +${sum[m]-(impPending[m]||0)}</b>`);
+    ex.innerHTML=lines.length?'ℹ '+lines.join('<br>'):'';
+  }
+}
+async function saveImportIMS(){
+  const items = $$('#impRows .imp-row').map(r=>({
+    Material:r.dataset.mat, OrderedQty:r.querySelector('.imp-qty').value, Unit:r.dataset.unit,
+    Rate:r.querySelector('.imp-rate').value, VendorID:r.querySelector('.imp-vendor').value,
+    ExpectedDate:r.querySelector('.imp-exp').value
+  })).filter(x=>x.VendorID && Number(x.OrderedQty)>0);
+  if(!items.length) return toast('Kam se kam ek item ka vendor + qty daalo','error');
+  const btn=$('#impSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const res=await api({action:'importIMSPO', IMS_POID:importPOID, Date:$('#impDate').value,
+      CreatedBy:State.user.Name, items:JSON.stringify(items)});
+    toast('Order(s) bane: '+(res.created||[]).map(c=>c.PO_No).join(', '),'success');
+    closeModal(); await loadAll(); loadIMSPOsBackground(); switchView('orders');
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Create Order(s)'; }
+}
+
+/* =========================================================
+ *  TRANSPORT  (consignments + freight settlement)
+ * ========================================================= */
+function freightBadge(s){
+  return s==='Paid'
+    ? '<span class="badge b-green">Paid</span>'
+    : '<span class="badge b-amber">Pending</span>';
+}
+const TRANSIT_STATUS = ['In Transit','Out for Delivery','Arrived','Delayed'];
+function transitBadge(s){
+  if(!s) return '<span class="badge b-gray">—</span>';
+  const map={'In Transit':'b-blue','Out for Delivery':'b-amber','Arrived':'b-green','Delayed':'b-red'};
+  return `<span class="badge ${map[s]||'b-gray'}">${esc(s)}</span>`;
+}
+function tfOf(id){ return (State.transportFollowups||[]).filter(f=>f.ConsignmentID==id)
+  .sort((a,b)=>String(b.TFUID).localeCompare(String(a.TFUID))); }
+function trackingDue(){
+  // consignments not Arrived, whose latest next-follow-up date is today or past
+  return (State.transport||[]).filter(c=>{
+    if(c.TransitStatus==='Arrived') return false;
+    const fs=tfOf(c.ConsignmentID).filter(f=>f.NextFollowUpDate);
+    if(!fs.length) return false;
+    return String(fs[0].NextFollowUpDate) <= todayStr();
+  });
+}
+function renderTransport(){
+  const list=State.transport||[];
+  const inTransit=list.filter(c=>c.TransitStatus && c.TransitStatus!=='Arrived').length;
+  const arrived=list.filter(c=>c.TransitStatus==='Arrived').length;
+  const dueCount=trackingDue().length;
+
+  $('#viewRoot').innerHTML=`
+    <div class="stat-grid">
+      ${statCard('Consignments', list.length, 'All inbound', '', 0)}
+      ${statCard('In Transit', inTransit, 'Not yet arrived', inTransit?'warn':'good', 1)}
+      ${statCard('Tracking Due', dueCount, 'Follow-up due', dueCount?'danger':'good', 2)}
+      ${statCard('Arrived', arrived, 'Delivered', 'good', 3)}
+    </div>
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="openConsignment()">+ Add Consignment</button><div class="spacer"></div>
+    </div>
+    <div class="filters">
+      <input class="search-box" id="tSearch" placeholder="Search LR / PO / vehicle..." oninput="renderTransportTable()">
+      <select id="tTransporter" onchange="renderTransportTable()">
+        <option value="">All transporters</option>
+        ${(State.config.lists.Transporters||[]).map(t=>`<option>${esc(t)}</option>`).join('')}
+      </select>
+      <select id="tTransit" onchange="renderTransportTable()">
+        <option value="">All transit</option>${TRANSIT_STATUS.map(s=>`<option>${esc(s)}</option>`).join('')}
+      </select>
+      <select id="tStatus" onchange="renderTransportTable()">
+        <option value="">All freight</option><option>Pending</option><option>Paid</option>
+      </select>
+    </div>
+    <div class="panel"><div class="panel-body flush"><div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Date</th><th>PO No</th><th>Transporter</th><th>LR No</th><th>Transit</th><th>Location / ETA</th><th>Freight</th><th>Payment</th><th></th></tr></thead>
+      <tbody id="transportTbody"></tbody>
+    </table></div></div></div>`;
+  animateCounts();
+  renderTransportTable();
+}
+function renderTransportTable(){
+  const q=($('#tSearch')?.value||'').toLowerCase();
+  const ft=$('#tTransporter')?.value||''; const fs=$('#tStatus')?.value||''; const ftr=$('#tTransit')?.value||'';
+  let list=[...(State.transport||[])].sort((a,b)=>String(b.ConsignmentID).localeCompare(String(a.ConsignmentID)));
+  list=list.filter(c=>{
+    const okQ=!q||[c.LR_No,c.PO_No,c.VehicleNo,c.Transporter].some(v=>String(v||'').toLowerCase().includes(q));
+    return okQ && (!ft||c.Transporter===ft) && (!fs||c.FreightStatus===fs) && (!ftr||c.TransitStatus===ftr);
+  });
+  const tb=$('#transportTbody');
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="10">${emptyState('No consignments yet','Add your first inbound consignment')}</td></tr>`; return; }
+  const _t=list.length;
+  tb.innerHTML=list.slice(0,PAGE_SIZE).map(c=>{
+    const loc=c.CurrentLocation?esc(c.CurrentLocation):'';
+    const eta=c.ETA?`<span style="color:var(--muted)">ETA ${esc(c.ETA)}</span>`:'';
+    const locEta=(loc||eta)?`${loc}${loc&&eta?' · ':''}${eta}`:'—';
+    return `<tr>
+      <td class="row-strong">${esc(c.ConsignmentID)}</td>
+      <td>${esc(c.Date)}</td><td>${esc(c.PO_No||'—')}</td><td>${esc(c.Transporter||'')}</td>
+      <td>${esc(c.LR_No||'')}</td>
+      <td>${transitBadge(c.TransitStatus)}</td>
+      <td style="font-size:12.5px">${locEta}</td>
+      <td class="mono">${c.FreightAmount?money(c.FreightAmount):'—'}</td>
+      <td>${freightBadge(c.FreightStatus)}</td>
+      <td>
+        <button class="btn btn-light btn-sm" onclick="openTracking('${esc(c.ConsignmentID)}')">Track</button>
+        ${(c.FreightPaidBy==='Litpax'&&c.FreightStatus!=='Paid')?`<button class="link-btn" onclick="markFreightPaid('${esc(c.ConsignmentID)}')">Paid</button>`:''}
+        <button class="link-btn" onclick="openConsignment('${esc(c.ConsignmentID)}')">Edit</button>
+        <button class="link-btn" onclick="deleteConsignmentUI('${esc(c.ConsignmentID)}')">Delete</button>
+      </td></tr>`;
+  }).join('')+capNote(_t,10);
+}
+
+/* ----- Consignment tracking (follow-ups: kaha pahuncha / kab aayega) ----- */
+function openTracking(id){
+  const c=(State.transport||[]).find(x=>x.ConsignmentID==id);
+  const hist=tfOf(id);
+  const types=cfgList('FollowUpTypes',['Call','WhatsApp','Email']);
+  openModal('Tracking — '+id+(c&&c.Transporter?` · ${c.Transporter}`:''), `
+    ${c?`<div class="track-summary">
+      <span>Transit: ${transitBadge(c.TransitStatus)}</span>
+      ${c.CurrentLocation?`<span>Location: <b>${esc(c.CurrentLocation)}</b></span>`:''}
+      ${c.ETA?`<span>ETA: <b>${esc(c.ETA)}</b></span>`:''}
+    </div>`:''}
+    ${hist.length?`<div class="track-timeline">
+      ${hist.map(f=>`<div class="track-item">
+        <div class="track-dot"></div>
+        <div class="track-body">
+          <div class="track-line"><b>${esc(f.Date)}</b> · ${esc(f.Type)} ${f.TransitStatus?transitBadge(f.TransitStatus):''}</div>
+          ${f.Location?`<div>📍 ${esc(f.Location)}${f.ETA?` · ETA ${esc(f.ETA)}`:''}</div>`:(f.ETA?`<div>ETA ${esc(f.ETA)}</div>`:'')}
+          ${f.Outcome?`<div>${esc(f.Outcome)}</div>`:''}
+          ${f.SpokenWith?`<div style="color:var(--muted)">Spoke with ${esc(f.SpokenWith)}</div>`:''}
+          ${f.NextFollowUpDate?`<div style="color:var(--muted)">Next: ${esc(f.NextFollowUpDate)}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div>`:'<div class="empty" style="padding:14px"><span class="emoji">◔</span>No tracking updates yet</div>'}
+    <h4 class="mini-head" style="margin:18px 0 10px">Add Update</h4>
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select id="tkType">${types.map(t=>`<option>${esc(t)}</option>`).join('')}</select></div>
+      <div class="field"><label>Date</label><input type="date" id="tkDate" value="${todayStr()}"></div>
+      <div class="field"><label>Current Location</label><input id="tkLoc" placeholder="e.g. Delhi hub"></div>
+      <div class="field"><label>ETA (expected arrival)</label><input type="date" id="tkETA"></div>
+      <div class="field"><label>Transit Status</label><select id="tkStatus">
+        <option value="">—</option>${TRANSIT_STATUS.map(s=>`<option ${c&&c.TransitStatus===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+      <div class="field"><label>Spoken With</label><input id="tkWith" placeholder="Transporter contact"></div>
+      <div class="field"><label>Next Follow-up Date</label><input type="date" id="tkNext"></div>
+      <div class="field"><label>Outcome</label><input id="tkOutcome" placeholder="e.g. Dispatched, reaching tomorrow"></div>
+      <div class="field full"><label>Remarks</label><input id="tkRemarks"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" id="tkSave" onclick="saveTracking('${esc(id)}')">Save Update</button>
+    </div>`);
+}
+async function saveTracking(id){
+  const next=$('#tkNext').value;
+  if(next && next<todayStr()) return toast('Next follow-up date must be today or later','error');
+  const btn=$('#tkSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    await api({action:'addTransportFollowUp',ConsignmentID:id,Type:$('#tkType').value,Date:$('#tkDate').value,
+      Location:$('#tkLoc').value,ETA:$('#tkETA').value,TransitStatus:$('#tkStatus').value,SpokenWith:$('#tkWith').value,
+      NextFollowUpDate:next,Outcome:$('#tkOutcome').value,Remarks:$('#tkRemarks').value});
+    toast('Tracking updated','success');
+    await loadAll(); openTracking(id); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save Update'; }
+}
+function openConsignment(id, prefillPO){
+  const c = id ? (State.transport||[]).find(x=>x.ConsignmentID==id) : null;
+  const transporters=State.config.lists.Transporters||[];
+  const openOrders=[...State.orders].sort((a,b)=>String(b.PO_No).localeCompare(String(a.PO_No)));
+  const tOpt=(sel)=>transporters.map(t=>`<option ${t===sel?'selected':''}>${esc(t)}</option>`).join('');
+  openModal(c?'Edit Consignment':'Add Consignment', `
+    <div class="form-grid">
+      <div class="field"><label>PO No</label>
+        <select id="cgPO"><option value="">— (optional)</option>
+          ${openOrders.map(o=>`<option value="${esc(o.PO_No)}" ${(c&&c.PO_No==o.PO_No)||(!c&&prefillPO===o.PO_No)?'selected':''}>${esc(o.PO_No)} · ${esc(vendorName(o.VendorID))}</option>`).join('')}
+        </select></div>
+      <div class="field"><label>Date</label><input type="date" id="cgDate" value="${c?esc(c.Date):todayStr()}"></div>
+      <div class="field"><label>Transporter <span class="req">*</span></label>
+        <select id="cgTransporter"><option value="">Select</option>${tOpt(c?c.Transporter:'')}</select>
+        <button type="button" class="link-btn add-inline-btn" onclick="showAddTransporter(this)">+ New transporter</button></div>
+      <div class="field"><label>LR / Docket No</label><input id="cgLR" value="${c?esc(c.LR_No):''}"></div>
+      <div class="field"><label>Vehicle No</label><input id="cgVehicle" value="${c?esc(c.VehicleNo):''}"></div>
+      <div class="field"><label>Packages</label><input type="number" min="0" id="cgPkgs" value="${c?esc(c.Packages):''}"></div>
+      <div class="field"><label>Weight (kg)</label><input type="number" min="0" step="any" id="cgWeight" value="${c?esc(c.Weight):''}"></div>
+      <div class="field"><label>Freight Amount</label><input type="number" min="0" step="any" id="cgFreight" value="${c?esc(c.FreightAmount):''}"></div>
+      <div class="field"><label>Freight Paid By</label>
+        <select id="cgPaidBy">
+          <option value="">—</option>
+          <option ${c&&c.FreightPaidBy==='Litpax'?'selected':''}>Litpax</option>
+          <option ${c&&c.FreightPaidBy==='Vendor'?'selected':''}>Vendor</option>
+        </select></div>
+      <div class="field"><label>Freight Status</label>
+        <select id="cgStatus" onchange="cgStatusChanged()">
+          <option ${c&&c.FreightStatus==='Pending'?'selected':''}>Pending</option>
+          <option ${c&&c.FreightStatus==='Paid'?'selected':''}>Paid</option>
+        </select></div>
+      <div class="field" id="cgPaidDateWrap" style="${c&&c.FreightStatus==='Paid'?'':'display:none'}">
+        <label>Paid Date</label><input type="date" id="cgPaidDate" value="${c&&c.PaidDate?esc(c.PaidDate):todayStr()}"></div>
+      <div class="field full"><label>Remarks</label><input id="cgRemarks" value="${c?esc(c.Remarks):''}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="cgSave" onclick="saveConsignment(${c?`'${esc(c.ConsignmentID)}'`:''})">${c?'Save Changes':'Add Consignment'}</button>
+    </div>`);
+}
+function cgStatusChanged(){ $('#cgPaidDateWrap').style.display = $('#cgStatus').value==='Paid' ? '' : 'none'; }
+function showAddTransporter(btn){
+  const wrap=btn.parentNode;
+  if(wrap.querySelector('.inline-add')) { wrap.querySelector('.inline-add input').focus(); return; }
+  const div=document.createElement('div');
+  div.className='inline-add';
+  div.innerHTML=`<input placeholder="New transporter name" onkeydown="if(event.key==='Enter'){event.preventDefault();addTransporterInline(this.nextElementSibling);}">
+    <button type="button" class="btn btn-light btn-sm" onclick="addTransporterInline(this)">Add</button>`;
+  wrap.appendChild(div);
+  div.querySelector('input').focus();
+}
+async function addTransporterInline(btn){
+  const inp=btn.parentNode.querySelector('input');
+  const name=inp.value.trim(); if(!name) return;
+  btn.disabled=true;
+  try{
+    await api({action:'addConfigItem',list:'Transporters',value:name});
+    (State.config.lists.Transporters=State.config.lists.Transporters||[]).push(name);
+    const sel=$('#cgTransporter');
+    if(![...sel.options].some(o=>o.value===name)) sel.add(new Option(name,name));
+    sel.value=name;
+    btn.parentNode.remove();
+    toast('Transporter added','success');
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; }
+}
+async function saveConsignment(id){
+  const transporter=$('#cgTransporter').value;
+  if(!transporter) return toast('Select a transporter','error');
+  const status=$('#cgStatus').value;
+  const fields={
+    Date:$('#cgDate').value, PO_No:$('#cgPO').value, Transporter:transporter,
+    LR_No:$('#cgLR').value, VehicleNo:$('#cgVehicle').value, Packages:$('#cgPkgs').value,
+    Weight:$('#cgWeight').value, FreightAmount:$('#cgFreight').value, FreightPaidBy:$('#cgPaidBy').value,
+    FreightStatus:status, PaidDate: status==='Paid' ? $('#cgPaidDate').value : '', Remarks:$('#cgRemarks').value
+  };
+  const btn=$('#cgSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try{
+    if(id){ fields.ConsignmentID=id; fields.action='updateConsignment'; await api(fields); toast('Consignment updated','success'); }
+    else { fields.action='addConsignment'; await api(fields); toast('Consignment added','success'); }
+    closeModal(); await loadAll(); render();
+  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent=id?'Save Changes':'Add Consignment'; }
+}
+async function markFreightPaid(id){
+  try{ await api({action:'updateConsignment',ConsignmentID:id,FreightStatus:'Paid',PaidDate:todayStr()});
+    toast('Freight marked paid','success'); await loadAll(); render(); }
+  catch(e){ toast(e.message,'error'); }
+}
+async function deleteConsignmentUI(id){
+  if(!confirm('Delete consignment '+id+'?')) return;
+  try{ await api({action:'deleteConsignment',ConsignmentID:id}); toast('Deleted','success'); await loadAll(); render(); }
+  catch(e){ toast(e.message,'error'); }
+}
+
+/* ----- Tracking view (all consignment follow-ups) ----- */
+function renderTracking(){
+  const full=[...(State.transportFollowups||[])].sort((a,b)=>String(b.TFUID).localeCompare(String(a.TFUID)));
+  const all=full.slice(0,PAGE_SIZE);
+  const due=trackingDue();
+  $('#viewRoot').innerHTML=`
+    ${due.length?`<div class="panel"><div class="panel-head"><h3>⏰ Tracking Due</h3></div>
+      <div class="panel-body flush"><div class="table-wrap"><table>
+      <thead><tr><th>Consignment</th><th>Transporter</th><th>Transit</th><th>Location / ETA</th><th></th></tr></thead>
+      <tbody>${due.map(c=>`<tr>
+        <td class="row-strong">${esc(c.ConsignmentID)}</td><td>${esc(c.Transporter||'')}</td>
+        <td>${transitBadge(c.TransitStatus)}</td>
+        <td>${c.CurrentLocation?esc(c.CurrentLocation):''}${c.ETA?` · ETA ${esc(c.ETA)}`:''}</td>
+        <td><button class="btn btn-light btn-sm" onclick="openTracking('${esc(c.ConsignmentID)}')">Track</button></td></tr>`).join('')}</tbody>
+      </table></div></div></div>`:''}
+    <div class="panel"><div class="panel-head"><h3>All Tracking Updates</h3></div>
+      <div class="panel-body flush">${all.length?`<div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Consignment</th><th>Type</th><th>Location</th><th>ETA</th><th>Transit</th><th>Next</th><th></th></tr></thead>
+      <tbody>${all.map(f=>`<tr>
+        <td>${esc(f.Date)}</td><td class="row-strong">${esc(f.ConsignmentID)}</td>
+        <td><span class="badge b-blue">${esc(f.Type)}</span></td>
+        <td>${esc(f.Location||'')}</td><td>${esc(f.ETA||'')}</td>
+        <td>${f.TransitStatus?transitBadge(f.TransitStatus):'—'}</td>
+        <td>${esc(f.NextFollowUpDate||'—')}</td>
+        <td><button class="link-btn" onclick="openTracking('${esc(f.ConsignmentID)}')">Open</button></td></tr>`).join('')}${capNote(full.length,8)}</tbody>
+      </table></div>`:emptyState('No tracking updates yet','Open a consignment and add an update')}</div></div>`;
+}
+
+/* ----- Freight view (settlement / payments) ----- */
+function renderFreight(){
+  const list=(State.transport||[]).filter(c=>Number(c.FreightAmount)>0);
+  const ours=list.filter(c=>c.FreightPaidBy==='Litpax');
+  const pending=ours.filter(c=>c.FreightStatus!=='Paid').reduce((a,c)=>a+(Number(c.FreightAmount)||0),0);
+  const paidMonth=ours.filter(c=>c.FreightStatus==='Paid'&&String(c.PaidDate||'').slice(0,7)===todayStr().slice(0,7)).reduce((a,c)=>a+(Number(c.FreightAmount)||0),0);
+  const pendCount=ours.filter(c=>c.FreightStatus!=='Paid').length;
+  $('#viewRoot').innerHTML=`
+    <div class="stat-grid">
+      ${statCard('Freight Pending', money(pending), 'Litpax to pay', pending?'warn':'good',0)}
+      ${statCard('To-Pay Count', pendCount, 'Unsettled (Litpax)', pendCount?'danger':'good',1)}
+      ${statCard('Paid This Month', money(paidMonth), 'Freight settled','good',2)}
+    </div>
+    <div class="filters">
+      <select id="frStatus" onchange="renderFreightTable()"><option value="">All status</option><option>Pending</option><option>Paid</option></select>
+      <select id="frBy" onchange="renderFreightTable()"><option value="">All payers</option><option>Litpax</option><option>Vendor</option></select>
+    </div>
+    <div class="panel"><div class="panel-body flush"><div class="table-wrap"><table>
+      <thead><tr><th>Consignment</th><th>Date</th><th>Transporter</th><th>PO</th><th>Freight</th><th>Paid By</th><th>Status</th><th>Paid Date</th><th></th></tr></thead>
+      <tbody id="freightTbody"></tbody></table></div></div></div>`;
+  animateCounts(); renderFreightTable();
+}
+function renderFreightTable(){
+  const fs=$('#frStatus')?.value||''; const fb=$('#frBy')?.value||'';
+  let list=(State.transport||[]).filter(c=>Number(c.FreightAmount)>0)
+    .sort((a,b)=>String(b.ConsignmentID).localeCompare(String(a.ConsignmentID)))
+    .filter(c=>(!fs||c.FreightStatus===fs)&&(!fb||c.FreightPaidBy===fb));
+  const tb=$('#freightTbody');
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="9">${emptyState('No freight records yet','')}</td></tr>`; return; }
+  const _t=list.length;
+  tb.innerHTML=list.slice(0,PAGE_SIZE).map(c=>`<tr>
+    <td class="row-strong">${esc(c.ConsignmentID)}</td><td>${esc(c.Date)}</td><td>${esc(c.Transporter||'')}</td>
+    <td>${esc(c.PO_No||'—')}</td><td class="mono">${money(c.FreightAmount)}</td><td>${esc(c.FreightPaidBy||'—')}</td>
+    <td>${freightBadge(c.FreightStatus)}</td><td>${esc(c.PaidDate||'—')}</td>
+    <td>${(c.FreightPaidBy==='Litpax'&&c.FreightStatus!=='Paid')?`<button class="btn btn-light btn-sm" onclick="markFreightPaid('${esc(c.ConsignmentID)}')">Mark Paid</button>`:''}</td></tr>`).join('')+capNote(_t,9);
+}
+
+/* =========================================================
+ *  DIARY BOOK  (plain notes + tick = done)
+ * ========================================================= */
+function updateDiaryBadge(){
+  const b=$('#diaryCount'); if(!b) return;
+  const c=(State.diary||[]).filter(n=>n.Status!=='Done').length;
+  b.textContent=c; b.style.display=c?'':'none';
+}
+function setupDiaryUI(){
+  if($('#diaryBtn')) return;
+  const rb=$('#refreshBtn');
+  const btn=document.createElement('button');
+  btn.id='diaryBtn'; btn.type='button'; btn.className='diary-btn';
+  btn.innerHTML='📒 <span class="diary-lbl">Diary</span> <span id="diaryCount" class="diary-count" style="display:none"></span>';
+  btn.addEventListener('click', openDiary);
+  rb.parentNode.insertBefore(btn, rb);
+
+  const wrap=document.createElement('div');
+  wrap.id='diaryWrap'; wrap.className='diary-wrap hidden';
+  wrap.innerHTML=`<div class="diary-overlay" onclick="closeDiary()"></div>
+    <aside class="diary-panel">
+      <div class="diary-head"><h3>📒 Diary Book</h3><button class="diary-x" onclick="closeDiary()">✕</button></div>
+      <div class="diary-add">
+        <textarea id="diaryInput" rows="2" maxlength="1000" placeholder="Note likho... (Ctrl+Enter = Add)"
+          onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))addNote()"></textarea>
+        <button class="btn btn-primary btn-sm" id="diaryAddBtn" onclick="addNote()">+ Add</button>
+      </div>
+      <div id="diaryList" class="diary-list"></div>
+    </aside>`;
+  document.body.appendChild(wrap);
+}
+function openDiary(){ $('#diaryWrap').classList.remove('hidden'); renderDiary(); setTimeout(()=>$('#diaryInput').focus(),50); }
+function closeDiary(){ const w=$('#diaryWrap'); if(w) w.classList.add('hidden'); }
+function renderDiary(){
+  updateDiaryBadge();
+  const box=$('#diaryList'); if(!box) return;
+  const all=[...(State.diary||[])].sort((a,b)=>String(b.NoteID).localeCompare(String(a.NoteID)));
+  const open=all.filter(n=>n.Status!=='Done'), done=all.filter(n=>n.Status==='Done');
+  const row=n=>`<label class="diary-item ${n.Status==='Done'?'done':''}">
+      <input type="checkbox" ${n.Status==='Done'?'checked':''} onchange="toggleNote('${esc(n.NoteID)}',this)">
+      <div><div class="diary-text">${esc(n.Note)}</div>
+      <div class="diary-meta">${esc(n.Date)}${n.Status==='Done'&&n.DoneDate?' · Done '+esc(n.DoneDate):''}</div></div>
+    </label>`;
+  box.innerHTML=(open.length?open.map(row).join(''):'<div class="diary-empty">Koi pending note nahi ✓</div>')
+    +(done.length?`<div class="diary-sep">Done (${done.length})</div>${done.slice(0,50).map(row).join('')}`:'');
+}
+async function addNote(){
+  const inp=$('#diaryInput'); const note=inp.value.trim(); if(!note) return;
+  const btn=$('#diaryAddBtn'); btn.disabled=true;
+  try{
+    const n=await api({action:'addNote',Note:note});
+    (State.diary=State.diary||[]).push(n);
+    inp.value=''; renderDiary();
+  }catch(e){ toast(e.message,'error'); }
+  finally{ btn.disabled=false; inp.focus(); }
+}
+async function toggleNote(id, cb){
+  const n=(State.diary||[]).find(x=>x.NoteID==id); if(!n) return;
+  const prev={Status:n.Status, DoneDate:n.DoneDate};
+  n.Status=cb.checked?'Done':'Open'; n.DoneDate=cb.checked?todayStr():''; renderDiary();   // turant UI update
+  try{ const r=await api({action:'setNoteStatus',NoteID:id,Status:n.Status}); n.DoneDate=r.DoneDate; }
+  catch(e){ Object.assign(n,prev); renderDiary(); toast(e.message,'error'); }
+}
+
+/* =========================================================
+ *  SIDEBAR (mobile)
+ * ========================================================= */
+function openSidebar(){ $('#sidebar').classList.add('show'); $('#sidebarOverlay').classList.add('show'); }
+function closeSidebar(){ $('#sidebar').classList.remove('show'); $('#sidebarOverlay').classList.remove('show'); }
+
+/* =========================================================
+ *  INIT
+ * ========================================================= */
+function init(){
+  $('#loginBtn').addEventListener('click', doLogin);
+  $('#pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  $('#logoutBtn').addEventListener('click', ()=>{ try{ sessionStorage.removeItem('sms_session'); }catch(e){} location.href = '../ims/index.html'; });
+  $('#refreshBtn').addEventListener('click', refresh);
+  $('#poSearch').addEventListener('input', poSearch);
+  $('#poSearch').addEventListener('keydown', poSearchEnter);
+  document.addEventListener('click', e=>{ if(!e.target.closest('.po-search')){ const b=$('#poSearchResults'); if(b) b.classList.remove('show'); } });
+  $('#modalClose').addEventListener('click', closeModal);
+  $('#hamburger').addEventListener('click', openSidebar);
+  $('#sidebarOverlay').addEventListener('click', closeSidebar);
+  $$('.nav-item').forEach(n=>n.addEventListener('click', ()=>switchView(n.dataset.view)));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeDiary(); } });
+  setupDiaryUI();
+
+  // Session restore — reload pe logout na ho
+  let saved=null;
+  try{ saved = JSON.parse(sessionStorage.getItem('sms_session')||'null'); }catch(e){}
+  if(saved && saved.token){
+    resumeSession(saved);
+    return;
+  }
+
+  const urlPin = new URLSearchParams(location.search).get('pin');
+  if(urlPin){
+    $('#pinInput').value = urlPin;
+    history.replaceState(null, '', location.pathname);   // URL se ?pin hata do
+    doLogin();                                   // PIN screen skip
+  }else{
+    setTimeout(()=>$('#pinInput').focus(), 300); // direct khola to normal
+  }
+}
+document.addEventListener('DOMContentLoaded', init);
