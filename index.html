@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Litpax Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen" class="login hidden">
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-mark">L</div>
+      <div>
+        <div class="brand-name">Litpax Suite</div>
+        <div class="brand-sub">ERP · Inventory · Production · Store</div>
+      </div>
+    </div>
+    <div class="field"><label class="lbl" for="userInput">Username</label>
+    <input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label class="lbl" for="pinInput">Password</label>
+    <input id="pinInput" type="password" autocomplete="current-password"></div>
+    <div id="loginError" class="err"></div>
+    <button id="loginBtn" class="btn btn-primary btn-block">Sign in</button>
+    <div class="login-foot">Use your ERP username and password · one sign-in for every Litpax app</div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell" class="shell hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="side-brand">
+      <div class="brand-mark sm">L</div>
+      <div class="side-title">Litpax Suite</div>
+    </div>
+    <nav id="nav" class="nav"></nav>
+    <div class="side-user">
+      <div class="avatar" id="userAvatar">A</div>
+      <div class="side-user-info">
+        <div class="side-user-name" id="userName"></div>
+        <div class="side-user-role" id="userRoles"></div>
+      </div>
+      <button class="icon-btn" id="logoutBtn" title="Sign out">⏻</button>
+    </div>
+  </aside>
+  <div id="overlay" class="overlay"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" title="Menu">☰</button>
+      <div class="topbar-title" id="pageTitle"></div>
+      <div class="topbar-right">
+        <span id="sessionWarn" class="chip chip-warn hidden"></span>
+        <button class="btn btn-ghost btn-sm" id="reloadBtn" title="Reload this page">↻ Refresh</button>
+      </div>
+    </header>
+
+    <!-- native views -->
+    <section id="view-overview" class="view hidden"></section>
+    <section id="view-inward" class="view hidden"></section>
+    <section id="view-approvals" class="view hidden"></section>
+    <section id="view-dispatch" class="view hidden"></section>
+    <section id="view-settings" class="view hidden"></section>
+
+    <!-- module iframes get added here -->
+    <div id="frames" class="frames"></div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
