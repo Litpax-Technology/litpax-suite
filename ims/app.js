@@ -14,11 +14,20 @@ const DEPTS = ['Volt Wing','Ampere Wing','Volt x Ampere Wing','Mega Grid','Catho
 // PINs ab yahan NAHI hain — backend verify karta hai (source me kuch nahi dikhta)
 const ROLES = {
 admin:   { name: 'Admin',   homePage: 'dashboard', pages: ['dashboard','inward','outward','dispatch','wip','items','opening','bom','indent','stock','reorder','closing','adc','ledger'] },
-  ajay:    { name: 'Ajay',    homePage: 'inward',    pages: ['inward','outward','items','opening','bom','indent','stock','reorder'] },
-  sandeep: { name: 'Nishant', homePage: 'dispatch',  pages: ['dispatch','received','wip','stock','items','bom'] },
+  ajay:    { name: 'Store',    homePage: 'inward',    pages: ['inward','outward','items','opening','bom','indent','stock','reorder'] },
+  sandeep: { name: 'Production', homePage: 'dispatch',  pages: ['dispatch','received','wip','stock','items','bom'] },
   purchase:  { name: 'Purchase',  redirect: '../soms/index.html' },
 
 };
+
+
+// ── LITPAX SUITE (common login) ──
+// Suite ke andar khula ho to suite_token hota hai → Inward approval ke through jaata hai
+function suiteTok() { try { return sessionStorage.getItem('suite_token') || ''; } catch (e) { return ''; } }
+function byName(def) {
+  try { const u = JSON.parse(sessionStorage.getItem('erp_user') || 'null'); if (u && u.name) return u.name; } catch (e) {}
+  return sessionStorage.getItem('lpx_name') || def || '';
+}
 
 let _currentRole = null;
 let _selectedRole = null;
@@ -260,7 +269,7 @@ const _writeActions = [
   'saveBomItems','addBomModel','deleteBomModel',
   'createPO','addPOItem','receivePOItem','cancelPO','cancelPOItem',
   'addRequest','addRequestBulk','closeRequest','cancelRequest',
-  'setOpeningStock','saveSnapshot','migrateCategories','uploadItemImage','uploadInwardPhoto'
+  'setOpeningStock','saveSnapshot','migrateCategories','uploadItemImage','uploadInwardPhoto','suiteSubmitInward'
 ];
 
 async function api(action, body) {
@@ -442,6 +451,7 @@ async function loadDash() {
 
 // ── INWARD ──
 async function loadInward() {
+  if (suiteTok()) loadInwardApprovals();
   const dateF = document.getElementById('in-date-f').value;
   document.getElementById('in-tb').innerHTML = `<tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr>`;
   try {
@@ -478,11 +488,76 @@ function openInwardModal() {
   document.getElementById('in-date').value = today();
   document.getElementById('in-supplier').value = '';
   document.getElementById('in-invoice').value = '';
-  document.getElementById('in-by').value = 'Ajay';
+  document.getElementById('in-by').value = byName('Store');
   document.getElementById('in-remarks').value = '';
   document.getElementById('in-stock-info').style.display = 'none';
   resetInPhotos();
+  _inLine = null;
+  const rm = document.querySelector('input[name="in-purpose"][value="Raw Material"]');
+  if (rm) rm.checked = true;
+  updInwardPurpose();
+  if (suiteTok()) loadInwardPO();
   document.getElementById('inward-modal').classList.add('open');
+}
+
+// ── SUITE: SOMS order lines (jo maal aana baaki hai) ──
+let _inLines = [], _inLine = null;
+async function loadInwardPO() {
+  const sel = document.getElementById('in-po');
+  sel.innerHTML = '<option value="">Loading SOMS orders…</option>';
+  document.getElementById('in-po-hint').textContent = '';
+  try {
+    const r = await api('suitePendingPO', { token: suiteTok() });
+    _inLines = r.lines || [];
+    if (!_inLines.length) {
+      sel.innerHTML = '<option value="">SOMS mein koi open order nahi hai</option>';
+      document.getElementById('in-po-hint').textContent = 'Pehle Purchase SOMS mein order lagaye, tab yahan dikhega.';
+      return;
+    }
+    sel.innerHTML = '<option value="">-- Order chuno --</option>' + _inLines.map((L, i) =>
+      `<option value="${i}">${htmlEnc(L.poId)} · ${htmlEnc(L.item)} · ${htmlEnc(L.supplier || '')} · pending ${L.pendingQty} ${htmlEnc(L.unit || '')}</option>`).join('');
+  } catch (e) { sel.innerHTML = '<option value="">Error</option>'; toast(e.message, 'err'); }
+}
+function selInwardPO() {
+  const i = document.getElementById('in-po').value;
+  _inLine = i === '' ? null : _inLines[Number(i)];
+  const hint = document.getElementById('in-po-hint');
+  if (!_inLine) { hint.textContent = ''; document.getElementById('in-stock-info').style.display = 'none'; return; }
+  hint.textContent = `Ordered ${_inLine.orderedQty} · Aa chuka ${_inLine.receivedQty} · Pending ${_inLine.pendingQty} ${_inLine.unit || ''}` + (_inLine.imsPo ? ` · Requirement ${_inLine.imsPo}` : '');
+  document.getElementById('in-supplier').value = _inLine.supplier || '';
+  document.getElementById('in-qty').value = _inLine.pendingQty;
+  const sel = document.getElementById('in-item');
+  sel.innerHTML = `<option value="${htmlEnc(_inLine.item)}">${htmlEnc(_inLine.item)}</option>`;
+  sel.value = _inLine.item;
+  updInwardInfo();
+}
+async function loadInwardApprovals() {
+  const card = document.getElementById('in-apr-card');
+  if (!card) return;
+  card.style.display = '';
+  const h = document.getElementById('in-stock-h'); if (h) h.style.display = '';
+  const tb = document.getElementById('in-apr-tb');
+  tb.innerHTML = `<tr class="lrow"><td colspan="8"><span class="loader"></span></td></tr>`;
+  try {
+    const r = await api('suiteMyInwards', { token: suiteTok() });
+    const list = r.list || [];
+    document.getElementById('in-apr-empty').style.display = list.length ? 'none' : 'block';
+    const col = { Pending: 'var(--amber,#b45309)', Approved: 'var(--green,#16a34a)', Rejected: 'var(--red,#dc2626)' };
+    tb.innerHTML = list.map(a => {
+      const st = String(a.Status || '');
+      const c = col[st] || (st.indexOf('Approved') === 0 ? col.Approved : 'var(--muted)');
+      return `<tr>
+        <td style="color:var(--muted);font-size:12px;">${htmlEnc(a['Raised At'] || '')}</td>
+        <td style="font-weight:500;">${htmlEnc(a.Item || '')}</td>
+        <td style="font-family:var(--mono);font-weight:700;">${htmlEnc(a.Qty)} ${htmlEnc(a.Unit || '')}</td>
+        <td style="font-family:var(--mono);font-size:11px;">${htmlEnc(a['PO ID'] || '—')}</td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">${htmlEnc(a.Invoice || '—')}</td>
+        <td><span style="font-weight:700;color:${c};">${st === 'Pending' ? '⏳ Pending approval' : htmlEnc(st)}</span></td>
+        <td style="font-family:var(--mono);">${a['Accepted Qty'] !== '' && a['Accepted Qty'] != null ? htmlEnc(a['Accepted Qty']) : '—'}</td>
+        <td style="font-size:12px;color:var(--muted);">${htmlEnc(a['Decision Note'] || a.Result || '')}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) { tb.innerHTML = ''; toast(e.message, 'err'); }
 }
 
 function filterInwardItems() {
@@ -518,6 +593,11 @@ async function saveInward() {
   const itemName = document.getElementById('in-item').value;
   const qty      = Number(document.getElementById('in-qty').value);
   const date     = document.getElementById('in-date').value;
+  const suiteRM  = suiteTok() && (document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material') === 'Raw Material';
+  if (suiteRM) {
+    if (!_inLine) { toast('SOMS order chuno', 'err'); return; }
+    if (qty > _inLine.pendingQty) { toast(`Is order mein sirf ${_inLine.pendingQty} ${_inLine.unit || ''} pending hai`, 'err'); return; }
+  }
   if (!itemName) { toast('Please select an item', 'err'); return; }
   if (!qty || qty <= 0) { toast('Enter a valid quantity', 'err'); return; }
   const inPurposeChk = document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material';
@@ -540,13 +620,24 @@ async function saveInward() {
     }
     btn.textContent = 'Saving...';
     const inPurpose = document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material';
+    if (suiteRM) {
+      // Stock abhi nahi badhega — SOMS → Inward Approvals me Purchase approve karega
+      const r = await api('suiteSubmitInward', {
+        token: suiteTok(), item: itemName, qty, poId: _inLine.poId, supplier: _inLine.supplier || '',
+        invoice: invoiceVal, photos: photoIds.join(','), remarks: document.getElementById('in-remarks').value,
+      });
+      toast(`Approval ke liye bheja ✓ (${r.id || ''}) — Purchase SOMS mein approve karega`, 'ok');
+      closeM('inward-modal');
+      loadInward();
+      return;
+    }
     await api('addInward', {
       reqId: _reqIds.inward,
       itemName, qty, date,
       purpose:  inPurpose,
       supplier: inPurpose === 'Raw Material' ? document.getElementById('in-supplier').value : '',
       invoice:  invoiceVal,
-      by:       document.getElementById('in-by').value || 'Ajay',
+      by:       document.getElementById('in-by').value || byName('Store'),
       remarks:  document.getElementById('in-remarks').value,
       photos:   photoIds.join(','),
     });
@@ -556,13 +647,27 @@ async function saveInward() {
     loadInward();
     loadDash();
   } catch(e) { toast(e.message, 'err'); }
-  finally { btn.disabled = false; btn.textContent = 'Save Inward'; }
+  finally { btn.disabled = false; btn.textContent = (suiteTok() && (document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material') === 'Raw Material') ? 'Approval ke liye bhejo' : 'Save Inward'; }
 }
 
 function updInwardPurpose() {
   const purpose = document.querySelector('input[name="in-purpose"]:checked')?.value;
   const supWrap = document.getElementById('in-supplier-wrap');
   if (supWrap) supWrap.style.display = purpose === 'From Production' ? 'none' : '';
+  const suiteRM = !!suiteTok() && purpose !== 'From Production';
+  const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  show('in-po-wrap', suiteRM);
+  show('in-cat-wrap', !suiteRM);
+  const sup = document.getElementById('in-supplier'); if (sup) sup.readOnly = suiteRM;
+  const btn = document.getElementById('in-btn'); if (btn) btn.textContent = suiteRM ? 'Approval ke liye bhejo' : 'Save Inward';
+  if (!suiteRM) {   // From Production → purana tareeka (category → item)
+    _inLine = null;
+    document.getElementById('in-cat').value = '';
+    document.getElementById('in-item').innerHTML = '<option value="">-- Select Category first --</option>';
+    document.getElementById('in-stock-info').style.display = 'none';
+  } else if (!_inLine) {
+    document.getElementById('in-item').innerHTML = '<option value="">-- Upar se order chuno --</option>';
+  }
 }
 
 // ── INWARD PHOTOS ──
@@ -702,7 +807,7 @@ function openOutwardModal() {
   document.getElementById('out-date').value = today();
   document.getElementById('out-dept').value = '';
   document.getElementById('out-issuedto').value = '';
-  document.getElementById('out-by').value = 'Ajay';
+  document.getElementById('out-by').value = byName('Store');
   document.getElementById('out-remarks').value = '';
   document.getElementById('out-stock-info').style.display = 'none';
   document.getElementById('outward-modal').classList.add('open');
@@ -760,7 +865,7 @@ async function saveOutward() {
       itemName, qty, date, department,
       purpose:  outPurpose,
       issuedTo: document.getElementById('out-issuedto').value,
-      by:       document.getElementById('out-by').value || 'Ajay',
+      by:       document.getElementById('out-by').value || byName('Store'),
       remarks:  document.getElementById('out-remarks').value,
     });
     toast('Outward saved ✓', 'ok');
@@ -871,7 +976,7 @@ async function selectDispatchType(type) {
     await populateBomSelect('dis-bom');
     document.getElementById('dis-qty').value  = 1;
     document.getElementById('dis-date').value = today();
-    document.getElementById('dis-by').value   = 'Nishant';
+    document.getElementById('dis-by').value   = byName('Production');
     document.getElementById('dis-to').value   = '';
     document.getElementById('dis-ref').value  = '';
     document.getElementById('dis-remarks').value = '';
@@ -882,7 +987,7 @@ async function selectDispatchType(type) {
     document.getElementById('dd-btn').style.display  = 'block';
     document.getElementById('dis-btn').style.display = 'none';
     document.getElementById('dd-date').value = today();
-    document.getElementById('dd-by').value   = 'Nishant';
+    document.getElementById('dd-by').value   = byName('Production');
     document.getElementById('dd-qty').value  = '';
     document.getElementById('dd-to').value   = '';
     document.getElementById('dd-invoice').value = '';
@@ -902,7 +1007,7 @@ async function selectDispatchType(type) {
       sel.innerHTML = '<option value="">-- No chargers in WIP --</option>';
       const errEl = document.getElementById('dd-error');
       errEl.style.display = 'block';
-      errEl.textContent = '⚠ Koi charger WIP mein nahi hai — pehle Ajay se outward karwao';
+      errEl.textContent = '⚠ Koi charger WIP mein nahi hai — pehle Store se outward karwao';
     }
   }
 }
@@ -965,7 +1070,7 @@ async function saveDirectDispatch() {
       itemName, qty, date, dispatchTo,
       invoiceNo: document.getElementById('dd-invoice').value,
       orderRef:  document.getElementById('dd-ref').value,
-      by:        document.getElementById('dd-by').value || 'Sandeep',
+      by:        document.getElementById('dd-by').value || byName('Production'),
       remarks:   document.getElementById('dd-remarks').value,
     });
     toast(`✓ ${r.itemName} — ${r.qty} dispatched | WIP remaining: ${r.remaining}`, 'ok');
@@ -1071,7 +1176,7 @@ async function saveDispatch() {
       cellVar: _disCellVar, bmsVar: _disBmsVar,
       dispatchTo: document.getElementById('dis-to').value,
       orderRef:   document.getElementById('dis-ref').value,
-      by:         document.getElementById('dis-by').value || 'Sandeep',
+      by:         document.getElementById('dis-by').value || byName('Production'),
       remarks:    document.getElementById('dis-remarks').value,
     });
     toast(`Dispatch saved ✓ — ${r.componentsConsumed} components deducted`, 'ok');
@@ -2431,7 +2536,7 @@ function openReceivePOItemModal(poId, itemName, orderedQty, supplier) {
   document.getElementById('recv-m-date').value   = today();
   document.getElementById('recv-invoice').value  = '';
   document.getElementById('recv-supplier').value = supplier || '';
-  document.getElementById('recv-by').value       = 'Ajay';
+  document.getElementById('recv-by').value       = byName('Production');
   document.getElementById('receive-modal').classList.add('open');
 }
 
@@ -2441,7 +2546,7 @@ async function confirmReceive() {
   const date     = document.getElementById('recv-m-date').value;
   const invoice  = document.getElementById('recv-invoice').value;
   const supplier = document.getElementById('recv-supplier').value;
-  const by       = document.getElementById('recv-by').value || 'Ajay';
+  const by       = document.getElementById('recv-by').value || byName('Production');
   if (!qty || qty <= 0) { toast('Valid qty daalo', 'err'); return; }
   const btn = document.getElementById('recv-btn');
   btn.disabled = true; btn.textContent = 'Processing...';
@@ -3287,7 +3392,7 @@ function fulfillRequest(reqId, itemName, qty, department, requestedBy) {
       document.getElementById('out-qty').value   = qty;
       document.getElementById('out-date').value  = today();
       document.getElementById('out-dept').value  = department || '';
-      document.getElementById('out-by').value       = 'Ajay';
+      document.getElementById('out-by').value       = byName('Store');
       document.getElementById('out-issuedto').value  = requestedBy || '';
       document.getElementById('out-remarks').value   = 'Req: ' + reqId;
       updOutwardInfo();
@@ -3305,7 +3410,7 @@ async function cancelRequest(id) {
   } catch(e) { toast(e.message, 'err'); }
 }
 
-// ── RECEIVED FROM STORE (Sandeep) ──
+// ── RECEIVED FROM STORE (Production) ──
 async function loadReceived() {
   const dateEl = document.getElementById('recv-date');
   const catEl  = document.getElementById('recv-cat');
