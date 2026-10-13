@@ -171,10 +171,10 @@
             <thead><tr><th>Sent</th><th>Item</th><th>Qty</th><th>SOMS Order</th><th>Invoice</th><th>Status</th><th>Accepted</th><th>Note</th></tr></thead>
             <tbody id="in-apr-tb"></tbody>
         </table></div>
-        <div id="in-apr-empty" class="empty" style="display:none"><div class="et">Abhi koi entry approval ke liye nahi bheji</div></div>
+        <div id="in-apr-empty" class="empty" style="display:none"><div class="et">No entries sent for approval yet</div></div>
       </div>
       <div class="card">
-        <div class="ch" id="in-stock-h" style="display:none"><h2>Stock mein aa chuka (approved)</h2></div>
+        <div class="ch" id="in-stock-h" style="display:none"><h2>Added to stock (approved)</h2></div>
         <div class="tw"><table>
             <thead><tr><th>Date</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Supplier</th><th>Invoice/PO</th><th>By</th><th>Remarks</th><th>Photo</th></tr></thead>
             <tbody id="in-tb"><tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr></tbody>
@@ -564,7 +564,7 @@
     <div class="mb">
       <div class="fg">
         <div class="fi full" id="in-po-wrap" style="display:none">
-          <label class="inp-label">SOMS Order (jo maal aaya) *</label>
+          <label class="inp-label">SOMS Order (material received by Purchase) *</label>
           <select class="inp" id="in-po" onchange="selInwardPO()"><option value="">Loading…</option></select>
           <div id="in-po-hint" style="font-size:11.5px;color:var(--muted);margin-top:4px;"></div>
         </div>
