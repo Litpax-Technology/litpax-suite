@@ -550,17 +550,17 @@
           var v = (L.urls || {})[a];
           return '<tr><td><b>' + a + '</b></td><td class="mono">' + (v ? esc(v) : '<span class="chip chip-bad">Not registered</span>') + '</td></tr>';
         }).join('') + '</tbody></table></div></div>' +
-        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">Users and passwords are managed in ERP. Here you set what each person can open in the Suite.</div></div></div>' +
-        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Suite roles</th><th>IMS role</th><th>SOMS role</th><th>PLT supervisor</th><th></th></tr></thead><tbody>' +
+        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">Naya user / password ERP mein banta hai. Yahan bas har user ka Kaam chuno → Save.</div></div></div>' +
+        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Kaam</th><th></th></tr></thead><tbody>' +
         U.users.map(function (u) {
           return '<tr><td><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.username) + '</div></td><td>' + (u.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') +
-            '</td><td>' + esc(u.roles.join(', ') || '—') + '</td><td>' + esc(u.imsRole || '—') + '</td><td>' + esc(u.somsRole || '—') + '</td><td>' + (u.pltSup ? 'Yes' : '—') +
+            '</td><td>' + jobsOf(u).map(function (j) { return '<span class="chip">' + esc(JOBS[j].label) + '</span>'; }).join(' ') +
             '</td><td><button class="btn btn-sm" data-edit="' + esc(u.username) + '">Edit</button></td></tr>';
         }).join('') + '</tbody></table></div><div id="userForm"></div></div></div>';
       el.innerHTML = html;
       $$('#view-settings select[data-key]').forEach(function (x) { x.onchange = function () { saveCfg(x.dataset.key, x.value, x); }; });
       $$('#view-settings [data-save]').forEach(function (b) { b.onclick = function () { var i = $('#view-settings input[data-key="' + b.dataset.save + '"]'); saveCfg(b.dataset.save, i.value, b); }; });
-      $$('#view-settings [data-edit]').forEach(function (b) { b.onclick = function () { userForm(U.users.filter(function (u) { return u.username === b.dataset.edit; })[0], U.roles); }; });
+      $$('#view-settings [data-edit]').forEach(function (b) { b.onclick = function () { userForm(U.users.filter(function (u) { return u.username === b.dataset.edit; })[0]); }; });
     }).catch(function (e) { el.innerHTML = '<div class="wrap"><div class="notice bad">' + esc(e.message) + '</div></div>'; });
   };
   function saveCfg(key, value, el) {
@@ -569,24 +569,68 @@
     api('ERP', 'suiteSaveLink', { key: key, value: value }).then(function () { toast(key + ' saved', 'ok'); el.disabled = false; })
       .catch(function (e) { toast(e.message, 'bad'); el.disabled = false; });
   }
-  function userForm(u, roles) {
-    var opt = function (list, cur, labels) { return list.map(function (r) { return '<option value="' + r + '"' + (cur === r ? ' selected' : '') + '>' + (labels[r] || r) + '</option>'; }).join(''); };
-    $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span></div><div class="grid g3">' +
-      '<div class="field span2"><span class="lbl">Suite roles</span><div class="row">' + roles.map(function (r) {
-        return '<label class="chip"><input type="checkbox" class="ufRole" value="' + r + '"' + (u.roles.indexOf(r) !== -1 ? ' checked' : '') + ' style="width:auto"> ' + r + '</label>';
+  /* ---------- "Kaam" — ek user ke liye sirf kaam chuno, baaki access apne aap set ---------- */
+  var JOBS = {
+    Admin:      { label: 'Admin',              hint: 'Sab kuch + Settings' },
+    Store:      { label: 'Store',              hint: 'Inward Entry + Inventory (IMS)' },
+    Purchase:   { label: 'Purchase',           hint: 'Store Orders (SOMS) + Inward Approvals' },
+    Production: { label: 'Production',         hint: 'Line Scan + Line Admin + Overview + Inventory' },
+    Dispatch:   { label: 'Dispatch',           hint: 'Line Scan → Dispatch' },
+    ErpOnly:    { label: 'Sales / Accounts',   hint: 'Sirf ERP' }
+  };
+  var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly'];
+  /** Saved access se "Kaam" wapas pehchano (table + form ke liye) */
+  function jobsOf(u) {
+    var r = u.roles || [];
+    if (r.indexOf('Admin') !== -1) return ['Admin'];
+    var j = [];
+    if (r.indexOf('Store') !== -1) j.push('Store');
+    if (u.somsRole === 'Purchase' || u.somsRole === 'Admin') j.push('Purchase');
+    if (r.indexOf('Production') !== -1) j.push('Production');
+    if (r.indexOf('Dispatch') !== -1) j.push('Dispatch');
+    if (!j.length) j.push('ErpOnly');
+    return j;
+  }
+  /** Chune hue Kaam → Suite roles + IMS role + SOMS role + PLT supervisor */
+  function accessFor(jobs) {
+    var has = function (k) { return jobs.indexOf(k) !== -1; };
+    if (has('Admin')) return { roles: ['Admin', 'Store', 'Approver', 'Dispatch', 'Production', 'Viewer'], imsRole: 'admin', somsRole: 'Admin', pltSup: true };
+    var roles = [];
+    if (has('Store')) roles.push('Store');
+    if (has('Production')) roles.push('Production');
+    if (has('Dispatch')) roles.push('Dispatch');
+    return {
+      roles: roles,
+      imsRole: has('Store') ? 'ajay' : (has('Production') ? 'sandeep' : ''),
+      somsRole: has('Purchase') ? 'Purchase' : '',
+      pltSup: has('Production')
+    };
+  }
+  function userForm(u) {
+    var cur = jobsOf(u);
+    $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span></div>' +
+      '<div class="field"><span class="lbl">Kaam (ek ya zyada chuno)</span><div class="grid g3">' + JOB_ORDER.map(function (k) {
+        return '<label class="chip" style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;cursor:pointer"><input type="checkbox" class="ufJob" value="' + k + '"' + (cur.indexOf(k) !== -1 ? ' checked' : '') + ' style="width:auto;margin-top:2px">' +
+          '<span><b>' + esc(JOBS[k].label) + '</b><br><span class="hint">' + esc(JOBS[k].hint) + '</span></span></label>';
       }).join('') + '</div></div>' +
-      '<div class="field"><label class="lbl" for="ufActive">Active</label><select id="ufActive"><option value="true">Yes</option><option value="false"' + (!u.active ? ' selected' : '') + '>No</option></select></div>' +
-      '<div class="field"><label class="lbl" for="ufIms">IMS role</label><select id="ufIms">' + opt(['', 'admin', 'ajay', 'sandeep'], u.imsRole, { '': 'No IMS access', admin: 'admin (Admin)', ajay: 'ajay (Store IN/OUT)', sandeep: 'sandeep (WIP / Dispatch)' }) + '</select></div>' +
-      '<div class="field"><label class="lbl" for="ufSoms">SOMS role</label><select id="ufSoms">' + opt(['', 'Admin', 'Purchase', 'Transport'], u.somsRole, { '': 'No SOMS access' }) + '</select></div>' +
-      '<div class="field"><label class="lbl" for="ufPlt">PLT supervisor</label><select id="ufPlt"><option value="false">No</option><option value="true"' + (u.pltSup ? ' selected' : '') + '>Yes</option></select></div>' +
-      '</div><div class="row" style="margin-top:14px"><button class="btn btn-primary" id="ufSave">Save</button><button class="btn btn-ghost" id="ufCancel">Cancel</button><span class="err" id="ufErr"></span></div></div>';
+      '<div class="field" style="max-width:220px;margin-top:12px"><label class="lbl" for="ufActive">Active</label><select id="ufActive"><option value="true">Yes</option><option value="false"' + (!u.active ? ' selected' : '') + '>No</option></select></div>' +
+      '<div class="row" style="margin-top:14px"><button class="btn btn-primary" id="ufSave">Save</button><button class="btn btn-ghost" id="ufCancel">Cancel</button><span class="err" id="ufErr"></span></div></div>';
+    var boxes = $$('.ufJob');
+    boxes.forEach(function (c) {
+      c.onchange = function () {   // Admin = sab kuch; "Sirf ERP" baaki ke saath nahi
+        if (!c.checked) return;
+        if (c.value === 'Admin' || c.value === 'ErpOnly') boxes.forEach(function (x) { if (x !== c) x.checked = false; });
+        else boxes.forEach(function (x) { if (x.value === 'Admin' || x.value === 'ErpOnly') x.checked = false; });
+      };
+    });
     $('#ufCancel').onclick = function () { $('#userForm').innerHTML = ''; };
     $('#ufSave').onclick = function () {
-      var btn = this;
+      var btn = this, jobs = boxes.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+      if (!jobs.length) { $('#ufErr').textContent = 'Kam se kam ek Kaam chuno'; return; }
+      var a = accessFor(jobs);
       busy(btn, true, 'Saving…');
-      api('ERP', 'suiteSaveUser', { username: u.username, active: $('#ufActive').value, imsRole: $('#ufIms').value, somsRole: $('#ufSoms').value, pltSup: $('#ufPlt').value,
-        roles: $$('.ufRole').filter(function (c) { return c.checked; }).map(function (c) { return c.value; }).join(',') })
-        .then(function () { toast('Saved. Changes apply at their next sign-in.', 'ok'); VIEWS.settings(); })
+      api('ERP', 'suiteSaveUser', { username: u.username, active: $('#ufActive').value, imsRole: a.imsRole, somsRole: a.somsRole, pltSup: String(a.pltSup), roles: a.roles.join(',') })
+        .then(function () { toast('Saved. User dobara login karega tab lagu hoga.', 'ok'); VIEWS.settings(); })
         .catch(function (e) { $('#ufErr').textContent = e.message; busy(btn, false); });
     };
     $('#userForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
