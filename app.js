@@ -120,7 +120,7 @@
   function navItems() {
     var u = S.user, s = S.sessions, M = SUITE.MODULES, items = [];
     if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });
-    if (has('Store')) items.push({ id: 'inward', sec: 'Automation', label: 'Inward Entry', ic: '⇩' });
+    // Inward Entry ab IMS ke Inward page me hai (SOMS approval ke saath)
     if (has('Approver')) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'dispatch', sec: 'Automation', label: 'Dispatch (manual)', ic: '⇨' });
     if (s.erp_user && s.erp_user.role) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
@@ -571,7 +571,7 @@
   /* ---------- "Kaam" — ek user ke liye sirf kaam chuno, baaki access apne aap set ---------- */
   var JOBS = {
     Admin:      { label: 'Admin',              hint: 'Sab kuch + Settings' },
-    Store:      { label: 'Store',              hint: 'Inward Entry + Inventory (IMS)' },
+    Store:      { label: 'Store',              hint: 'Inventory (IMS) — Inward, Outward, Indent' },
     Purchase:   { label: 'Purchase',           hint: 'Store Orders (SOMS) + Inward Approvals' },
     Production: { label: 'Production',         hint: 'Line Scan + Line Admin + Overview + Inventory' },
     Dispatch:   { label: 'Dispatch',           hint: 'Line Scan → Dispatch' },
