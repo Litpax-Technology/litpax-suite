@@ -11,7 +11,8 @@
 
   var cfg = {};
   try { cfg = JSON.parse(sessionStorage.getItem('suite_bridge') || '{}'); } catch (e) {}
-  var hide = cfg.hidePages || [];
+  // 'inward' ab nahi chhupta — IMS Inward khud approval (SOMS) ke through jaata hai
+  var hide = (cfg.hidePages || []).filter(function (p) { return p !== 'inward'; });
 
   function toSuite(type) {
     try { window.parent.postMessage({ source: 'litpax-suite', type: type }, location.origin); } catch (e) {}
