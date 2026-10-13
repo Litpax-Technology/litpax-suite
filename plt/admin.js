@@ -10,6 +10,7 @@ state = {
   sel: { station: {}, staff: {} },   // false = unchecked; missing = checked
   labels: [], labelModel: '', labelHall: '',        // serials currently laid out for printing
   labelPick: '', labelCellOpt: 'Main', labelBmsOpt: 'Main', modelsError: '',
+  labelPlans: [], labelPlan: '', labelPlansLoaded: false, labelPlansMsg: '',   // Litpax Suite: ERP plan → serial
   models: [], halls: [], stationRows: [],
   empFrom: '', empTo: '',            // custom date range on the Employees tab
   loading: true, connected: true, pending: 0, statusMsg: ''
@@ -60,6 +61,7 @@ function refreshAll() {
 function setTab(t) {
   state.tab = t; state.expandedPack = null; state.expandedEmp = null;
   if (t === 'manual' && state.sup) state.sup.loaded = false;
+  if (t === 'labels') state.labelPlansLoaded = false;
   render();
 }
 function setSearch(v) { state.search = v; renderContentOnly(); }
@@ -665,6 +667,43 @@ function setLabelHall(v) {
   renderContentOnly();
 }
 
+/* ---- ERP plan (Item ID) — chuna to model + qty usi se ---- */
+function loadLabelPlans() {
+  if (state.labelPlansLoaded) return;
+  state.labelPlansLoaded = true;
+  if (!state.sup || !state.sup.token) {
+    state.labelPlansMsg = 'ERP plan list ke liye pehle "Manual Entry" tab me supervisor login karo (Suite se khola ho to apne aap hota hai).';
+    return;
+  }
+  state.labelPlansMsg = 'Loading ERP plans...';
+  call('labelPlans', { token: state.sup.token }).then(function (r) {
+    state.labelPlans = r.plans || [];
+    state.labelPlansMsg = state.labelPlans.length ? '' : 'ERP me koi pending plan nahi (sab ke label ban chuke).';
+    if (state.tab === 'labels') renderContentOnly();
+  }, function (err) {
+    state.labelPlansMsg = 'Plans load nahi hue: ' + err.message;
+    if (state.tab === 'labels') renderContentOnly();
+  });
+}
+function labelPlanObj() {
+  return state.labelPlans.filter(function (x) { return x.key === state.labelPlan; })[0] || null;
+}
+function normModelJs(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function setLabelPlan(key) {
+  state.labelPlan = key;
+  var pl = labelPlanObj();
+  if (pl) {
+    var m = state.models.filter(function (x) { return normModelJs(x.name) === normModelJs(pl.model); })[0];
+    if (!m) { alert('Plan ka model "' + pl.model + '" Master Sheet me (Active + BOM ke saath) nahi mila.'); state.labelPlan = ''; }
+    else {
+      state.labelPick = m.code;
+      if (m.category) state.labelHall = m.category;
+      state.labelCellOpt = 'Main'; state.labelBmsOpt = 'Main';
+    }
+  }
+  renderContentOnly();
+}
+
 function setLabelModel(v) {
   state.labelPick = v;
   state.labelCellOpt = 'Main';
@@ -695,7 +734,11 @@ function generateSerials() {
   var btn = document.getElementById('genBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
 
-  call('newSerials', { qty: qty, model: model, hall: hall, cellOpt: cellOpt, bmsOpt: bmsOpt }).then(function (res) {
+  var pl = labelPlanObj();
+  if (pl && qty > pl.remaining) { alert('Is plan me sirf ' + pl.remaining + ' battery ke label aur ban sakte hain.'); if (btn) { btn.disabled = false; btn.textContent = 'Generate serials'; } return; }
+  call('newSerials', { qty: qty, model: model, hall: hall, cellOpt: cellOpt, bmsOpt: bmsOpt,
+    planKey: pl ? pl.key : '', token: pl ? state.sup.token : '' }).then(function (res) {
+    state.labelPlan = ''; state.labelPlansLoaded = false;
     state.labels = res.serials || [];
     state.labelModel = res.model || '';
     state.labelCellOpt = 'Main';
@@ -719,6 +762,8 @@ function loadReprint() {
 function clearLabels() { state.labels = []; renderContentOnly(); }
 
 function renderLabels() {
+  loadLabelPlans();
+  var plan = labelPlanObj();
   var w = CONFIG.LABEL_WIDTH_MM || 50;
   var h = CONFIG.LABEL_HEIGHT_MM || 25;
   var selModel = null;
@@ -735,7 +780,7 @@ function renderLabels() {
     var hopts = '<option value="">-- hall chuno --</option>' + hallList.map(function (hn) {
       return '<option value="' + esc(hn) + '"' + (state.labelHall === hn ? ' selected' : '') + '>' + esc(hn) + '</option>';
     }).join('');
-    hallField = '<div class="field"><label>Hall</label><select id="labelHall" onchange="setLabelHall(this.value)">' +
+    hallField = '<div class="field"><label>Hall</label><select id="labelHall" onchange="setLabelHall(this.value)"' + (plan ? ' disabled' : '') + '>' +
                 hopts + '</select></div>';
   }
 
@@ -750,7 +795,7 @@ function renderLabels() {
              esc(m.name) + ' (' + esc(m.code) + ')</option>';
     }).join('');
     modelField = hallField +
-                 '<div class="field"><label>Model</label><select id="labelModel" onchange="setLabelModel(this.value)">' +
+                 '<div class="field"><label>Model</label><select id="labelModel" onchange="setLabelModel(this.value)"' + (plan ? ' disabled' : '') + '>' +
                  opts + '</select></div>';
   } else {
     modelField = '<div class="field"><label>Model</label>' +
@@ -775,13 +820,25 @@ function renderLabels() {
   var bmsField = '<div class="field"><label>BMS used</label>' +
     optSelect('labelBmsOpt', selModel ? (selModel.bmsOptions || []) : [], state.labelBmsOpt, 'BMS', false) + '</div>';
 
+  // ERP plan (Item ID) — isse serial usi order item se juda paida hota hai
+  var planOpts = '<option value="">-- bina plan ke (stock ke liye) --</option>' + state.labelPlans.map(function (x) {
+    return '<option value="' + esc(x.key) + '"' + (state.labelPlan === x.key ? ' selected' : '') + '>' +
+      esc(x.date + ' · ' + x.planId + ' · ' + x.itemId + ' · ' + x.customer + ' · ' + x.model + ' · ' + x.remaining + ' bache') + '</option>';
+  }).join('');
+  var planField = '<div class="field" style="flex:2 1 420px;"><label>ERP Plan / Item ID</label>' +
+    '<select id="labelPlan" onchange="setLabelPlan(this.value)">' + planOpts + '</select>' +
+    (state.labelPlansMsg ? '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">' + esc(state.labelPlansMsg) + '</div>' : '') +
+    (plan ? '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Order ' + esc(plan.orderId) + ' · Planned ' + plan.planned +
+      ' · Label ban chuke ' + plan.labelled + '. In serials ka scan isi Item ID ki production me ginega.</div>' : '') + '</div>';
+
   var head = '<div class="panel"><div class="panel-title">New battery labels</div>' +
     '<p style="color:var(--text-muted);font-size:13.5px;margin-top:-6px;">Model, Cells aur BMS <b>Master Sheet</b> se aate hain. ' +
     'Normal me <b>Main</b> rakho; Main stock me na ho to <b>Backup</b> chuno. Jo chuna, wahi har serial ke saath save hota hai.</p>' +
+    '<div class="row" style="max-width:960px;">' + planField + '</div>' +
     '<div class="row" style="max-width:960px;">' +
       modelField + cellField + bmsField +
       '<div class="field"><label>How many batteries</label>' +
-      '<input id="labelQty" type="number" min="1" max="200" value="10" ' +
+      '<input id="labelQty" type="number" min="1" max="200" value="' + (plan ? Math.min(200, plan.remaining) : 10) + '" ' +
       'onkeydown="if(event.key===\'Enter\') generateSerials();"></div>' +
     '</div>' +
     '<div style="margin-top:10px;"><button class="btn" id="genBtn" onclick="generateSerials()"' +
