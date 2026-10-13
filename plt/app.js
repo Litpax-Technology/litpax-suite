@@ -7,8 +7,12 @@ state = {
   stationEmp: {}, manualStation: '',   // per-station employee; manual station for prefix-less scans
   lastScan: null, recentScans: [],
   sessionCount: {},                    // "station||empId" -> scans this session (no cap)
-  loading: true, connected: true, pending: 0, statusMsg: ''
+  loading: true, connected: true, pending: 0, statusMsg: '',
+  mode: 'scan',                         // 'scan' = production line, 'dispatch' = dispatch station
+  dsp: { token: '', transport: '', lr: '', vehicle: '', driver: '', list: [], busy: false, checking: 0, last: null }
 };
+try { state.dsp.token = sessionStorage.getItem('plt_sup') || ''; } catch (e) {}
+try { if (new URLSearchParams(window.location.search).get('mode') === 'dispatch') state.mode = 'dispatch'; } catch (e) {}
 
 (function () {
   try {
@@ -298,6 +302,122 @@ function manualOperator(v) {
   if (emp) { state.stationEmp[st] = emp; render(); }
 }
 
+/* ---------------- Dispatch station ---------------- */
+
+function setMode(m) { state.mode = m; render(); }
+
+function dspLogin() {
+  var el = document.getElementById('dspPin');
+  var pin = el ? el.value.trim() : '';
+  if (!pin) { alert('Supervisor PIN daalo'); return; }
+  call('supLogin', { pin: pin }).then(function (res) {
+    state.dsp.token = res.token;
+    try { sessionStorage.setItem('plt_sup', res.token); } catch (e) {}
+    render();
+  }, function (err) { alert(err.message); });
+}
+
+function dspField(k, v) { state.dsp[k] = v; }
+
+function dspScan(raw) {
+  var serial = splitScan(raw).rest;
+  serial = String(serial || '').trim();
+  if (!serial) return;
+  var d = state.dsp;
+  if (!d.transport.trim() || !d.lr.trim()) {
+    flash('flash-error'); beep(false);
+    alert('Pehle Transport aur LR / Bilty No bharo, phir battery scan karo.');
+    return;
+  }
+  if (d.list.some(function (x) { return x.serial.toUpperCase() === serial.toUpperCase(); })) {
+    flash('flash-error'); beep(false); d.last = { err: serial + ' pehle hi scan ho chuki' }; render(); return;
+  }
+  d.checking++; render();
+  call('dispatchCheck', { token: d.token, serial: serial }).then(function (r) {
+    d.checking--;
+    d.list.push(r); d.last = { ok: r.serial + ' · ' + r.customer + ' · ' + r.itemId };
+    flash('flash'); beep(true); render();
+  }, function (err) {
+    d.checking--;
+    if (/login|session/i.test(err.message)) { d.token = ''; try { sessionStorage.removeItem('plt_sup'); } catch (e) {} }
+    d.last = { err: err.message };
+    flash('flash-error'); beep(false); render();
+  });
+}
+
+function dspRemove(i) { state.dsp.list.splice(i, 1); render(); }
+
+function dspSubmit() {
+  var d = state.dsp;
+  if (!d.list.length) { alert('Koi battery scan nahi hui'); return; }
+  if (!d.transport.trim() || !d.lr.trim()) { alert('Transport aur LR / Bilty No zaroori hai'); return; }
+  var groups = {};
+  d.list.forEach(function (x) { (groups[x.itemId] = groups[x.itemId] || []).push(x); });
+  var over = Object.keys(groups).filter(function (k) { var g = groups[k]; return g[0].qty && g[0].dispatched + g.length > g[0].qty; });
+  var msg = d.list.length + ' battery dispatch karein?\n\n' + Object.keys(groups).map(function (k) {
+    var g = groups[k]; return g[0].customer + ' · ' + k + ' · ' + g.length;
+  }).join('\n') + (over.length ? '\n\n⚠ Order qty se zyada: ' + over.join(', ') : '');
+  if (!confirm(msg)) return;
+  d.busy = true; render();
+  call('dispatchBatch', { token: d.token, serials: d.list.map(function (x) { return x.serial; }).join(','),
+    transport: d.transport, lr: d.lr, vehicle: d.vehicle, driver: d.driver }).then(function (r) {
+    d.busy = false;
+    var bad = (r.results || []).filter(function (x) { return !x.ok; });
+    var good = (r.results || []).filter(function (x) { return x.ok; });
+    var okSet = {}; good.forEach(function (g) { okSet[g.itemId] = true; });
+    d.list = d.list.filter(function (x) { return !okSet[x.itemId]; });
+    if (!bad.length) { d.lr = ''; d.vehicle = ''; d.driver = ''; }
+    alert((good.length ? good.map(function (g) { return '✓ ' + g.itemId + ': ' + g.count + ' dispatched (' + g.erp + ')'; }).join('\n') : '') +
+          (bad.length ? '\n\n✗ ' + bad.map(function (b) { return b.itemId + ': ' + b.error; }).join('\n✗ ') : ''));
+    render();
+  }, function (err) { d.busy = false; alert('Dispatch nahi hua: ' + err.message); render(); });
+}
+
+function renderDispatch() {
+  var d = state.dsp;
+  if (!d.token) {
+    return '<div class="panel"><div class="panel-title">Dispatch station</div>' +
+      '<p style="color:var(--text-muted);font-size:13.5px;margin-top:-6px;">Dispatch ke liye Supervisor PIN chahiye.</p>' +
+      '<div class="row" style="max-width:420px;"><div class="field"><label>Supervisor PIN</label>' +
+      '<input id="dspPin" type="password" onkeydown="if(event.key===\'Enter\')dspLogin()"></div></div>' +
+      '<div style="margin-top:10px;"><button class="btn" onclick="dspLogin()">Login</button></div></div>';
+  }
+  var inp = function (k, label, req) {
+    return '<div class="field"><label>' + label + (req ? ' *' : '') + '</label><input value="' + esc(d[k]) + '" oninput="dspField(\'' + k + '\', this.value)"></div>';
+  };
+  var groups = {}, order = [];
+  d.list.forEach(function (x, i) { if (!groups[x.itemId]) { groups[x.itemId] = []; order.push(x.itemId); } groups[x.itemId].push({ x: x, i: i }); });
+  var grpHtml = order.map(function (k) {
+    var g = groups[k], f = g[0].x;
+    return '<div class="panel" style="margin-bottom:12px;"><div class="panel-title">' + esc(f.customer) + ' · ' + esc(f.model) +
+      ' · Order ' + esc(f.orderId) + ' · Item ' + esc(k) + ' · ' + g.length + ' scanned (pehle ' + f.dispatched + ' / ' + f.qty + ')</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + g.map(function (o) {
+        return '<span class="mono" style="background:var(--accent-soft);padding:4px 8px;border-radius:6px;font-size:12.5px;">' + esc(o.x.serial) +
+          ' <a href="javascript:void 0" onclick="dspRemove(' + o.i + ')" style="text-decoration:none;color:var(--text-muted);">×</a></span>';
+      }).join('') + '</div></div>';
+  }).join('');
+  var last = d.last ? (d.last.err
+      ? '<div style="margin-top:10px;color:var(--bad);font-weight:600;">✗ ' + esc(d.last.err) + '</div>'
+      : '<div style="margin-top:10px;color:var(--ok);font-weight:600;">✓ ' + esc(d.last.ok) + '</div>') : '';
+  return '<div class="panel"><div class="panel-title">Dispatch details</div>' +
+      '<div class="row">' + inp('transport', 'Transport', true) + inp('lr', 'LR / Bilty No', true) + inp('vehicle', 'Vehicle No') + inp('driver', 'Driver No') + '</div></div>' +
+    '<div class="panel scan-panel"><div class="scan-box" id="scanBox">' +
+      '<input id="dispatchScan" type="text" placeholder="Dispatch: battery scan karo" autocomplete="off" ' +
+      'onkeydown="if(event.key===\'Enter\'){dspScan(this.value); this.value=\'\';}">' +
+      '<div class="scan-hint">Har battery scan karo. Sab scan ho jaaye to neeche Dispatch dabao — ERP aur IMS dono update honge.</div>' +
+      '<div class="scan-readout">' + d.list.length + ' scanned' + (d.checking ? ' · checking...' : '') + '</div>' +
+    '</div>' + last + '</div>' +
+    (order.length ? grpHtml : '<div class="panel"><div class="empty">Abhi koi battery scan nahi hui.</div></div>') +
+    '<div style="margin:6px 0 30px;"><button class="btn" onclick="dspSubmit()"' + (d.busy || !d.list.length ? ' disabled' : '') + '>' +
+      (d.busy ? 'Dispatching...' : 'Dispatch ' + d.list.length + ' batteries') + '</button></div>';
+}
+
+function renderModeTabs() {
+  return '<div class="tabs">' +
+    '<button class="tab' + (state.mode === 'scan' ? ' active' : '') + '" onclick="setMode(\'scan\')">Production scan</button>' +
+    '<button class="tab' + (state.mode === 'dispatch' ? ' active' : '') + '" onclick="setMode(\'dispatch\')">Dispatch</button></div>';
+}
+
 /* ---------------- Render ---------------- */
 
 function renderContextBar() {
@@ -417,7 +537,13 @@ function render() {
     return;
   }
 
-  content.innerHTML = renderScan();
+  if (state.mode === 'dispatch') {
+    content.innerHTML = renderModeTabs() + renderDispatch();
+    var di = document.getElementById('dispatchScan') || document.getElementById('dspPin');
+    if (di) di.focus();
+    return;
+  }
+  content.innerHTML = renderModeTabs() + renderScan();
   var input = document.getElementById('universalScan');
   if (input) input.focus();
 }
@@ -430,7 +556,7 @@ loadAll();
 // A scanner types wherever the focus is, so keep the scan box focused.
 document.addEventListener('click', function () {
   setTimeout(function () {
-    var el = document.getElementById('universalScan');
+    var el = document.getElementById(state.mode === 'dispatch' ? 'dispatchScan' : 'universalScan');
     var a = document.activeElement;
     if (el && a && a.tagName !== 'SELECT' && a.tagName !== 'INPUT') el.focus();
   }, 50);
