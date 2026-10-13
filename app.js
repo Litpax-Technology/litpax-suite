@@ -125,7 +125,7 @@
     if (has('Store')) items.push({ id: 'inward', sec: 'Automation', label: 'Inward Entry', ic: '⇩' });
     if (has('Approver')) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'dispatch', sec: 'Automation', label: 'Dispatch (manual)', ic: '⇨' });
-    if (s.erp_user) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
+    if (s.erp_user && s.erp_user.role) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
     if (s.ims) items.push({ id: 'm-ims', sec: 'Apps', label: M.ims.label, ic: '▦', mod: 'ims' });
     if (has('Production') || has('Dispatch') || u.pltSup) items.push({ id: 'm-pltScan', sec: 'Apps', label: M.pltScan.label, ic: '⌁', mod: 'pltScan' });
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
@@ -576,7 +576,7 @@
     Purchase:   { label: 'Purchase',           hint: 'Store Orders (SOMS) + Inward Approvals' },
     Production: { label: 'Production',         hint: 'Line Scan + Line Admin + Overview + Inventory' },
     Dispatch:   { label: 'Dispatch',           hint: 'Line Scan → Dispatch' },
-    ErpOnly:    { label: 'Sales / Accounts',   hint: 'Sirf ERP' }
+    ErpOnly:    { label: 'Sirf ERP',           hint: 'Sales / Accounts / CRM — ERP ka page sheet ke Role column se' }
   };
   var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly'];
   /** Saved access se "Kaam" wapas pehchano (table + form ke liye) */
