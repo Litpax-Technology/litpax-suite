@@ -253,11 +253,24 @@ function commitScan(code, station, emp) {
     hall: state.hall
   }).then(function () {
     entry.synced = true; render();
+    kickAutomation();
   }, function (err) {
     entry.failed = true; render();
     alert('Not saved: ' + err.message + '\n\nBattery: ' + code +
           '\nUse Retry held scans once the connection is back.');
   });
+}
+
+/* Scan save hone ke baad ERP / IMS update turant chalao (background, worker ko wait nahi).
+   Lagatar scans → 4s ruk ke ek hi baar; 20s me max ek kick. Timer (1 min) backup hai. */
+var _kickTimer = null, _kickLast = 0;
+function kickAutomation() {
+  clearTimeout(_kickTimer);
+  _kickTimer = setTimeout(function () {
+    if (Date.now() - _kickLast < 20000) { _kickTimer = setTimeout(kickAutomation, 20000); return; }
+    _kickLast = Date.now();
+    jsonp({ action: 'kick' }).then(function () {}, function () {});   // jawab ka wait / error dono ignore
+  }, 4000);
 }
 
 function failedList() {
@@ -283,6 +296,7 @@ function retryFailed() {
   });
   chain.then(function () {
     render();
+    kickAutomation();
     var left = failedList().length;
     alert(left ? (left + ' scan(s) still failing.') : 'All held scans saved.');
   });
