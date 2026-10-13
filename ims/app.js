@@ -510,12 +510,12 @@ async function loadInwardPO() {
     const r = await api('suitePendingPO', { token: suiteTok() });
     _inLines = r.lines || [];
     if (!_inLines.length) {
-      sel.innerHTML = '<option value="">Inward ke liye kuch baaki nahi hai</option>';
-      document.getElementById('in-po-hint').textContent = 'Purchase jab SOMS → Receiving mein maal receive karega, tab wo yahan dikhega.';
+      sel.innerHTML = '<option value="">Nothing pending for inward</option>';
+      document.getElementById('in-po-hint').textContent = 'Orders appear here once Purchase receives the material in SOMS → Receiving.';
       return;
     }
-    sel.innerHTML = '<option value="">-- Order chuno --</option>' + _inLines.map((L, i) =>
-      `<option value="${i}">${htmlEnc(L.poId)} · ${htmlEnc(L.item)} · ${htmlEnc(L.supplier || '')} · inward baaki ${L.pendingQty} ${htmlEnc(L.unit || '')}</option>`).join('');
+    sel.innerHTML = '<option value="">-- Select order --</option>' + _inLines.map((L, i) =>
+      `<option value="${i}">${htmlEnc(L.poId)} · ${htmlEnc(L.item)} · ${htmlEnc(L.supplier || '')} · to inward: ${L.pendingQty} ${htmlEnc(L.unit || '')}</option>`).join('');
   } catch (e) { sel.innerHTML = '<option value="">Error</option>'; toast(e.message, 'err'); }
 }
 function selInwardPO() {
@@ -523,7 +523,7 @@ function selInwardPO() {
   _inLine = i === '' ? null : _inLines[Number(i)];
   const hint = document.getElementById('in-po-hint');
   if (!_inLine) { hint.textContent = ''; document.getElementById('in-stock-info').style.display = 'none'; return; }
-  hint.textContent = `Order ${_inLine.orderedQty} · Purchase ne receive kiya ${_inLine.somsReceived ?? _inLine.receivedQty} · Store inward kar chuka ${_inLine.inwarded || 0} · Ab inward kar sakte ho ${_inLine.pendingQty} ${_inLine.unit || ''}` + (_inLine.imsPo ? ` · IMS PO ${_inLine.imsPo}` : '');
+  hint.textContent = `Ordered ${_inLine.orderedQty} · Received by Purchase ${_inLine.somsReceived ?? _inLine.receivedQty} · Already sent by Store ${_inLine.inwarded || 0} · Available to inward ${_inLine.pendingQty} ${_inLine.unit || ''}` + (_inLine.imsPo ? ` · IMS PO ${_inLine.imsPo}` : '');
   document.getElementById('in-supplier').value = _inLine.supplier || '';
   document.getElementById('in-qty').value = _inLine.pendingQty;
   const sel = document.getElementById('in-item');
@@ -595,8 +595,8 @@ async function saveInward() {
   const date     = document.getElementById('in-date').value;
   const suiteRM  = suiteTok() && (document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material') === 'Raw Material';
   if (suiteRM) {
-    if (!_inLine) { toast('SOMS order chuno', 'err'); return; }
-    if (qty > _inLine.pendingQty) { toast(`Purchase ne sirf ${_inLine.pendingQty} ${_inLine.unit || ''} receive kiya hai jo inward baaki hai`, 'err'); return; }
+    if (!_inLine) { toast('Select a SOMS order', 'err'); return; }
+    if (qty > _inLine.pendingQty) { toast(`Only ${_inLine.pendingQty} ${_inLine.unit || ''} received by Purchase is available to inward`, 'err'); return; }
   }
   if (!itemName) { toast('Please select an item', 'err'); return; }
   if (!qty || qty <= 0) { toast('Enter a valid quantity', 'err'); return; }
@@ -626,7 +626,7 @@ async function saveInward() {
         token: suiteTok(), item: itemName, qty, poId: _inLine.poId, supplier: _inLine.supplier || '',
         invoice: invoiceVal, photos: photoIds.join(','), remarks: document.getElementById('in-remarks').value,
       });
-      toast(`Approval ke liye bheja ✓ (${r.id || ''}) — Purchase SOMS mein approve karega`, 'ok');
+      toast(`Sent for approval ✓ (${r.id || ''}). Purchase will approve it in SOMS.`, 'ok');
       closeM('inward-modal');
       loadInward();
       return;
@@ -647,7 +647,7 @@ async function saveInward() {
     loadInward();
     loadDash();
   } catch(e) { toast(e.message, 'err'); }
-  finally { btn.disabled = false; btn.textContent = (suiteTok() && (document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material') === 'Raw Material') ? 'Approval ke liye bhejo' : 'Save Inward'; }
+  finally { btn.disabled = false; btn.textContent = (suiteTok() && (document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material') === 'Raw Material') ? 'Send for Approval' : 'Save Inward'; }
 }
 
 function updInwardPurpose() {
@@ -659,14 +659,14 @@ function updInwardPurpose() {
   show('in-po-wrap', suiteRM);
   show('in-cat-wrap', !suiteRM);
   const sup = document.getElementById('in-supplier'); if (sup) sup.readOnly = suiteRM;
-  const btn = document.getElementById('in-btn'); if (btn) btn.textContent = suiteRM ? 'Approval ke liye bhejo' : 'Save Inward';
+  const btn = document.getElementById('in-btn'); if (btn) btn.textContent = suiteRM ? 'Send for Approval' : 'Save Inward';
   if (!suiteRM) {   // From Production → purana tareeka (category → item)
     _inLine = null;
     document.getElementById('in-cat').value = '';
     document.getElementById('in-item').innerHTML = '<option value="">-- Select Category first --</option>';
     document.getElementById('in-stock-info').style.display = 'none';
   } else if (!_inLine) {
-    document.getElementById('in-item').innerHTML = '<option value="">-- Upar se order chuno --</option>';
+    document.getElementById('in-item').innerHTML = '<option value="">-- Select an order above --</option>';
   }
 }
 
@@ -2388,10 +2388,10 @@ let _expandedPO = null;
 let _poTrack = {};   // Suite: IMS PO → SOMS status
 const PO_STAGE = {
   'Ordered':              { t: '🛒 Ordered',                 c: 'b-in'  },
-  'Received by Purchase': { t: '📦 Purchase ne receive kiya', c: 'b-dep' },
+  'Received by Purchase': { t: '📦 Received by Purchase', c: 'b-dep' },
   'Approval Pending':     { t: '📝 Approval pending',        c: 'b-dep' },
-  'Partly In Stock':      { t: '◐ Thoda stock mein',          c: 'b-dep' },
-  'In Stock':             { t: '✅ Stock mein aa gaya',       c: 'b-ok'  },
+  'Partly In Stock':      { t: '◐ Partly in stock',          c: 'b-dep' },
+  'In Stock':             { t: '✅ In stock',       c: 'b-ok'  },
 };
 
 // ── LOAD POs ──
@@ -2403,7 +2403,7 @@ async function loadIndents() {
     _pos = await api('getPOs', body);
     renderPOs();
     if (suiteTok()) {   // SOMS order / receiving / stock status
-      try { _poTrack = (await api('suitePoTrack', { token: suiteTok() })).track || {}; renderPOs(); } catch (e) { console.warn(e); }
+      try { _poTrack = (await api('suitePoTrack', { token: suiteTok() })).track || {}; renderPOs(); } catch (e) { toast('Could not load SOMS status: ' + e.message, 'err'); }
     }
   } catch(e) { toast(e.message, 'err'); }
 }
@@ -2430,9 +2430,9 @@ function renderPOs() {
       ? `<span class="badge ${stage.c}">${stage.t}</span>
          <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">
            SOMS: <span style="font-family:var(--mono);">${htmlEnc(T.orders.join(', '))}</span><br>
-           Order ${T.ordered} · Purchase recv ${T.somsReceived} · Stock ${T.inStock}${T.waiting ? ` · Approval ${T.waiting}` : ''}
+           Ordered ${T.ordered} · Received ${T.somsReceived} · In stock ${T.inStock}${T.waiting ? ` · Awaiting approval ${T.waiting}` : ''}
          </div>`
-      : (suiteTok() && po.status === 'Pending' ? `<span class="badge b-in">⏳ Order baaki (SOMS)</span>` : `<span class="badge ${stColor}">${po.status}</span>`);
+      : (suiteTok() && po.status === 'Pending' ? `<span class="badge b-in">⏳ Not ordered yet (SOMS)</span>` : `<span class="badge ${stColor}">${po.status}</span>`);
     return `
       <tr style="cursor:pointer;" onclick="togglePOExpand('${po.poId}')">
         <td style="font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700;">${po.poId}</td>
