@@ -110,8 +110,6 @@
     $('#loginScreen').classList.add('hidden');
     $('#appShell').classList.remove('hidden');
     $('#userName').textContent = S.user.name;
-    $('#userRoles').textContent = S.user.roles.join(', ') || 'No suite role';
-    $('#userAvatar').textContent = (S.user.name || 'U').charAt(0).toUpperCase();
     buildNav();
     var want = location.hash.replace('#', '');
     go(navItems().some(function (n) { return n.id === want; }) ? want : (navItems()[0] || {}).id);
@@ -136,13 +134,15 @@
   function buildNav() {
     var html = '', sec = '';
     navItems().forEach(function (n) {
-      if (n.sec !== sec) { sec = n.sec; html += '<div class="nav-sec">' + esc(sec) + '</div>'; }
       html += '<div class="nav-item" data-id="' + n.id + '"><span class="nav-ic">' + n.ic + '</span><span>' + esc(n.label) + '</span>' +
         (n.badge ? '<span class="badge hidden" id="aprBadge">0</span>' : '') + '</div>';
     });
-    if (!html) html = '<div class="nav-sec">No access assigned. Ask the Admin.</div>';
+    if (!html) html = '<div class="nav-empty">Koi access nahi hai. Admin se bolo.</div>';
     $('#nav').innerHTML = html;
-    $$('.nav-item').forEach(function (el) { el.addEventListener('click', function () { go(el.dataset.id); closeMenu(); }); });
+    $$('.nav-item').forEach(function (el) { el.addEventListener('click', function () { go(el.dataset.id); }); });
+    // sirf ek app (jaise Purchase → Store Orders) → top bar bhi nahi; logout us app ke apne sidebar se
+    var items = navItems();
+    $('#appShell').classList.toggle('solo', items.length === 1 && !!items[0].mod);
   }
   function go(id) {
     if (!id) return;
@@ -151,7 +151,7 @@
     S.view = id;
     history.replaceState(null, '', '#' + id);
     $$('.nav-item').forEach(function (el) { el.classList.toggle('active', el.dataset.id === id); });
-    $('#pageTitle').textContent = n.label;
+    document.title = n.label + ' · Litpax Suite';
     $$('.view').forEach(function (v) { v.classList.add('hidden'); });
     Object.keys(S.frames).forEach(function (k) { S.frames[k].classList.add('hidden'); });
     if (n.mod) {
@@ -177,7 +177,6 @@
     if (n.mod && S.frames[n.mod]) S.frames[n.mod].src = SUITE.MODULES[n.mod].path;
     else if (!n.mod) VIEWS[n.id]();
   }
-  function closeMenu() { $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show'); }
 
   function refreshBadge() {
     if (!has('Approver')) return;
@@ -645,8 +644,6 @@
     $('#userInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#pinInput').focus(); });
     $('#logoutBtn').onclick = function () { if (confirm('Sign out of all apps?')) signOut(); };
     $('#reloadBtn').onclick = reloadCurrent;
-    $('#menuBtn').onclick = function () { $('#sidebar').classList.add('open'); $('#overlay').classList.add('show'); };
-    $('#overlay').onclick = closeMenu;
     // module iframes se logout message
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
