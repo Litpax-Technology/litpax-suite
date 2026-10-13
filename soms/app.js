@@ -12,7 +12,7 @@ const State = {
 };
 
 /* ---------- JSONP ---------- */
-const NO_ALL = ['getAll','login','getIMSPendingPOs','addNote','setNoteStatus'];
+const NO_ALL = ['getAll','login','getIMSPendingPOs','addNote','setNoteStatus','inwardApprovals'];
 function api(params){
   return new Promise((resolve, reject)=>{
     if(!CONFIG.API_URL || CONFIG.API_URL.indexOf('PASTE_') === 0){
@@ -128,6 +128,7 @@ async function doLogin(){
     $('#userRole').textContent = u.Role;
     $('#userAvatar').textContent = (u.Name||'A').charAt(0).toUpperCase();
     await loadAll();
+    if(allowedViews().includes('inward')) api({action:'inwardApprovals',status:'Pending'}).then(l=>setInwardBadge((l||[]).length)).catch(()=>{});
     applyRoleNav();
     switchView(allowedViews()[0] || 'dashboard');
     loadIMSPOsBackground();
@@ -148,6 +149,7 @@ async function resumeSession(u){
   $('#userAvatar').textContent = (u.Name||'A').charAt(0).toUpperCase();
   try{
     await loadAll();
+    if(allowedViews().includes('inward')) api({action:'inwardApprovals',status:'Pending'}).then(l=>setInwardBadge((l||[]).length)).catch(()=>{});
     applyRoleNav();
     switchView(allowedViews()[0] || 'dashboard');
     loadIMSPOsBackground();
@@ -196,10 +198,10 @@ async function refresh(){
 /* =========================================================
  *  ROUTER
  * ========================================================= */
-const TITLES = {dashboard:'Dashboard',orders:'Orders',receiving:'Receiving',followups:'Follow-ups',vendors:'Vendors',masters:'Masters',imspo:'From IMS',transport:'Consignments',tracking:'Tracking',freight:'Freight'};
+const TITLES = {dashboard:'Dashboard',orders:'Orders',inward:'Inward Approvals',receiving:'Receiving',followups:'Follow-ups',vendors:'Vendors',masters:'Masters',imspo:'From IMS',transport:'Consignments',tracking:'Tracking',freight:'Freight'};
 const ROLE_VIEWS = {
-  Admin:     ['dashboard','orders','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
-  Purchase:  ['dashboard','orders','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
+  Admin:     ['dashboard','orders','inward','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
+  Purchase:  ['dashboard','orders','inward','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
   Transport: ['transport','tracking','freight']
 };
 function allowedViews(){ const r=State.user&&State.user.Role; return ROLE_VIEWS[r] || ROLE_VIEWS.Admin; }
@@ -234,7 +236,7 @@ function switchView(v){
 function render(){
   const root = $('#viewRoot');
   root.style.animation='none'; void root.offsetWidth; root.style.animation='fadeIn .35s ease';
-  ({dashboard:renderDashboard,orders:renderOrders,receiving:renderReceiving,followups:renderFollowups,vendors:renderVendors,masters:renderMasters,imspo:renderIMSPOs,transport:renderTransport,tracking:renderTracking,freight:renderFreight}[State.view])();
+  ({dashboard:renderDashboard,orders:renderOrders,inward:renderInward,receiving:renderReceiving,followups:renderFollowups,vendors:renderVendors,masters:renderMasters,imspo:renderIMSPOs,transport:renderTransport,tracking:renderTracking,freight:renderFreight}[State.view])();
 }
 
 /* =========================================================
@@ -841,6 +843,71 @@ function renderReceiving(){
         <td>${Number(r.RejectedQty)>0?`<span class="badge b-red">${esc(r.RejectedQty)}</span>`:'0'}</td>
         <td>${esc(r.ReceivedDate)}</td><td>${esc(r.ReceivedBy||'')}</td></tr>`).join('')}${capNote(full.length,8)}</tbody>
     </table></div>`:emptyState('No receiving records yet','')}</div></div>`;
+}
+
+/* =========================================================
+ *  INWARD APPROVALS — store ki inward entry (Litpax Suite) yahan approve
+ *  Approve → SOMS GRN + IMS stock + IMS requirement progress
+ * ========================================================= */
+let INW = { tab:'Pending', list:[], loading:false };
+function renderInward(){
+  $('#viewRoot').innerHTML = `
+    <div class="panel"><div class="panel-head"><h3>Store Inward Approvals</h3>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm ${INW.tab==='Pending'?'btn-primary':'btn-light'}" onclick="inwardTab('Pending')">Pending</button>
+        <button class="btn btn-sm ${INW.tab==='Done'?'btn-primary':'btn-light'}" onclick="inwardTab('Done')">History</button>
+        <button class="btn btn-sm btn-light" onclick="loadInward()">↻</button></div></div>
+    <div class="panel-body flush" id="inwardBody"><div class="empty">Loading…</div></div></div>`;
+  loadInward();
+}
+function inwardTab(t){ INW.tab=t; renderInward(); }
+async function loadInward(){
+  try{
+    const list = await api({ action:'inwardApprovals', status:INW.tab });
+    INW.list = list || [];
+    if(INW.tab==='Pending') setInwardBadge(INW.list.length);
+    if(State.view==='inward') drawInward();
+  }catch(e){ const b=$('#inwardBody'); if(b) b.innerHTML = emptyState('Could not load', esc(e.message)); }
+}
+function setInwardBadge(n){ const b=$('#inwardBadge'); if(!b) return; b.textContent=n; b.style.display = n ? '' : 'none'; }
+function drawInward(){
+  const box=$('#inwardBody'); if(!box) return;
+  if(!INW.list.length){ box.innerHTML = emptyState(INW.tab==='Pending'?'Nothing waiting for approval':'No history yet',''); return; }
+  box.innerHTML = INW.list.map(r=>{
+    const id = esc(r['Approval ID']); const pending = r.Status==='Pending';
+    const photos = String(r.Photos||'').split(',').filter(Boolean).map(p=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(p)}/view" target="_blank" rel="noopener"><img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(p)}&sz=w200" alt="Inward photo" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"></a>`).join('');
+    return `<div style="display:grid;grid-template-columns:1fr auto;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div>
+        <div class="row-strong" style="font-size:15px">${esc(r.Item)} · ${esc(r.Qty)} ${esc(r.Unit||'')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);margin-top:6px">
+          <span>${id}</span><span>By <b>${esc(r['Raised By'])}</b></span><span>${esc(r['Raised At'])}</span>
+          ${r['PO ID']?`<span>Order <b>${esc(r['PO ID'])}</b></span>`:'<span><span class="badge b-amber">Direct (no order)</span></span>'}
+          ${r.Supplier?`<span>Vendor <b>${esc(r.Supplier)}</b></span>`:''}${r.Invoice?`<span>Invoice <b>${esc(r.Invoice)}</b></span>`:''}
+          ${r['IMS PO']?`<span>IMS ${esc(r['IMS PO'])}</span>`:''}</div>
+        ${r.Remarks?`<div style="font-size:12.5px;margin-top:6px">${esc(r.Remarks)}</div>`:''}
+        ${photos?`<div style="display:flex;gap:8px;margin-top:10px">${photos}</div>`:''}
+        ${!pending?`<div style="font-size:12.5px;margin-top:8px">${statusBadge(r.Status)} by <b>${esc(r['Decided By'])}</b> ${esc(r['Decided At'])}
+          ${r['Accepted Qty']!==''?` · Accepted <b>${esc(r['Accepted Qty'])}</b>`:''} ${r['Decision Note']?' · '+esc(r['Decision Note']):''}
+          ${r.Result?`<div style="color:var(--muted);margin-top:4px">${esc(r.Result)}</div>`:''}</div>`:''}
+      </div>
+      ${pending?`<div style="display:flex;flex-direction:column;gap:8px;min-width:210px">
+        <div class="field"><label>Accepted qty</label><input type="number" min="0" step="any" id="inwAcc-${id}" value="${esc(r.Qty)}"></div>
+        <div class="field"><input id="inwNote-${id}" placeholder="Note (reject ke liye zaroori)"></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="inwardDecide('${id}','approve',this)">Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="inwardDecide('${id}','reject',this)">Reject</button></div></div>`:'<div></div>'}
+    </div>`;
+  }).join('');
+}
+async function inwardDecide(id, decision, btn){
+  const acc = $('#inwAcc-'+id), note = $('#inwNote-'+id);
+  if(decision==='reject' && !note.value.trim()){ toast('Reject ka reason likho','error'); note.focus(); return; }
+  if(decision==='approve' && !confirm(id+' approve karein? Stock IMS me judega aur GRN banega.')) return;
+  btn.disabled = true;
+  try{
+    const r = await api({ action:'inwardDecide', id, decision, acceptedQty: acc ? acc.value : '', note: note.value.trim() });
+    toast(id+': '+(r && r.status || 'Done'), 'success');
+    loadInward();
+  }catch(e){ toast(e.message,'error'); btn.disabled = false; }
 }
 
 /* =========================================================
