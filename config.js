@@ -7,7 +7,7 @@ window.SUITE = {
   ERP_URL:  'https://script.google.com/macros/s/AKfycbzWlaoqlVqbcI5ZaROZWqMuqX4f5fMAIYwr40TxawPspIsAk8fHcYYGJE3QoZ_XmdSK/exec',
   IMS_URL:  'https://script.google.com/macros/s/AKfycby_OhFNah2Ukzf61I_J471ZQ9W5hSTxXgnzNbWSHBH_-ULwPXgjHqjxvIpALub0QmDV8Q/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbzNmqmfYRE7g0pGmlsi-gqg1rIUslHPLqII3_YPA59860_T_tkQcyr4d7qtD3dseOxDLQ/exec',
-  SOMS_URL: 'https://script.google.com/macros/s/AKfycbyoB8-gS17yLA9kJSDh4-ZGqsZaTqge4rnKba5X982pcSWDMo3whKRDMxZztlRK5Y86cA/exec',
+  SOMS_URL: 'https://script.google.com/macros/s/AKfycbx910JnmnztoAz-kzXzqsBUAb75TFH1i0W2ViongxXrKSG3RQtyOwWaPmh8NC5Rw7Q_2g/exec',
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
