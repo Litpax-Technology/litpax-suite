@@ -137,7 +137,7 @@
       html += '<div class="nav-item" data-id="' + n.id + '"><span class="nav-ic">' + n.ic + '</span><span>' + esc(n.label) + '</span>' +
         (n.badge ? '<span class="badge hidden" id="aprBadge">0</span>' : '') + '</div>';
     });
-    if (!html) html = '<div class="nav-empty">Koi access nahi hai. Admin se bolo.</div>';
+    if (!html) html = '<div class="nav-empty">No access assigned. Please contact the Admin.</div>';
     $('#nav').innerHTML = html;
     $$('.nav-item').forEach(function (el) { el.addEventListener('click', function () { go(el.dataset.id); }); });
     // sirf ek app (jaise Purchase → Store Orders) → top bar bhi nahi; logout us app ke apne sidebar se
@@ -549,8 +549,8 @@
           var v = (L.urls || {})[a];
           return '<tr><td><b>' + a + '</b></td><td class="mono">' + (v ? esc(v) : '<span class="chip chip-bad">Not registered</span>') + '</td></tr>';
         }).join('') + '</tbody></table></div></div>' +
-        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">Naya user / password ERP mein banta hai. Yahan bas har user ka Kaam chuno → Save.</div></div></div>' +
-        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Kaam</th><th></th></tr></thead><tbody>' +
+        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">New users and passwords are created in ERP. Here, just pick each user&#39;s job and click Save.</div></div></div>' +
+        '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Job</th><th></th></tr></thead><tbody>' +
         U.users.map(function (u) {
           return '<tr><td><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.username) + '</div></td><td>' + (u.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') +
             '</td><td>' + jobsOf(u).map(function (j) { return '<span class="chip">' + esc(JOBS[j].label) + '</span>'; }).join(' ') +
@@ -570,12 +570,12 @@
   }
   /* ---------- "Kaam" — ek user ke liye sirf kaam chuno, baaki access apne aap set ---------- */
   var JOBS = {
-    Admin:      { label: 'Admin',              hint: 'Sab kuch + Settings' },
-    Store:      { label: 'Store',              hint: 'Inventory (IMS) — Inward, Outward, Indent' },
-    Purchase:   { label: 'Purchase',           hint: 'Store Orders (SOMS) + Inward Approvals' },
-    Production: { label: 'Production',         hint: 'Line Scan + Line Admin + Overview + Inventory' },
-    Dispatch:   { label: 'Dispatch',           hint: 'Line Scan → Dispatch' },
-    ErpOnly:    { label: 'Sirf ERP',           hint: 'Sales / Accounts / CRM — ERP ka page sheet ke Role column se' }
+    Admin:      { label: 'Admin',              hint: 'Everything + Settings' },
+    Store:      { label: 'Store',              hint: 'Inventory (IMS): Inward, Outward, Indent / PO' },
+    Purchase:   { label: 'Purchase',           hint: 'Store Orders (SOMS): Orders, Receiving, Inward Approvals' },
+    Production: { label: 'Production',         hint: 'Line Scan, Line Admin, Overview, Inventory' },
+    Dispatch:   { label: 'Dispatch',           hint: 'Line Scan: Dispatch station' },
+    ErpOnly:    { label: 'ERP only',           hint: 'Sales / Accounts / CRM (ERP page set by the Role column)' }
   };
   var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly'];
   /** Saved access se "Kaam" wapas pehchano (table + form ke liye) */
@@ -608,7 +608,7 @@
   function userForm(u) {
     var cur = jobsOf(u);
     $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span></div>' +
-      '<div class="field"><span class="lbl">Kaam (ek ya zyada chuno)</span><div class="grid g3">' + JOB_ORDER.map(function (k) {
+      '<div class="field"><span class="lbl">Job (pick one or more)</span><div class="grid g3">' + JOB_ORDER.map(function (k) {
         return '<label class="chip" style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;cursor:pointer"><input type="checkbox" class="ufJob" value="' + k + '"' + (cur.indexOf(k) !== -1 ? ' checked' : '') + ' style="width:auto;margin-top:2px">' +
           '<span><b>' + esc(JOBS[k].label) + '</b><br><span class="hint">' + esc(JOBS[k].hint) + '</span></span></label>';
       }).join('') + '</div></div>' +
@@ -625,11 +625,11 @@
     $('#ufCancel').onclick = function () { $('#userForm').innerHTML = ''; };
     $('#ufSave').onclick = function () {
       var btn = this, jobs = boxes.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
-      if (!jobs.length) { $('#ufErr').textContent = 'Kam se kam ek Kaam chuno'; return; }
+      if (!jobs.length) { $('#ufErr').textContent = 'Pick at least one job'; return; }
       var a = accessFor(jobs);
       busy(btn, true, 'Saving…');
       api('ERP', 'suiteSaveUser', { username: u.username, active: $('#ufActive').value, imsRole: a.imsRole, somsRole: a.somsRole, pltSup: String(a.pltSup), roles: a.roles.join(',') })
-        .then(function () { toast('Saved. User dobara login karega tab lagu hoga.', 'ok'); VIEWS.settings(); })
+        .then(function () { toast('Saved. Changes apply at the user\'s next sign-in.', 'ok'); VIEWS.settings(); })
         .catch(function (e) { $('#ufErr').textContent = e.message; busy(btn, false); });
     };
     $('#userForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
