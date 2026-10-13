@@ -33,8 +33,8 @@
       <label class="login-field-label">Select Role</label>
       <div class="role-grid" id="role-grid">
         <button class="role-btn" onclick="selectRole('admin')" id="role-admin"><div class="role-icon">👑</div><div class="role-name">Admin</div><div class="role-sub">Full Access</div></button>
-        <button class="role-btn" onclick="selectRole('ajay')" id="role-ajay"><div class="role-icon">📦</div><div class="role-name">Ajay</div><div class="role-sub">Store</div></button>
-        <button class="role-btn" onclick="selectRole('sandeep')" id="role-sandeep"><div class="role-icon">🏭</div><div class="role-name">Nishant</div><div class="role-sub">Production</div></button>
+        <button class="role-btn" onclick="selectRole('ajay')" id="role-ajay"><div class="role-icon">📦</div><div class="role-name">Store</div><div class="role-sub">IN / OUT</div></button>
+        <button class="role-btn" onclick="selectRole('sandeep')" id="role-sandeep"><div class="role-icon">🏭</div><div class="role-name">Production</div><div class="role-sub">WIP / Dispatch</div></button>
         <button class="role-btn" onclick="selectRole('purchase')" id="role-purchase"><div class="role-icon">🛒</div><div class="role-name">Purchase</div><div class="role-sub">Store Orders</div></button>
       </div>
            
@@ -164,7 +164,17 @@
           </div>
         </div>
       </div>
+      <!-- Suite: approval ke liye bheji entries (SOMS → Inward Approvals) -->
+      <div class="card" id="in-apr-card" style="display:none;margin-bottom:12px;">
+        <div class="ch"><h2>Approval status</h2><div class="ta"><button class="btn bg bsm" onclick="loadInwardApprovals()">↻ Refresh</button></div></div>
+        <div class="tw"><table>
+            <thead><tr><th>Sent</th><th>Item</th><th>Qty</th><th>SOMS Order</th><th>Invoice</th><th>Status</th><th>Accepted</th><th>Note</th></tr></thead>
+            <tbody id="in-apr-tb"></tbody>
+        </table></div>
+        <div id="in-apr-empty" class="empty" style="display:none"><div class="et">Abhi koi entry approval ke liye nahi bheji</div></div>
+      </div>
       <div class="card">
+        <div class="ch" id="in-stock-h" style="display:none"><h2>Stock mein aa chuka (approved)</h2></div>
         <div class="tw"><table>
             <thead><tr><th>Date</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Supplier</th><th>Invoice/PO</th><th>By</th><th>Remarks</th><th>Photo</th></tr></thead>
             <tbody id="in-tb"><tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr></tbody>
@@ -229,7 +239,7 @@
       </div>
     </div>
 
-    <!-- RECEIVED FROM STORE (Sandeep) -->
+    <!-- RECEIVED FROM STORE (Production) -->
     <div class="page" id="page-received">
       <div class="tb">
         <div class="pt"><h1>📥 Received from Store</h1><p>Store se production mein aaya material</p></div>
@@ -553,7 +563,12 @@
     <div class="mh"><h2>📥 New Inward Entry</h2><button class="mclose" onclick="closeM('inward-modal')">✕</button></div>
     <div class="mb">
       <div class="fg">
-        <div class="fi full">
+        <div class="fi full" id="in-po-wrap" style="display:none">
+          <label class="inp-label">SOMS Order (jo maal aaya) *</label>
+          <select class="inp" id="in-po" onchange="selInwardPO()"><option value="">Loading…</option></select>
+          <div id="in-po-hint" style="font-size:11.5px;color:var(--muted);margin-top:4px;"></div>
+        </div>
+        <div class="fi full" id="in-cat-wrap">
           <label class="inp-label">Category *</label>
           <select class="inp cat-select" id="in-cat" onchange="filterInwardItems()">
             <option value="">-- Select Category --</option>
@@ -562,7 +577,7 @@
             <option>Consumables</option><option>Tools</option><option>Packaging</option>
           </select>
         </div>
-        <div class="fi full">
+        <div class="fi full" id="in-item-wrap">
           <label class="inp-label">Item *</label>
           <select class="inp" id="in-item" onchange="updInwardInfo()">
             <option value="">-- Select Category first --</option>
@@ -584,7 +599,7 @@
         </div>
         <div class="fi" id="in-supplier-wrap"><label class="inp-label">Supplier</label><input class="inp" id="in-supplier" placeholder="Supplier name"></div>
         <div class="fi"><label class="inp-label">Invoice / PO No.</label><input class="inp" id="in-invoice" placeholder="INV-001"></div>
-        <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="in-by" placeholder="Ajay"></div>
+        <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="in-by" placeholder="Name"></div>
         <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="in-remarks" placeholder="Optional"></div>
         <div class="fi full">
           <label class="inp-label">Stock Photo <span style="font-size:10px;color:var(--muted);">(optional — max 3)</span></label>
@@ -645,7 +660,7 @@
           </select>
         </div>
         <div class="fi"><label class="inp-label">Issued To</label><input class="inp" id="out-issuedto" placeholder="Person name"></div>
-        <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="out-by" placeholder="Ajay"></div>
+        <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="out-by" placeholder="Name"></div>
         <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="out-remarks" placeholder="Optional"></div>
       </div>
     </div>
@@ -688,7 +703,7 @@
           <div class="fi"><label class="inp-label">Date *</label><input class="inp" id="dis-date" type="date"></div>
           <div class="fi"><label class="inp-label">Dispatch To</label><input class="inp" id="dis-to" placeholder="Customer / Stock"></div>
           <div class="fi"><label class="inp-label">Order Ref</label><input class="inp" id="dis-ref" placeholder="ORD-001"></div>
-          <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="dis-by" placeholder="Sandeep"></div>
+          <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="dis-by" placeholder="Name"></div>
           <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="dis-remarks" placeholder="Optional"></div>
         </div>
         <div id="dis-preview"></div>
@@ -715,7 +730,7 @@
           <div class="fi"><label class="inp-label">Dispatch To * <span style="color:var(--red);">*</span></label><input class="inp" id="dd-to" placeholder="Customer name"></div>
           <div class="fi"><label class="inp-label">Invoice No.</label><input class="inp" id="dd-invoice" placeholder="INV-001"></div>
           <div class="fi"><label class="inp-label">Order Ref</label><input class="inp" id="dd-ref" placeholder="ORD-001"></div>
-          <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="dd-by" placeholder="Sandeep"></div>
+          <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="dd-by" placeholder="Name"></div>
           <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="dd-remarks" placeholder="Optional"></div>
         </div>
         <!-- Confirm summary -->
@@ -861,7 +876,7 @@
   <div class="fi"><label class="inp-label">Received Date 🔒</label><input class="inp" id="recv-m-date" type="date" readonly style="background:var(--s2);color:var(--muted);cursor:not-allowed;"></div>
         <div class="fi full"><label class="inp-label">Invoice No.</label><input class="inp" id="recv-invoice" placeholder="INV-001"></div>
         <div class="fi full"><label class="inp-label">Supplier / Party</label><input class="inp" id="recv-supplier" placeholder="Supplier name"></div>
-        <div class="fi full"><label class="inp-label">Recorded By</label><input class="inp" id="recv-by" placeholder="Ajay"></div>
+        <div class="fi full"><label class="inp-label">Recorded By</label><input class="inp" id="recv-by" placeholder="Name"></div>
       </div>
     </div>
     <div class="mf"><button class="btn bg" onclick="closeM('receive-modal')">Cancel</button><button class="btn bgn" id="recv-btn" onclick="confirmReceive()">Receive & Add to Stock</button></div>
