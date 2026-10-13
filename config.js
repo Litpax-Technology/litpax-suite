@@ -4,10 +4,10 @@
  * Har app ka GAS deploy karke uska /exec URL neeche paste karo. Bas.
  * ============================================================= */
 window.SUITE = {
-  ERP_URL:  'https://script.google.com/macros/s/AKfycbzWlaoqlVqbcI5ZaROZWqMuqX4f5fMAIYwr40TxawPspIsAk8fHcYYGJE3QoZ_XmdSK/exec',
-  IMS_URL:  'https://script.google.com/macros/s/AKfycby_OhFNah2Ukzf61I_J471ZQ9W5hSTxXgnzNbWSHBH_-ULwPXgjHqjxvIpALub0QmDV8Q/exec',
-  PLT_URL:  'https://script.google.com/macros/s/AKfycbzNmqmfYRE7g0pGmlsi-gqg1rIUslHPLqII3_YPA59860_T_tkQcyr4d7qtD3dseOxDLQ/exec',
-  SOMS_URL: 'https://script.google.com/macros/s/AKfycbx910JnmnztoAz-kzXzqsBUAb75TFH1i0W2ViongxXrKSG3RQtyOwWaPmh8NC5Rw7Q_2g/exec',
+  ERP_URL:  'https://script.google.com/macros/s/AKfycbw0ykKGTgVkJWuF4S-MPlJ3wUnvPDlwEber6-wd7cC6GjPJzEz7p45c2RjPim00RrGw/exec',
+  IMS_URL:  'https://script.google.com/macros/s/AKfycbwfBWF_w1xXiaZNr6M6GhQYnYTjUtJp0Z3LFkEabQpNDz9cBPkcwtj8KklepL_iKtamfQ/exec',
+  PLT_URL:  'https://script.google.com/macros/s/AKfycbwpZgAF_HliJw_Xeapq29PykpHKLCbIt7tLkjVcVLIUWrjDZAmO4JEPLIj7P0RSRUXTuQ/exec',
+  SOMS_URL: 'https://script.google.com/macros/s/AKfycbwA76zHs2JYZN_KWVW7Ddj6I5Edn_X_vwLA6ycBFElJ1RjsalW2qfOdbbu89GrlPPsupQ/exec',
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
