@@ -124,10 +124,10 @@
     if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });
     if (has('Store')) items.push({ id: 'inward', sec: 'Automation', label: 'Inward Entry', ic: '⇩' });
     if (has('Approver')) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
-    if (has('Dispatch')) items.push({ id: 'dispatch', sec: 'Automation', label: 'Serial Dispatch', ic: '⇨' });
+    if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'dispatch', sec: 'Automation', label: 'Dispatch (manual)', ic: '⇨' });
     if (s.erp_user) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
     if (s.ims) items.push({ id: 'm-ims', sec: 'Apps', label: M.ims.label, ic: '▦', mod: 'ims' });
-    if (has('Production') || u.pltSup) items.push({ id: 'm-pltScan', sec: 'Apps', label: M.pltScan.label, ic: '⌁', mod: 'pltScan' });
+    if (has('Production') || has('Dispatch') || u.pltSup) items.push({ id: 'm-pltScan', sec: 'Apps', label: M.pltScan.label, ic: '⌁', mod: 'pltScan' });
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
@@ -269,15 +269,15 @@
   }
 
   /* ---------- Inward entry (Store) ---------- */
-  var IN = { items: [], photos: [] };
+  var IN = { items: [], photos: [], lines: [] };
   VIEWS.inward = function () {
     var el = $('#view-inward');
     IN.photos = [];
     el.innerHTML = '<div class="wrap">' +
-      '<div class="card"><div class="card-h"><div><div class="card-t">New inward</div><div class="card-s">Goes to an approver first. Stock is added in IMS only after approval.</div></div></div>' +
+      '<div class="card"><div class="card-h"><div><div class="card-t">New inward</div><div class="card-s">Goes to Purchase (SOMS → Inward Approvals) first. Stock is added in IMS only after approval.</div></div></div>' +
       '<div class="card-b"><div class="grid g2">' +
       '<div class="field span2"><label class="lbl req" for="inItem">Item</label><input id="inItem" list="inItemList" placeholder="Search item…" autocomplete="off"><datalist id="inItemList"></datalist><div class="hint" id="inItemHint"></div></div>' +
-      '<div class="field"><label class="lbl" for="inPO">Against PO</label><select id="inPO"><option value="">No PO (direct inward)</option></select></div>' +
+      '<div class="field"><label class="lbl" for="inPO">Against SOMS order</label><select id="inPO"><option value="">No order (direct inward)</option></select><div class="hint" id="inPOHint"></div></div>' +
       '<div class="field"><label class="lbl req" for="inQty">Quantity received</label><input id="inQty" type="number" min="0" step="any" inputmode="decimal"></div>' +
       '<div class="field"><label class="lbl" for="inSupplier">Supplier</label><input id="inSupplier"></div>' +
       '<div class="field"><label class="lbl" id="inInvLbl" for="inInvoice">Invoice no.</label><input id="inInvoice"></div>' +
@@ -304,12 +304,14 @@
     var name = $('#inItem').value.trim(), it = IN.items.filter(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })[0];
     $('#inItemHint').textContent = it ? 'Unit: ' + (it.unit || '—') + ' · Category: ' + (it.cat || '—') : (name ? 'Pick an item from the list' : '');
     var sel = $('#inPO');
-    sel.innerHTML = '<option value="">No PO (direct inward)</option>';
+    sel.innerHTML = '<option value="">No order (direct inward)</option>';
+    IN.lines = [];
     if (!it) return syncPoUI();
     api('IMS', 'suitePendingPO', { item: it.name }).then(function (r) {
       var pos = r.lines;
-      sel.innerHTML = '<option value="">No PO (direct inward)</option>' + pos.map(function (p) {
-        return '<option value="' + esc(p.poId) + '" data-supplier="' + esc(p.supplier) + '">' + esc(p.poId + ' · ' + p.supplier + ' · ordered ' + p.orderedQty + ' ' + p.unit) + '</option>';
+      IN.lines = pos;
+      sel.innerHTML = '<option value="">No order (direct inward)</option>' + pos.map(function (p) {
+        return '<option value="' + esc(p.poId) + '" data-supplier="' + esc(p.supplier) + '">' + esc(p.poId + ' · ' + p.supplier + ' · pending ' + p.pendingQty + ' ' + p.unit) + '</option>';
       }).join('');
       if (pos.length === 1) { sel.value = pos[0].poId; }
       syncPoUI();
@@ -320,6 +322,8 @@
     $('#inInvLbl').classList.toggle('req', !po);
     $('#inPhotoLbl').classList.toggle('req', !po);
     if (po && opt && opt.dataset.supplier && !$('#inSupplier').value) $('#inSupplier').value = opt.dataset.supplier;
+    var L = (IN.lines || []).filter(function (x) { return x.poId === po; })[0];
+    $('#inPOHint').textContent = L ? ('Ordered ' + L.orderedQty + ' · already received ' + L.receivedQty + ' · pending ' + L.pendingQty + ' ' + L.unit + (L.imsPo ? ' · IMS ' + L.imsPo : '')) : '';
   }
   function addPhoto(ev) {
     var f = ev.target.files && ev.target.files[0];
@@ -358,7 +362,9 @@
     var item = $('#inItem').value.trim(), qty = Number($('#inQty').value), po = $('#inPO').value;
     if (!IN.items.some(function (x) { return x.name.toLowerCase() === item.toLowerCase(); })) { err.textContent = 'Pick an item from the list'; return; }
     if (!(qty > 0)) { err.textContent = 'Enter the quantity received'; return; }
-    if (!po && !$('#inInvoice').value.trim()) { err.textContent = 'Invoice number is required without a PO'; return; }
+    var L = (IN.lines || []).filter(function (x) { return x.poId === po; })[0];
+    if (L && qty > L.pendingQty) { err.textContent = 'Only ' + L.pendingQty + ' ' + L.unit + ' is pending on ' + po; return; }
+    if (!po && !$('#inInvoice').value.trim()) { err.textContent = 'Invoice number is required without an order'; return; }
     if (!po && !IN.photos.length) { err.textContent = 'Add at least one photo for a direct inward'; return; }
     busy(btn, true, 'Submitting…');
     api('IMS', 'suiteSubmitInward', { item: item, qty: qty, poId: po, supplier: $('#inSupplier').value.trim(), invoice: $('#inInvoice').value.trim(),
