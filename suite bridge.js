@@ -23,6 +23,16 @@
     var lb = document.getElementById('logoutBtn');
     if (lb) lb.addEventListener('click', function (e) { e.preventDefault(); e.stopImmediatePropagation(); toSuite('logout'); }, true);
 
+    // ---- jis app me apna logout nahi (PLT Line Scan / Line Admin) → chhota Sign out button ----
+    if (!lb && typeof window.logout !== 'function' && !document.getElementById('suiteOut')) {
+      var b = document.createElement('button');
+      b.id = 'suiteOut'; b.type = 'button'; b.textContent = '⏻ Sign out'; b.title = 'Sign out';
+      b.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9999;border:1px solid #e6e8f0;background:#fff;color:#6b7085;' +
+        'font:600 12.5px Inter,system-ui,sans-serif;padding:7px 12px;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(20,22,50,.08)';
+      b.onclick = function () { if (confirm('Sign out?')) toSuite('logout'); };
+      document.body.appendChild(b);
+    }
+
     // ---- IMS: hidden pages ----
     if (hide.length) {
       hide.forEach(function (p) {
