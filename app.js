@@ -64,16 +64,23 @@
   function modeChip(m) { var c = m === 'LIVE' ? 'chip-live' : m === 'SHADOW' ? 'chip-shadow' : 'chip-off'; return '<span class="chip ' + c + '">' + esc(m) + '</span>'; }
 
   /* ---------------- AUTH ---------------- */
+  /* Screen pe dikhne wale naam (ERP / IMS / PLT / SOMS jaise short forms nahi) */
+  var APPNAMES = { erp: { label: 'Sales & Orders' }, ims: { label: 'Inventory' }, pltScan: { label: 'Line Scan' }, pltAdmin: { label: 'Line Admin' }, soms: { label: 'Purchase' } };
   function showLogin() {
     $('#appShell').classList.add('hidden');
     $('#loginScreen').classList.remove('hidden');
-    setTimeout(function () { $('#userInput').focus(); }, 50);
+    var h = new Date().getHours();
+    $('#loginHello').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    var saved = ''; try { saved = localStorage.getItem('suite_user') || ''; } catch (e) {}
+    if (saved) { $('#userInput').value = saved; $('#rememberUser').checked = true; }
+    setTimeout(function () { (saved ? $('#pinInput') : $('#userInput')).focus(); }, 50);
   }
   function doLogin() {
     var un = $('#userInput').value.trim(), pw = $('#pinInput').value, btn = $('#loginBtn');
     $('#loginError').textContent = '';
     if (!un || !pw) { $('#loginError').textContent = 'Enter username and password'; return; }
-    busy(btn, true, 'Signing in…');
+    try { if ($('#rememberUser').checked) localStorage.setItem('suite_user', un); else localStorage.removeItem('suite_user'); } catch (e) {}
+    busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
     api('ERP', 'suiteLogin', { username: un, password: pw }).then(function (d) {
       S.token = d.token;
       try { sessionStorage.setItem('suite_token', d.token); } catch (e) {}
@@ -118,7 +125,7 @@
 
   /* ---------------- NAV ---------------- */
   function navItems() {
-    var u = S.user, s = S.sessions, M = SUITE.MODULES, items = [];
+    var u = S.user, s = S.sessions, M = APPNAMES, items = [];
     if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });
     // Inward Entry ab IMS ke Inward page me hai (SOMS approval ke saath)
     if (has('Approver')) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
@@ -151,7 +158,7 @@
     S.view = id;
     history.replaceState(null, '', '#' + id);
     $$('.nav-item').forEach(function (el) { el.classList.toggle('active', el.dataset.id === id); });
-    document.title = n.label + ' · Litpax Suite';
+    document.title = n.label + ' · Litpax';
     $$('.view').forEach(function (v) { v.classList.add('hidden'); });
     Object.keys(S.frames).forEach(function (k) { S.frames[k].classList.add('hidden'); });
     if (n.mod) {
@@ -549,7 +556,7 @@
           var v = (L.urls || {})[a];
           return '<tr><td><b>' + a + '</b></td><td class="mono">' + (v ? esc(v) : '<span class="chip chip-bad">Not registered</span>') + '</td></tr>';
         }).join('') + '</tbody></table></div></div>' +
-        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">New users and passwords are created in ERP. Here, just pick each user&#39;s job and click Save.</div></div></div>' +
+        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">New users and passwords are created in Sales &amp; Orders (Users). Here, just pick each user&#39;s job and click Save.</div></div></div>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Job</th><th></th></tr></thead><tbody>' +
         U.users.map(function (u) {
           return '<tr><td><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.username) + '</div></td><td>' + (u.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') +
@@ -571,11 +578,11 @@
   /* ---------- "Kaam" — ek user ke liye sirf kaam chuno, baaki access apne aap set ---------- */
   var JOBS = {
     Admin:      { label: 'Admin',              hint: 'Everything + Settings' },
-    Store:      { label: 'Store',              hint: 'Inventory (IMS): Inward, Outward, Indent / PO' },
-    Purchase:   { label: 'Purchase',           hint: 'Store Orders (SOMS): Orders, Receiving, Inward Approvals' },
+    Store:      { label: 'Store',              hint: 'Inventory: Inward, Outward, Indent / PO' },
+    Purchase:   { label: 'Purchase',           hint: 'Purchase: Orders, Receiving, Inward Approvals' },
     Production: { label: 'Production',         hint: 'Line Scan, Line Admin, Overview, Inventory' },
     Dispatch:   { label: 'Dispatch',           hint: 'Line Scan: Dispatch station' },
-    ErpOnly:    { label: 'ERP only',           hint: 'Sales / Accounts / CRM (ERP page set by the Role column)' }
+    ErpOnly:    { label: 'Sales & Orders only', hint: 'Sales / Accounts / CRM (page set by the Role column)' }
   };
   var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly'];
   /** Saved access se "Kaam" wapas pehchano (table + form ke liye) */
@@ -640,6 +647,14 @@
    * ============================================================= */
   function boot() {
     $('#loginBtn').onclick = doLogin;
+    $('#pwToggle').onclick = function () {
+      var i = $('#pinInput'), show = i.type === 'password';
+      i.type = show ? 'text' : 'password'; this.classList.toggle('on', show);
+      this.title = show ? 'Hide password' : 'Show password'; i.focus();
+    };
+    $('#pinInput').addEventListener('keyup', function (e) {
+      if (e.getModifierState) $('#capsWarn').classList.toggle('hidden', !e.getModifierState('CapsLock'));
+    });
     $('#pinInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
     $('#userInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#pinInput').focus(); });
     $('#logoutBtn').onclick = function () { if (confirm('Sign out of all apps?')) signOut(); };
