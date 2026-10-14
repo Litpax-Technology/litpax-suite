@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Litpax Suite</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preload" as="image" href="assets/litpax-logo-light.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -12,22 +14,39 @@
 
 <!-- ============ LOGIN ============ -->
 <div id="loginScreen" class="login hidden">
-  <div class="login-card">
-    <div class="brand">
-      <div class="brand-mark">L</div>
-      <div>
-        <div class="brand-name">Litpax Suite</div>
-        <div class="brand-sub">ERP · Inventory · Production · Store</div>
-      </div>
+  <section class="login-hero">
+    <img class="hero-logo" src="assets/litpax-logo-light.png" alt="Litpax" width="166" height="48">
+    <div class="hero-art">
+      <svg class="pack" viewBox="0 0 500 360" aria-hidden="true">
+          <rect x="18" y="18" width="464" height="324" rx="26" class="pack-body"/>
+          <rect x="44" y="50" width="96" height="40" rx="10" class="strip"/><rect x="148" y="50" width="96" height="40" rx="10" class="strip"/><rect x="252" y="50" width="96" height="40" rx="10" class="strip"/><rect x="356" y="50" width="96" height="40" rx="10" class="strip"/><rect x="44" y="102" width="96" height="40" rx="10" class="strip"/><rect x="148" y="102" width="96" height="40" rx="10" class="strip"/><rect x="252" y="102" width="96" height="40" rx="10" class="strip"/><rect x="356" y="102" width="96" height="40" rx="10" class="strip"/><rect x="44" y="154" width="96" height="40" rx="10" class="strip"/><rect x="148" y="154" width="96" height="40" rx="10" class="strip"/><rect x="252" y="154" width="96" height="40" rx="10" class="strip"/><rect x="356" y="154" width="96" height="40" rx="10" class="strip"/><rect x="44" y="206" width="96" height="40" rx="10" class="strip"/><rect x="148" y="206" width="96" height="40" rx="10" class="strip"/><rect x="252" y="206" width="96" height="40" rx="10" class="strip"/><rect x="356" y="206" width="96" height="40" rx="10" class="strip"/><rect x="44" y="258" width="96" height="40" rx="10" class="strip"/><rect x="148" y="258" width="96" height="40" rx="10" class="strip"/><rect x="252" y="258" width="96" height="40" rx="10" class="strip"/><rect x="356" y="258" width="96" height="40" rx="10" class="strip"/>
+          <g><circle cx="70" cy="70" r="21" class="cell"/><circle cx="70" cy="70" r="8" class="cap"/></g><g><circle cx="122" cy="70" r="21" class="cell"/><circle cx="122" cy="70" r="8" class="cap"/></g><g><circle cx="174" cy="70" r="21" class="cell"/><circle cx="174" cy="70" r="8" class="cap"/></g><g><circle cx="226" cy="70" r="21" class="cell"/><circle cx="226" cy="70" r="8" class="cap"/></g><g><circle cx="278" cy="70" r="21" class="cell"/><circle cx="278" cy="70" r="8" class="cap"/></g><g><circle cx="330" cy="70" r="21" class="cell"/><circle cx="330" cy="70" r="8" class="cap"/></g><g class="lit-y"><circle cx="382" cy="70" r="21" class="cell"/><circle cx="382" cy="70" r="8" class="cap"/></g><g><circle cx="434" cy="70" r="21" class="cell"/><circle cx="434" cy="70" r="8" class="cap"/></g><g><circle cx="70" cy="122" r="21" class="cell"/><circle cx="70" cy="122" r="8" class="cap"/></g><g class="lit-r"><circle cx="122" cy="122" r="21" class="cell"/><circle cx="122" cy="122" r="8" class="cap"/></g><g class="lit-r"><circle cx="174" cy="122" r="21" class="cell"/><circle cx="174" cy="122" r="8" class="cap"/></g><g><circle cx="226" cy="122" r="21" class="cell"/><circle cx="226" cy="122" r="8" class="cap"/></g><g><circle cx="278" cy="122" r="21" class="cell"/><circle cx="278" cy="122" r="8" class="cap"/></g><g><circle cx="330" cy="122" r="21" class="cell"/><circle cx="330" cy="122" r="8" class="cap"/></g><g><circle cx="382" cy="122" r="21" class="cell"/><circle cx="382" cy="122" r="8" class="cap"/></g><g><circle cx="434" cy="122" r="21" class="cell"/><circle cx="434" cy="122" r="8" class="cap"/></g><g><circle cx="70" cy="174" r="21" class="cell"/><circle cx="70" cy="174" r="8" class="cap"/></g><g><circle cx="122" cy="174" r="21" class="cell"/><circle cx="122" cy="174" r="8" class="cap"/></g><g><circle cx="174" cy="174" r="21" class="cell"/><circle cx="174" cy="174" r="8" class="cap"/></g><g><circle cx="226" cy="174" r="21" class="cell"/><circle cx="226" cy="174" r="8" class="cap"/></g><g><circle cx="278" cy="174" r="21" class="cell"/><circle cx="278" cy="174" r="8" class="cap"/></g><g><circle cx="330" cy="174" r="21" class="cell"/><circle cx="330" cy="174" r="8" class="cap"/></g><g><circle cx="382" cy="174" r="21" class="cell"/><circle cx="382" cy="174" r="8" class="cap"/></g><g><circle cx="434" cy="174" r="21" class="cell"/><circle cx="434" cy="174" r="8" class="cap"/></g><g class="lit-y"><circle cx="70" cy="226" r="21" class="cell"/><circle cx="70" cy="226" r="8" class="cap"/></g><g><circle cx="122" cy="226" r="21" class="cell"/><circle cx="122" cy="226" r="8" class="cap"/></g><g><circle cx="174" cy="226" r="21" class="cell"/><circle cx="174" cy="226" r="8" class="cap"/></g><g><circle cx="226" cy="226" r="21" class="cell"/><circle cx="226" cy="226" r="8" class="cap"/></g><g><circle cx="278" cy="226" r="21" class="cell"/><circle cx="278" cy="226" r="8" class="cap"/></g><g class="lit-y"><circle cx="330" cy="226" r="21" class="cell"/><circle cx="330" cy="226" r="8" class="cap"/></g><g class="lit-y"><circle cx="382" cy="226" r="21" class="cell"/><circle cx="382" cy="226" r="8" class="cap"/></g><g><circle cx="434" cy="226" r="21" class="cell"/><circle cx="434" cy="226" r="8" class="cap"/></g><g><circle cx="70" cy="278" r="21" class="cell"/><circle cx="70" cy="278" r="8" class="cap"/></g><g><circle cx="122" cy="278" r="21" class="cell"/><circle cx="122" cy="278" r="8" class="cap"/></g><g><circle cx="174" cy="278" r="21" class="cell"/><circle cx="174" cy="278" r="8" class="cap"/></g><g class="lit-r"><circle cx="226" cy="278" r="21" class="cell"/><circle cx="226" cy="278" r="8" class="cap"/></g><g><circle cx="278" cy="278" r="21" class="cell"/><circle cx="278" cy="278" r="8" class="cap"/></g><g><circle cx="330" cy="278" r="21" class="cell"/><circle cx="330" cy="278" r="8" class="cap"/></g><g><circle cx="382" cy="278" r="21" class="cell"/><circle cx="382" cy="278" r="8" class="cap"/></g><g><circle cx="434" cy="278" r="21" class="cell"/><circle cx="434" cy="278" r="8" class="cap"/></g>
+          <rect x="400" y="-6" width="26" height="30" rx="6" class="term term-p"/><rect x="74" y="-6" width="26" height="30" rx="6" class="term term-n"/>
+        </svg>
+      <div class="hero-chip c1"><span class="dot r"></span>Store → WIP on first scan</div>
+      <div class="hero-chip c2"><span class="dot y"></span>ERP updates itself</div>
+      <div class="hero-chip c3"><span class="dot g"></span>Scan to dispatch</div>
     </div>
-    <div class="field"><label class="lbl" for="userInput">Username</label>
-    <input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
-    <div class="field"><label class="lbl" for="pinInput">Password</label>
-    <input id="pinInput" type="password" autocomplete="current-password"></div>
-    <div id="loginError" class="err"></div>
-    <button id="loginBtn" class="btn btn-primary btn-block">Sign in</button>
-    <div class="login-foot">Use your ERP username and password · one sign-in for every Litpax app</div>
-  </div>
+    <div class="hero-copy">
+      <h1>One system for the whole line.</h1>
+      <p>Orders, store, production and dispatch, connected end to end.</p>
+    </div>
+  </section>
+  <section class="login-side">
+    <div class="login-card">
+      <img class="card-logo" src="assets/litpax-logo-dark.png" alt="Litpax" width="124" height="36">
+      <div class="login-title">Sign in</div>
+      <div class="login-sub">ERP · Inventory · Production · Store</div>
+      <div class="field"><label class="lbl" for="userInput">Username</label>
+      <input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label class="lbl" for="pinInput">Password</label>
+      <input id="pinInput" type="password" autocomplete="current-password"></div>
+      <div id="loginError" class="err"></div>
+      <button id="loginBtn" class="btn btn-brand btn-block">Sign in</button>
+      <div class="login-foot">One sign-in for every Litpax app</div>
+    </div>
+    <div class="login-copy">© Litpax Technology Pvt. Ltd.</div>
+  </section>
 </div>
 
 <!-- ============ APP SHELL ============ -->
@@ -35,7 +54,7 @@
   <main class="main">
     <!-- patli top bar: sirf app tabs. Har app apne sidebar se chalta hai, logout bhi wahi se -->
     <header class="topbar" id="topbar">
-      <div class="brand-mark sm" title="Litpax Suite">L</div>
+      <img class="top-logo" src="assets/litpax-logo-dark.png" alt="Litpax" width="83" height="24">
       <nav id="nav" class="tabs"></nav>
       <div class="topbar-right">
         <span id="sessionWarn" class="chip chip-warn hidden"></span>
