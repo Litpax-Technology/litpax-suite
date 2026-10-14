@@ -276,3 +276,5 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .login-side { justify-content: flex-start; padding: 24px 16px; }
   .login .login-card { padding: 26px 22px; }
 }
+.login-copy .sig { color: #c9cbd8; transition: color .2s; }
+.login-copy:hover .sig { color: var(--brand-red); }
