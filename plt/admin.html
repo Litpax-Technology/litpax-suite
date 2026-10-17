@@ -9,9 +9,9 @@
 </head>
 <body>
 
-<div class="app" id="app">
+<div class="shell">
 
-  <div class="header">
+  <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">L</div>
       <div>
@@ -19,16 +19,23 @@
         <p>Admin &amp; reporting</p>
       </div>
     </div>
-    <div class="context-bar" id="contextBar"></div>
-  </div>
+    <div class="side-label">Menu</div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="side-foot">
+      <div class="context-bar" id="contextBar"></div>
+      <div class="footer-note">
+        <span class="conn-dot" id="connDot"></span>
+        <span id="connText">Connecting...</span>
+      </div>
+    </div>
+  </aside>
 
-  <div class="tabs" id="tabs"></div>
-  <div id="content"></div>
-
-  <div class="footer-note">
-    <span class="conn-dot" id="connDot"></span>
-    <span id="connText">Connecting...</span>
-  </div>
+  <main class="main">
+    <div class="app" id="app">
+      <div class="page-head"><h2 id="pageTitle">Dashboard</h2></div>
+      <div id="content"></div>
+    </div>
+  </main>
 
 </div>
 
