@@ -7,33 +7,33 @@
 */
 
 :root{
-  /* Surfaces — clean white/grey, easy on the eyes over a full shift */
-  --bg:#f6f7f9;
+  /* Surfaces — Litpax Suite palette */
+  --bg:#f6f7fb;
   --surface:#ffffff;
-  --surface-2:#f4f5f7;
-  --surface-3:#eceef1;
-  --border:#e6e8ec;
-  --border-strong:#d6dae1;
+  --surface-2:#f4f5f9;
+  --surface-3:#eef0f6;
+  --border:#e6e8f0;
+  --border-strong:#d6d9e4;
 
   /* Text */
-  --text:#1a1d24;
-  --text-muted:#5b6472;
-  --text-faint:#8b94a3;
+  --text:#1a1d2e;
+  --text-muted:#6b7085;
+  --text-faint:#8a8ea3;
 
   /* Indigo — the one accent */
   --accent:#635bff;
-  --accent-hi:#514bd6;
-  --accent-soft:#f0effe;
+  --accent-hi:#4b44d6;
+  --accent-soft:#efeeff;
   --accent-line:#dcd9fb;
 
   /* Status */
-  --ok:#16a34a;        --ok-soft:#e9f7ef;   --ok-line:#c3e8d0;
+  --ok:#16a34a;        --ok-soft:#e8f7ee;   --ok-line:#c3e8d0;
   --bad:#dc2626;       --bad-soft:#fdecec;  --bad-line:#f5c6c6;
-  --warn:#d97706;      --warn-soft:#fdf4e5; --warn-line:#f2ddb2;
+  --warn:#b45309;      --warn-soft:#fff4e0; --warn-line:#f2ddb2;
   --info:#2563eb;      --info-soft:#e9f0fe; --info-line:#c6d8fa;
 
-  --shadow:0 1px 2px rgba(16,24,40,.06);
-  --shadow-lg:0 12px 32px rgba(16,24,40,.12);
+  --shadow:0 1px 2px rgba(20,22,50,.06);
+  --shadow-lg:0 12px 32px rgba(20,22,50,.12);
 
   --mono:'JetBrains Mono',ui-monospace,monospace;
   --sans:'Inter',system-ui,sans-serif;
@@ -297,7 +297,7 @@ body:has(.tabs) .tabs{
   backdrop-filter:saturate(180%) blur(12px);
   -webkit-backdrop-filter:saturate(180%) blur(12px);
   border-color:var(--border-strong);
-  box-shadow:0 8px 24px rgba(16,24,40,.10);
+  box-shadow:0 8px 24px rgba(20,22,50,.10);
 }
 
 /* Brand thoda richer */
@@ -310,7 +310,7 @@ body:has(.tabs) .panel{
   background:linear-gradient(180deg,#ffffff,#fcfcfe);
   transition:box-shadow .16s, transform .16s, border-color .16s;
 }
-body:has(.tabs) .panel:hover{box-shadow:0 10px 30px rgba(16,24,40,.09);border-color:var(--border-strong);}
+body:has(.tabs) .panel:hover{box-shadow:0 10px 30px rgba(20,22,50,.09);border-color:var(--border-strong);}
 body:has(.tabs) .panel-title{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--text-muted);}
 body:has(.tabs) .panel-title::before{
   content:"";width:14px;height:14px;border-radius:5px;flex:0 0 auto;
@@ -326,7 +326,7 @@ body:has(.tabs) .stat-card{
   transition:transform .16s, box-shadow .16s;
 }
 body:has(.tabs) .stat-card::before{content:"";position:absolute;top:0;bottom:0;left:0;width:4px;background:linear-gradient(180deg,var(--accent),#8b84ff);}
-body:has(.tabs) .stat-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(16,24,40,.10);}
+body:has(.tabs) .stat-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,22,50,.10);}
 body:has(.tabs) .stat-card .num{font-size:32px;}
 body:has(.tabs) .stat-card .lbl{font-size:12px;color:var(--text-muted);}
 
@@ -350,3 +350,48 @@ body:has(.tabs) th{background:var(--surface-2);}
 body:has(.tabs) .range-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:5px;width:fit-content;box-shadow:var(--shadow);}
 body:has(.tabs) .range-btn{border:none;background:transparent;box-shadow:none;}
 body:has(.tabs) .range-btn.active{box-shadow:0 2px 8px rgba(99,91,255,.28);}
+
+/* ============================================================
+   ADMIN SIDEBAR LAYOUT — menu left side me (ERP / IMS / SOMS jaisa)
+   Sirf admin page (body:has(.sidebar)). Scan page untouched.
+   ============================================================ */
+body:has(.sidebar){height:100vh;overflow:hidden;}
+.shell{display:flex;height:100vh;}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:16px 10px;overflow-y:auto;}
+.sidebar .brand{padding:2px 6px 14px;margin-bottom:6px;border-bottom:1px solid var(--border);gap:10px;}
+body:has(.sidebar) .sidebar .brand-mark{width:32px;height:32px;font-size:15px;border-radius:9px;}
+body:has(.sidebar) .sidebar .brand h1{font-size:14px;}
+.sidebar .brand p{font-size:9.5px;letter-spacing:1px;}
+.side-label{font-size:10px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.8px;padding:10px 8px 6px;}
+
+body:has(.sidebar) .tabs{display:flex;flex-direction:column;gap:2px;background:none;border:none;box-shadow:none;padding:0;margin:0;width:auto;max-width:none;position:static;backdrop-filter:none;-webkit-backdrop-filter:none;overflow:visible;}
+body:has(.sidebar) .tab{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-muted);position:relative;}
+body:has(.sidebar) .tab .tab-ic{width:18px;text-align:center;font-size:14px;opacity:.75;}
+body:has(.sidebar) .tab:hover{background:var(--surface-2);color:var(--text);}
+body:has(.sidebar) .tab.active{background:var(--accent-soft);color:var(--accent);font-weight:600;box-shadow:none;}
+body:has(.sidebar) .tab.active::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:var(--accent);}
+body:has(.sidebar) .tab.active .tab-ic{opacity:1;}
+
+.side-foot{margin-top:auto;padding:12px 6px 0;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;}
+.side-foot .footer-note{margin:0;justify-content:flex-start;align-items:flex-start;text-align:left;font-size:11.5px;line-height:1.4;}
+.side-foot .conn-dot{margin-top:4px;flex-shrink:0;}
+
+body:has(.sidebar) .main{flex:1;min-width:0;overflow-y:auto;}
+body:has(.sidebar) .app{max-width:1080px;margin:0;padding:22px 26px 64px;}
+.page-head{margin-bottom:18px;}
+.page-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-.3px;color:var(--text);}
+
+@media (max-width:760px){
+  body:has(.sidebar){height:auto;overflow:auto;}
+  .shell{flex-direction:column;height:auto;}
+  .sidebar{width:auto;border-right:none;border-bottom:1px solid var(--border);padding:12px;}
+  .side-label,.side-foot{display:none;}
+  body:has(.sidebar) .tabs{flex-direction:row;overflow-x:auto;}
+  body:has(.sidebar) .tab{width:auto;white-space:nowrap;}
+  body:has(.sidebar) .main{overflow:visible;}
+  body:has(.sidebar) .app{padding:16px 14px 48px;}
+}
+@media print{
+  body:has(.sidebar){height:auto !important;overflow:visible !important;}
+  .shell,.main{display:block !important;height:auto !important;overflow:visible !important;}
+}
