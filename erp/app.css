@@ -1,6 +1,6 @@
 /* ============================================================
    LITPAX ERP — Design System v4 (Premium Light + Motion Pass)
-   Brand: Teal #157A5C accent · White surfaces · Slate text
+   Brand: Indigo #635bff accent (Litpax Suite palette) · White surfaces · Slate text
    Font: Inter (UI) + JetBrains Mono (data/IDs)
    Drop-in replacement — class names unchanged, HTML/JS same.
    ============================================================ */
@@ -8,83 +8,83 @@
 /* ── 1. DESIGN TOKENS ──────────────────────────────────────── */
 :root {
   /* Brand */
-  --navy:        #0D1F3C;
-  --navy-mid:    #162D52;
-  --navy-light:  #1E3A68;
-  --teal:        #157A5C;
-  --teal-mid:    #1D9E75;
-  --teal-dim:    #EEF5F2;
-  --teal-b:      #C7DED6;
+  --navy:        #1e1b4b;
+  --navy-mid:    #2c2870;
+  --navy-light:  #3b3680;
+  --teal:        #635bff;
+  --teal-mid:    #7b74ff;
+  --teal-dim:    #efeeff;
+  --teal-b:      #dcd9fb;
 
   /* Surfaces */
-  --bg:          #F3F5F9;
-  --surface:     #FFFFFF;
-  --surface2:    #F8FAFC;
-  --surface3:    #EEF1F5;
+  --bg:          #f6f7fb;
+  --surface:     #ffffff;
+  --surface2:    #f9fafc;
+  --surface3:    #eef0f6;
 
   /* Light chrome (topbar + sidebar) */
-  --chrome-bg:      #FFFFFF;
-  --chrome-border:  #E6E9EF;
-  --chrome-hover:   #F2F5F9;
-  --chrome-active:  #EDF5F1;
+  --chrome-bg:      #ffffff;
+  --chrome-border:  #e6e8f0;
+  --chrome-hover:   #f3f4f9;
+  --chrome-active:  #efeeff;
 
   /* Borders */
-  --border:      #EAEDF2;
-  --border2:     #D8DCE3;
+  --border:      #e6e8f0;
+  --border2:     #d6d9e4;
 
   /* Text */
-  --text:        #16202F;
-  --text2:       #475264;
-  --text3:       #7E8794;
-  --text4:       #AAB1BC;
+  --text:        #1a1d2e;
+  --text2:       #4a4f66;
+  --text3:       #6b7085;
+  --text4:       #a3a6b8;
 
   /* Accent (Teal as primary action) */
-  --accent:      #157A5C;
-  --accent2:     #1D9E75;
-  --accent-dim:  #EEF5F2;
-  --accent-b:    #C7DED6;
-  --accent-grad: linear-gradient(135deg, #1A8A68 0%, #147152 100%);
+  --accent:      #635bff;
+  --accent2:     #4b44d6;
+  --accent-dim:  #efeeff;
+  --accent-b:    #dcd9fb;
+  --accent-grad: linear-gradient(135deg, #6f68ff 0%, #4b44d6 100%);
 
   /* Blue (secondary info) */
-  --blue:        #3457B2;
-  --blue-dim:    #EEF1FA;
-  --blue-b:      #CBD5EE;
+  --blue:        #2563eb;
+  --blue-dim:    #e9f0fe;
+  --blue-b:      #c6d8fa;
 
   /* Semantic — desaturated, MNC-grade */
-  --success:     #1F7A4D;
-  --success-dim: #EEF6F1;
-  --success-b:   #C8E0D2;
+  --success:     #16a34a;
+  --success-dim: #e8f7ee;
+  --success-b:   #c3e8d0;
 
-  --warning:     #946400;
-  --warning-dim: #FBF5E8;
-  --warning-b:   #E8D7AE;
+  --warning:     #b45309;
+  --warning-dim: #fff4e0;
+  --warning-b:   #f2ddb2;
 
-  --error:       #A3322B;
-  --error-dim:   #FBEFEE;
-  --error-b:     #E3C5C2;
+  --error:       #dc2626;
+  --error-dim:   #fdecec;
+  --error-b:     #f5c6c6;
 
-  --info:        #2C5C82;
-  --info-dim:    #EEF3F7;
-  --info-b:      #C7D7E2;
+  --info:        #2563eb;
+  --info-dim:    #e9f0fe;
+  --info-b:      #c6d8fa;
 
-  --purple:      #5B4A9E;
-  --purple-dim:  #F1EFF8;
-  --purple-b:    #D6D0EA;
+  --purple:      #7c3aed;
+  --purple-dim:  #f3eefe;
+  --purple-b:    #ddd0fb;
 
-  --orange:      #A85A1E;
-  --orange-dim:  #FBF1E7;
-  --orange-b:    #E5CDB0;
+  --orange:      #c2410c;
+  --orange-dim:  #fff1e7;
+  --orange-b:    #f5d0b5;
 
   /* Layout */
   --sidebar:     224px;
   --topbar:      56px;
 
   /* Shadows — soft, layered, enterprise-grade */
-  --sh-xs:  0 1px 2px rgba(20,40,70,0.04);
-  --sh:     0 1px 2px rgba(20,40,70,0.04), 0 1px 3px rgba(20,40,70,0.05);
-  --sh-md:  0 2px 5px rgba(20,40,70,0.05), 0 6px 16px rgba(20,40,70,0.06);
-  --sh-lg:  0 6px 16px rgba(20,40,70,0.07), 0 16px 40px rgba(20,40,70,0.11);
-  --ring:   0 0 0 3px rgba(21,122,92,0.10);
+  --sh-xs:  0 1px 2px rgba(20,22,50,0.04);
+  --sh:     0 1px 2px rgba(20,22,50,0.04), 0 1px 3px rgba(20,22,50,0.05);
+  --sh-md:  0 2px 5px rgba(20,22,50,0.05), 0 6px 16px rgba(20,22,50,0.06);
+  --sh-lg:  0 6px 16px rgba(20,22,50,0.07), 0 16px 40px rgba(20,22,50,0.11);
+  --ring:   0 0 0 3px rgba(99,91,255,0.10);
 
   /* Radius */
   --r-sm:   5px;
@@ -142,7 +142,7 @@ td, th, .detail-val, .badge {
   flex-shrink: 0;
   z-index: 100;
   border-bottom: 1px solid var(--chrome-border);
-  box-shadow: 0 1px 0 rgba(20,40,70,0.02), var(--sh-xs);
+  box-shadow: 0 1px 0 rgba(20,22,50,0.02), var(--sh-xs);
   position: relative;
   animation: slideDown 0.3s ease;
 }
@@ -170,7 +170,7 @@ td, th, .detail-val, .badge {
   color: #fff;
   flex-shrink: 0;
   letter-spacing: -0.3px;
-  box-shadow: 0 2px 6px rgba(21,122,92,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
+  box-shadow: 0 2px 6px rgba(99,91,255,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
 }
 .brand-name {
   font-size: 14px;
@@ -388,7 +388,7 @@ td, th, .detail-val, .badge {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(20,40,70,0.35);
+  background: rgba(20,22,50,0.35);
   z-index: 199;
   top: var(--topbar);
 }
@@ -454,11 +454,11 @@ td, th, .detail-val, .badge {
   width: 3px;
   background: var(--border2);
 }
-.stat.c-green::before  { background: linear-gradient(180deg, #2A9862, var(--success)); }
-.stat.c-blue::before   { background: linear-gradient(180deg, #4468C4, var(--blue)); }
-.stat.c-amber::before  { background: linear-gradient(180deg, #B07A0F, var(--warning)); }
-.stat.c-red::before    { background: linear-gradient(180deg, #B84037, var(--error)); }
-.stat.c-purple::before { background: linear-gradient(180deg, #6D5BB4, var(--purple)); }
+.stat.c-green::before  { background: linear-gradient(180deg, #22c55e, var(--success)); }
+.stat.c-blue::before   { background: linear-gradient(180deg, #3b82f6, var(--blue)); }
+.stat.c-amber::before  { background: linear-gradient(180deg, #d97706, var(--warning)); }
+.stat.c-red::before    { background: linear-gradient(180deg, #ef4444, var(--error)); }
+.stat.c-purple::before { background: linear-gradient(180deg, #8b5cf6, var(--purple)); }
 .stat.c-teal::before   { background: linear-gradient(180deg, var(--teal-mid), var(--teal)); }
 
 /* stagger the stat cards */
@@ -568,7 +568,7 @@ td, th, .detail-val, .badge {
 .pipe-node.active {
   background: var(--accent-dim);
   border-color: var(--accent-b);
-  box-shadow: inset 0 0 0 1px rgba(21,122,92,0.06);
+  box-shadow: inset 0 0 0 1px rgba(99,91,255,0.06);
 }
 .pipe-icon { font-size: 16px; filter: grayscale(0.4); opacity: 0.9; }
 .pipe-count {
@@ -765,13 +765,13 @@ tbody tr:hover td {
   background: var(--accent-grad);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 1px 2px rgba(21,122,92,0.24), inset 0 1px 0 rgba(255,255,255,0.16);
+  box-shadow: 0 1px 2px rgba(99,91,255,0.24), inset 0 1px 0 rgba(255,255,255,0.16);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #17805F 0%, #106248 100%);
+  background: linear-gradient(135deg, #6f68ff 0%, #4b44d6 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(21,122,92,0.30), inset 0 1px 0 rgba(255,255,255,0.16);
+  box-shadow: 0 3px 10px rgba(99,91,255,0.30), inset 0 1px 0 rgba(255,255,255,0.16);
 }
 
 .btn-sm  { padding: 4px 10px; font-size: 11px; border-radius: var(--r-sm); }
@@ -853,7 +853,7 @@ textarea.form-control      { resize: vertical; min-height: 72px; }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(16,30,55,0.38);
+  background: rgba(20,22,50,0.38);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   z-index: 1000;
@@ -1046,7 +1046,7 @@ textarea.form-control      { resize: vertical; min-height: 72px; }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(16,30,55,0.20);
+  background: rgba(20,22,50,0.20);
   z-index: 499;
   top: var(--topbar);
 }
