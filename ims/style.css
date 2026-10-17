@@ -2,39 +2,39 @@
    LITPAX IMS — style.css v6 (Light Theme)
    Litpax Technology Pvt. Ltd.
    Light UI · soft shadows · smooth animations
-   Accent Indigo #6366f1 | Teal #14b8a6 | Sky #0ea5e9
+   Accent Indigo #635bff | Teal #14b8a6 | Sky #0ea5e9
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ── TOKENS ── */
 :root {
-  --navy:    #1e293b;   /* text-heading (soft slate, not black) */
-  --accent:  #6366f1;   /* indigo */
-  --accent2: #818cf8;   /* light indigo */
-  --teal:    #14b8a6;
+  --navy:    #1a1d2e;   /* text-heading (soft slate, not black) */
+  --accent:  #635bff;   /* indigo */
+  --accent2: #8b84ff;   /* light indigo */
+  --teal:    #0d9488;
   --sky:     #0ea5e9;
-  --green:   #10b981;
-  --red:     #ef4444;
-  --orange:  #f59e0b;
-  --purple:  #a855f7;
-  --amber:   #d97706;
-  --amber-l: #fffbeb;
-  --muted:   #64748b;
-  --light:   #94a3b8;
-  --border:  #e8ecf3;
-  --s1:      #f6f8fc;   /* app background */
-  --s2:      #eef2f9;   /* light surface */
-  --t2:      #334155;
-  --sans:    'DM Sans', system-ui, sans-serif;
-  --mono:    'DM Mono', 'Courier New', monospace;
-  --accent-l:#eef1ff;
+  --green:   #16a34a;
+  --red:     #dc2626;
+  --orange:  #d97706;
+  --purple:  #7c3aed;
+  --amber:   #b45309;
+  --amber-l: #fff4e0;
+  --muted:   #6b7085;
+  --light:   #a3a6b8;
+  --border:  #e6e8f0;
+  --s1:      #f6f7fb;   /* app background */
+  --s2:      #eef0f6;   /* light surface */
+  --t2:      #3d4258;
+  --sans:    'Inter', system-ui, sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, monospace;
+  --accent-l:#efeeff;
 
   /* soft shadows */
-  --sh-sm: 0 1px 2px rgba(30,41,59,.04), 0 1px 3px rgba(30,41,59,.06);
-  --sh-md: 0 4px 12px rgba(30,41,59,.06), 0 2px 4px rgba(30,41,59,.04);
-  --sh-lg: 0 12px 32px rgba(30,41,59,.10), 0 4px 8px rgba(30,41,59,.05);
-  --sh-accent: 0 8px 24px rgba(99,102,241,.28);
+  --sh-sm: 0 1px 2px rgba(20,22,50,.04), 0 1px 3px rgba(20,22,50,.06);
+  --sh-md: 0 4px 12px rgba(20,22,50,.06), 0 2px 4px rgba(20,22,50,.04);
+  --sh-lg: 0 12px 32px rgba(20,22,50,.10), 0 4px 8px rgba(20,22,50,.05);
+  --sh-accent: 0 8px 24px rgba(99,91,255,.28);
 }
 
 /* ── RESET ── */
@@ -77,7 +77,7 @@ p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
 }
 .login-bg-shape {
   position: absolute;
-  background: radial-gradient(circle, rgba(99,102,241,.14) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(99,91,255,.14) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
   animation: floaty 9s ease-in-out infinite;
@@ -86,8 +86,8 @@ p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
 .login-left {
   width: 55%;
-  background: linear-gradient(140deg, #6366f1 0%, #818cf8 55%, #38b6 e6 100%);
-  background: linear-gradient(140deg, #6366f1 0%, #7c85f7 50%, #22c8d8 100%);
+  background: linear-gradient(140deg, #635bff 0%, #818cf8 55%, #38b6 e6 100%);
+  background: linear-gradient(140deg, #635bff 0%, #7c85f7 50%, #22c8d8 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,7 +165,7 @@ p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
   transition: border-color .15s, box-shadow .15s;
   background: #fff;
 }
-.pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(99,102,241,.12); }
+.pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(99,91,255,.12); }
 
 .login-err { color: var(--red); font-size: 12px; margin-bottom: 12px; display: none; font-weight: 500; }
 
@@ -188,7 +188,7 @@ p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
   margin-bottom: 20px;
   box-shadow: var(--sh-accent);
 }
-.login-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(99,102,241,.36); }
+.login-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(99,91,255,.36); }
 .login-btn:active { transform: scale(.98); }
 .login-footer { font-size: 11px; color: var(--light); text-align: center; }
 
@@ -214,7 +214,7 @@ p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .slogo-row { display: flex; align-items: center; gap: 9px; }
 .slogo-box {
   width: 30px; height: 30px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
+  background: linear-gradient(135deg, #6f68ff 0%, #4b44d6 100%);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 800; color: #fff;
@@ -271,7 +271,7 @@ nav { flex: 1; padding: 0 8px; }
 }
 .conn-dot-row { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
 .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.dot.ok      { background: var(--teal); box-shadow: 0 0 6px rgba(20,184,166,.6); }
+.dot.ok      { background: var(--green); box-shadow: 0 0 6px rgba(22,163,74,.5); }
 .dot.err     { background: var(--red); }
 .dot.loading { background: var(--amber); animation: pulse 1.2s infinite; }
 .conn-lbl { font-size: 10px; color: var(--muted); }
@@ -419,7 +419,7 @@ tbody tr:hover { background: #f5f7ff; }
 .brd { background: linear-gradient(135deg,var(--red),#f87171); color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,.25); }
 .brd:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(239,68,68,.32); }
 .bp  { background: linear-gradient(135deg,var(--accent),var(--accent2)); color: #fff; box-shadow: var(--sh-accent); }
-.bp:hover  { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(99,102,241,.34); }
+.bp:hover  { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(99,91,255,.34); }
 .bsm { padding: 5px 10px; font-size: 11px; }
 .btn:active:not(:disabled) { transform: scale(.96); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
@@ -437,14 +437,14 @@ tbody tr:hover { background: #f5f7ff; }
   transition: border-color .15s, box-shadow .15s;
   width: 100%;
 }
-.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,91,255,.12); }
 .inp-label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
 
 /* ── MODALS ── */
 .ov {
   position: fixed;
   inset: 0;
-  background: rgba(30,41,59,.35);
+  background: rgba(20,22,50,.35);
   backdrop-filter: blur(3px);
   display: none;
   align-items: center;
@@ -788,7 +788,7 @@ thead th { position: sticky; top: 0; z-index: 2; }
 .item-pic-box img{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
 .item-pic-box .d{font-size:12px;color:var(--muted);line-height:1.45;}
 
-.iv-overlay{position:fixed;inset:0;background:rgba(13,31,60,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+.iv-overlay{position:fixed;inset:0;background:rgba(20,22,50,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;}
 .iv-overlay.open{display:flex;}
 .iv-box{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25);}
 .iv-img{width:100%;max-height:60vh;object-fit:contain;background:#f8faff;display:block;}
@@ -806,5 +806,5 @@ thead th { position: sticky; top: 0; z-index: 2; }
 .ph-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;white-space:nowrap;}
 .ph-btn:hover{border-color:var(--accent);color:var(--accent);}
 .pv-stage{position:relative;}
-.pv-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(13,31,60,.6);color:#fff;font-size:22px;cursor:pointer;line-height:34px;padding:0;z-index:1;}
+.pv-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(20,22,50,.6);color:#fff;font-size:22px;cursor:pointer;line-height:34px;padding:0;z-index:1;}
 #pv-prev{left:8px;} #pv-next{right:8px;}
