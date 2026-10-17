@@ -1150,11 +1150,15 @@ function renderManual() {
 function renderTabs() {
   var el = document.getElementById('tabs');
   if (!state.unlocked) { el.innerHTML = ''; return; }
-  var tabs = [['dashboard', 'Dashboard'], ['employees', 'Employees'], ['labels', 'Battery Labels'],
-              ['manual', 'Manual Entry'], ['setup', 'Setup'], ['cards', 'Print Cards']];
+  var tabs = [['dashboard', 'Dashboard', '📊'], ['employees', 'Employees', '👥'], ['labels', 'Battery Labels', '🏷️'],
+              ['manual', 'Manual Entry', '✍️'], ['setup', 'Setup', '⚙️'], ['cards', 'Print Cards', '🖨️']];
   el.innerHTML = tabs.map(function (t) {
-    return '<button class="tab ' + (state.tab === t[0] ? 'active' : '') + '" onclick="setTab(\'' + t[0] + '\')">' + t[1] + '</button>';
+    return '<button class="tab ' + (state.tab === t[0] ? 'active' : '') + '" onclick="setTab(\'' + t[0] + '\')">' +
+           '<span class="tab-ic">' + t[2] + '</span><span>' + t[1] + '</span></button>';
   }).join('');
+  var cur = tabs.filter(function (t) { return t[0] === state.tab; })[0];
+  var pt = document.getElementById('pageTitle');
+  if (pt && cur) pt.textContent = cur[1];
 }
 
 function renderContextBar() {
