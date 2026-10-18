@@ -393,13 +393,7 @@ function dspSubmit() {
 
 function renderDispatch() {
   var d = state.dsp;
-  if (!d.token) {
-    return '<div class="panel"><div class="panel-title">Dispatch station</div>' +
-      '<p style="color:var(--text-muted);font-size:13.5px;margin-top:-6px;">Dispatch ke liye Supervisor PIN chahiye.</p>' +
-      '<div class="row" style="max-width:420px;"><div class="field"><label>Supervisor PIN</label>' +
-      '<input id="dspPin" type="password" onkeydown="if(event.key===\'Enter\')dspLogin()"></div></div>' +
-      '<div style="margin-top:10px;"><button class="btn" onclick="dspLogin()">Login</button></div></div>';
-  }
+  // PIN band — dispatch page seedha khulta hai
   var inp = function (k, label, req) {
     return '<div class="field"><label>' + label + (req ? ' *' : '') + '</label><input value="' + esc(d[k]) + '" oninput="dspField(\'' + k + '\', this.value)"></div>';
   };
