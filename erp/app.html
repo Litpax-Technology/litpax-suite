@@ -1245,8 +1245,15 @@
       <div id="dsp-history" style="margin-bottom:12px;max-height:150px;overflow-y:auto;"></div>
       <div style="border-top:2px solid var(--border);padding-top:14px;">
         <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">+ New Dispatch Entry</div>
+        <div style="margin-bottom:12px;padding:10px 12px;border:1px dashed var(--accent);border-radius:10px;background:var(--accent-dim);">
+          <div id="dsp-emp" style="font-size:12px;margin-bottom:8px;"></div>
+          <input class="form-control" id="dsp-scan" placeholder="Pehle employee badge, phir battery scan karo" autocomplete="off"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();dscScan(this.value);this.value='';}">
+          <div id="dsp-scan-msg" style="font-size:12px;margin-top:6px;font-weight:600;"></div>
+          <div id="dsp-scan-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+        </div>
         <div class="form-grid">
-          <div class="form-group"><label class="form-label">Dispatch Qty <span class="req-mark">*</span></label><input class="form-control" type="number" id="dsp-qty" placeholder="0"></div>
+          <div class="form-group"><label class="form-label">Dispatch Qty <span style="font-size:10px;color:var(--text3);font-weight:400;">(scan se)</span></label><input class="form-control" type="number" id="dsp-qty" placeholder="0" readonly></div>
           <div class="form-group">
             <label class="form-label" style="display:flex;align-items:center;gap:7px;cursor:pointer;">
               <input type="checkbox" id="dsp-fms-chk" onchange="toggleDispatchFMS()" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;">
