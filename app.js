@@ -133,7 +133,6 @@
     if (s.erp_user && s.erp_user.role) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
     if (s.ims) items.push({ id: 'm-ims', sec: 'Apps', label: M.ims.label, ic: '▦', mod: 'ims' });
     if (has('Production') || u.pltSup) items.push({ id: 'm-plt2W', sec: 'Apps', label: SUITE.MODULES.plt2W.label, ic: '⌁', mod: 'plt2W' });
-    if (has('Dispatch') || u.pltSup) items.push({ id: 'm-pltDisp', sec: 'Apps', label: SUITE.MODULES.pltDisp.label, ic: '⇨', mod: 'pltDisp' });
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
