@@ -11,8 +11,12 @@ state = {
   mode: 'scan',                         // 'scan' = production line, 'dispatch' = dispatch station
   dsp: { token: '', transport: '', lr: '', vehicle: '', driver: '', list: [], busy: false, checking: 0, last: null }
 };
-try { state.dsp.token = sessionStorage.getItem('plt_sup') || ''; } catch (e) {}
-try { if (new URLSearchParams(window.location.search).get('mode') === 'dispatch') state.mode = 'dispatch'; } catch (e) {}
+try { state.dsp.token = sessionStorage.getItem('plt_sup') || sessionStorage.getItem('suite_token') || ''; } catch (e) {}
+try {
+  var _q = new URLSearchParams(window.location.search);
+  if (_q.get('mode') === 'dispatch') state.mode = 'dispatch';
+  state.lockMode = !!_q.get('mode') || !!_q.get('hall');   // ?hall= ya ?mode= wala page → sirf wahi kaam, tabs nahi
+} catch (e) {}
 
 (function () {
   try {
@@ -427,6 +431,7 @@ function renderDispatch() {
 }
 
 function renderModeTabs() {
+  if (state.lockMode) return '';
   return '<div class="tabs">' +
     '<button class="tab' + (state.mode === 'scan' ? ' active' : '') + '" onclick="setMode(\'scan\')">Production scan</button>' +
     '<button class="tab' + (state.mode === 'dispatch' ? ' active' : '') + '" onclick="setMode(\'dispatch\')">Dispatch</button></div>';
@@ -436,7 +441,7 @@ function renderModeTabs() {
 
 function renderContextBar() {
   document.getElementById('contextBar').innerHTML =
-    '<div class="context-pill floor">' + esc(state.hall || CONFIG.FLOOR || 'ALL HALLS') + '</div>';
+    '<div class="context-pill floor">' + esc(state.mode === 'dispatch' ? 'DISPATCH' : (state.hall || CONFIG.FLOOR || 'ALL HALLS')) + '</div>';
 }
 
 function renderScan() {
