@@ -3210,6 +3210,7 @@ function openDispatchModal(p) {
   document.getElementById('dsp-driver').value   = '';
   document.getElementById('dsp-remarks').value  = '';
   openModal('dispatchModal');
+  dscReset();
   loadDispatchHistory(oid, iid);
 }
 
@@ -3231,12 +3232,74 @@ function loadDispatchHistory(orderID, itemID) {
   });
 }
 
+/* ===== Dispatch scan (PLT) — employee badge + battery serials ===== */
+let DSC = { emp: null, list: [], staff: null };
+
+function pltApi(params) {
+  return new Promise((resolve, reject) => {
+    const url = (window.SUITE || {}).PLT_URL;
+    if (!url) return reject(new Error('PLT_URL config.js me nahi hai'));
+    const key = 'pcb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const s = document.createElement('script');
+    const t = setTimeout(() => { done(); reject(new Error('PLT ne time par jawab nahi diya')); }, 60000);
+    function done() { clearTimeout(t); delete window[key]; s.remove(); }
+    window[key] = res => { done(); (res && res.ok === false) ? reject(new Error(res.error || 'PLT error')) : resolve(res || {}); };
+    s.onerror = () => { done(); reject(new Error('PLT network error')); };
+    s.src = url + '?' + Object.entries(params).map(([k, v]) => k + '=' + encodeURIComponent(v == null ? '' : v)).join('&') + '&callback=' + key;
+    document.body.appendChild(s);
+  });
+}
+
+function dscReset() {
+  DSC.emp = null; DSC.list = [];
+  dscRender('');
+  if (!DSC.staff) pltApi({ action: 'init', limit: 0 }).then(r => { DSC.staff = r.staff || []; })
+    .catch(e => toast('PLT staff list nahi aayi: ' + e.message, 'e'));
+  setTimeout(() => document.getElementById('dsp-scan')?.focus(), 150);
+}
+
+function dscScan(raw) {
+  let v = String(raw || '').trim();
+  if (!v) return;
+  const pre = v.match(/^(\d{2,4})[:>?](.+)$/);            // scanner ka station prefix (jaise 111:) hata do
+  if (pre) v = pre[2].trim();
+  const badge = v.replace(/^STAFF[^A-Za-z0-9]+/i, '').trim();
+  const emp = (DSC.staff || []).find(s => String(s.id).toLowerCase() === badge.toLowerCase());
+  if (emp) { DSC.emp = emp; dscRender('✓ Employee: ' + emp.name + ' (' + emp.id + ')', 'ok'); return; }
+  if (!DSC.staff) { dscRender('Staff list load ho rahi hai, 2 sec me dobara scan karo', 'bad'); return; }
+  if (!DSC.emp) { dscRender('Pehle employee badge scan karo', 'bad'); return; }
+  if (DSC.list.some(x => x.serial.toUpperCase() === v.toUpperCase())) { dscRender(v + ' pehle hi scan ho chuki', 'bad'); return; }
+  const c = currentDispatchData;
+  dscRender('Checking ' + v + '...');
+  pltApi({ action: 'dispatchCheck', serial: v, itemId: c.iid }).then(r => {
+    if (r.itemId !== c.iid) { dscRender(r.serial + ' is item ki nahi hai — ' + r.itemId + ' · ' + r.customer, 'bad'); return; }
+    if (DSC.list.some(x => x.serial === r.serial)) return;
+    DSC.list.push(r);
+    dscRender('✓ ' + r.serial, 'ok');
+  }).catch(e => dscRender(e.message, 'bad'));
+}
+
+function dscRemove(i) { DSC.list.splice(i, 1); dscRender(''); }
+
+function dscRender(msg, kind) {
+  const e = document.getElementById('dsp-emp');
+  if (e) e.innerHTML = DSC.emp ? 'Employee: <b>' + esc(DSC.emp.name) + ' (' + esc(DSC.emp.id) + ')</b> · Scanned: <b>' + DSC.list.length + '</b>'
+                               : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
+  const l = document.getElementById('dsp-scan-list');
+  if (l) l.innerHTML = DSC.list.map((x, i) =>
+    `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:3px 8px;border-radius:6px;">${esc(x.serial)} <a href="javascript:void 0" onclick="dscRemove(${i})" style="text-decoration:none;color:var(--text3);">×</a></span>`).join('');
+  const q = document.getElementById('dsp-qty'); if (q) q.value = DSC.list.length;
+  const m = document.getElementById('dsp-scan-msg');
+  if (m) { m.textContent = msg || ''; m.style.color = kind === 'bad' ? 'var(--error)' : kind === 'ok' ? 'var(--success)' : 'var(--text3)'; }
+}
+
 function submitDispatch() {
   const c = currentDispatchData;
   if (!c) return;
   const btn = document.getElementById('dsp-submit-btn');
-  const dq  = parseFloat(document.getElementById('dsp-qty').value) || 0;
-  if (dq <= 0) { toast('Dispatch Qty 0 se zyada bharo', 'e'); return; }
+  if (!DSC.emp) { toast('Pehle employee badge scan karo', 'e'); document.getElementById('dsp-scan')?.focus(); return; }
+  const dq = DSC.list.length;
+  if (dq <= 0) { toast('Kam se kam ek battery scan karo', 'e'); document.getElementById('dsp-scan')?.focus(); return; }
   const transport = document.getElementById('dsp-transport').value.trim();
   if (!transport) { toast('Transport Name bharo', 'e'); return; }
   const lrEl = document.getElementById('dsp-lr');
@@ -3256,29 +3319,33 @@ function submitDispatch() {
   }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-  api({
-    action: 'addDispatch',
-    'Order ID': c.oid,
-    'Item ID': c.iid,
-    'Dispatch Qty': dq,
-    'Dispatch Date': fmtDisplayDate(document.getElementById('dsp-date').value),
-    'Transport Name': transport,
-    'Vehicle No': document.getElementById('dsp-vehicle').value,
-    'LR No': lrNo,
-    'Driver No': document.getElementById('dsp-driver').value,
-    'Remarks': document.getElementById('dsp-remarks').value,
-    'Added By': user.name || ''
-  }, r => {
+  // PLT ke through: ERP Dispatch + PLT Dispatched + IMS — ek saath
+  pltApi({
+    action: 'dispatchBatch',
+    itemId: c.iid,
+    serials: DSC.list.map(x => x.serial).join(','),
+    transport: transport,
+    lr: lrNo,
+    vehicle: document.getElementById('dsp-vehicle').value,
+    driver: document.getElementById('dsp-driver').value,
+    date: document.getElementById('dsp-date').value,
+    remarks: document.getElementById('dsp-remarks').value,
+    empId: DSC.emp.id,
+    empName: DSC.emp.name
+  }).then(r => {
     if (btn) { btn.disabled = false; btn.textContent = '🚚 Save Dispatch'; }
-    if (r.success) {
-      // FMS: Dispatch checkbox ticked hai to us step ko Done karo
-      if (document.getElementById('dsp-fms-chk')?.checked) {
-        api({ action: 'markFMSProductionDone', 'Item ID': c.iid, 'Step': 'dispatch', 'Actual': fmtDisplayDate(document.getElementById('dsp-date').value) }, () => {});
-      }
-      toast('Dispatch saved! ' + r.dispatchID + (r.orderDispatched ? ' — 🎉 Pura order Dispatched ho gaya!' : ''));
-      closeModal('dispatchModal');
-      loadDispatch();
-    } else toast(r.message || 'Failed', 'e');
+    const res = (r.results || [])[0] || {};
+    if (!res.ok) { toast(res.error || 'Dispatch nahi hua', 'e'); return; }
+    if (document.getElementById('dsp-fms-chk')?.checked) {
+      api({ action: 'markFMSProductionDone', 'Item ID': c.iid, 'Step': 'dispatch', 'Actual': fmtDisplayDate(document.getElementById('dsp-date').value) }, () => {});
+    }
+    if (res.mode === 'SHADOW') toast('SHADOW mode: ERP me entry nahi bani — Links me MODE_DISPATCH = LIVE karo', 'w');
+    else toast('Dispatch saved! ' + res.ref + ' · ' + res.erp + ' · ' + res.count + ' battery');
+    closeModal('dispatchModal');
+    loadDispatch();
+  }).catch(e => {
+    if (btn) { btn.disabled = false; btn.textContent = '🚚 Save Dispatch'; }
+    toast('Dispatch nahi hua: ' + e.message, 'e');
   });
 }
 
