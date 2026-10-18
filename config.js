@@ -25,6 +25,8 @@ window.SUITE = {
     erp:      { label: 'ERP',             path: 'erp/app.html' },
     ims:      { label: 'Inventory (IMS)', path: 'ims/index.html' },
     pltScan:  { label: 'Line Scan',       path: 'plt/index.html' },
+    plt2W:    { label: '2 Wheeler Line',  path: 'plt/index.html?hall=2%20Wheeler' },
+    pltDisp:  { label: 'Dispatch',        path: 'plt/index.html?mode=dispatch' },
     pltAdmin: { label: 'Line Admin',      path: 'plt/admin.html' },
     soms:     { label: 'Store Orders',    path: 'soms/index.html' }
   }
