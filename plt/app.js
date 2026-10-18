@@ -342,6 +342,11 @@ function dspScan(raw) {
   serial = String(serial || '').trim();
   if (!serial) return;
   var d = state.dsp;
+  // Employee badge? (STAFF:45 ya sirf 45)
+  var badge = /^STAFF:/i.test(serial) ? serial.replace(/^STAFF:/i, '').trim() : serial;
+  var emp = matchStaff(badge);
+  if (emp) { d.emp = emp; d.last = { ok: 'Employee: ' + emp.name + ' (' + emp.id + ')' }; flash('flash-context'); beep(true); render(); return; }
+  if (!d.emp) { flash('flash-error'); beep(false); alert('Pehle apna employee badge scan karo.'); return; }
   if (!d.transport.trim() || !d.lr.trim()) {
     flash('flash-error'); beep(false);
     alert('Pehle Transport aur LR / Bilty No bharo, phir battery scan karo.');
@@ -378,7 +383,8 @@ function dspSubmit() {
   if (!confirm(msg)) return;
   d.busy = true; render();
   call('dispatchBatch', { token: d.token, serials: d.list.map(function (x) { return x.serial; }).join(','),
-    transport: d.transport, lr: d.lr, vehicle: d.vehicle, driver: d.driver }).then(function (r) {
+    transport: d.transport, lr: d.lr, vehicle: d.vehicle, driver: d.driver,
+    empId: d.emp ? d.emp.id : '', empName: d.emp ? d.emp.name : '' }).then(function (r) {
     d.busy = false;
     var bad = (r.results || []).filter(function (x) { return !x.ok; });
     var good = (r.results || []).filter(function (x) { return x.ok; });
@@ -411,7 +417,8 @@ function renderDispatch() {
   var last = d.last ? (d.last.err
       ? '<div style="margin-top:10px;color:var(--bad);font-weight:600;">✗ ' + esc(d.last.err) + '</div>'
       : '<div style="margin-top:10px;color:var(--ok);font-weight:600;">✓ ' + esc(d.last.ok) + '</div>') : '';
-  return '<div class="panel"><div class="panel-title">Dispatch details</div>' +
+  return '<div class="panel"><div class="panel-title">Dispatch details · ' +
+      (d.emp ? 'Employee: ' + esc(d.emp.name) + ' (' + esc(d.emp.id) + ')' : '<span style="color:var(--bad);">⚠ Pehle employee badge scan karo</span>') + '</div>' +
       '<div class="row">' + inp('transport', 'Transport', true) + inp('lr', 'LR / Bilty No', true) + inp('vehicle', 'Vehicle No') + inp('driver', 'Driver No') + '</div></div>' +
     '<div class="panel scan-panel"><div class="scan-box" id="scanBox">' +
       '<input id="dispatchScan" type="text" placeholder="Dispatch: battery scan karo" autocomplete="off" ' +
