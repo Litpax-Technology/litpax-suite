@@ -14,7 +14,6 @@ state = {
 try { state.dsp.token = sessionStorage.getItem('plt_sup') || sessionStorage.getItem('suite_token') || ''; } catch (e) {}
 try {
   var _q = new URLSearchParams(window.location.search);
-  if (_q.get('mode') === 'dispatch') state.mode = 'dispatch';
   state.lockMode = !!_q.get('mode') || !!_q.get('hall');   // ?hall= ya ?mode= wala page → sirf wahi kaam, tabs nahi
 } catch (e) {}
 
@@ -432,7 +431,7 @@ function renderDispatch() {
 }
 
 function renderModeTabs() {
-  if (state.lockMode) return '';
+  return '';   // Dispatch ab ERP ke Dispatch popup me hota hai
   return '<div class="tabs">' +
     '<button class="tab' + (state.mode === 'scan' ? ' active' : '') + '" onclick="setMode(\'scan\')">Production scan</button>' +
     '<button class="tab' + (state.mode === 'dispatch' ? ' active' : '') + '" onclick="setMode(\'dispatch\')">Dispatch</button></div>';
