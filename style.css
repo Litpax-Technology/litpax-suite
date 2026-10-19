@@ -309,3 +309,30 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .hero-stats .d.r { background: var(--brand-red); } .hero-stats .d.y { background: var(--brand-yellow); } .hero-stats .d.g { background: #46e39b; } .hero-stats .d.b { background: #8ea2ff; }
 .tabs .nav-item.active { background: rgba(236,79,85,.09); color: #c9363d; }
 .tabs .badge { background: var(--brand-red); }
+
+
+/* =============================================================
+ * Login hero — Vendor → Order → Dispatch flow (cells ki jagah)
+ * ============================================================= */
+.flowart { width: min(540px, 100%); height: auto; max-height: 56vh; overflow: visible; }
+.fa-halo { animation: breathe 6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.fa-belt { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 16; stroke-linecap: round; stroke-linejoin: round; }
+.fa-belt-dash { fill: none; stroke: rgba(255,255,255,.18); stroke-width: 2; stroke-dasharray: 2 12; stroke-linecap: round; animation: belt 1.2s linear infinite; }
+@keyframes belt { to { stroke-dashoffset: -14; } }
+.fa-prog { fill: none; stroke: url(#fgrad); stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 100 100; stroke-dashoffset: 100; filter: drop-shadow(0 0 6px rgba(245,205,71,.5)); }
+.fa-vline { stroke: rgba(192,132,252,.4); stroke-width: 2; stroke-dasharray: 3 6; }
+.fa-pkt { fill: #f5cd47; filter: drop-shadow(0 0 6px #f5cd47); }
+.fa-base { fill: rgba(8,9,20,.88); stroke: rgba(255,255,255,.12); stroke-width: 1.5; }
+.fa-ring { fill: none; stroke: var(--c); stroke-width: 2.2; filter: drop-shadow(0 0 10px var(--c)); }
+.fa-orbit { fill: none; stroke: rgba(236,79,85,.28); stroke-width: 1.5; stroke-dasharray: 3 7; animation: spin 10s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fa-ic, .fa-ic * { fill: none; stroke: var(--c); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.fa-lbl { fill: rgba(255,255,255,.85); font: 700 12.5px Inter, sans-serif; letter-spacing: .1em; text-anchor: middle; text-transform: uppercase; }
+.fa-sub { fill: rgba(255,255,255,.45); font: 500 11px Inter, sans-serif; text-anchor: middle; }
+.fa-left { text-anchor: start; }
+.fa-dot { fill: #fff; filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #f5cd47); }
+.fa-bbody { fill: rgba(8,9,20,.95); stroke: rgba(255,255,255,.8); stroke-width: 1.6; }
+.fa-bnub { fill: rgba(255,255,255,.8); }
+.fa-parts circle { fill: #fff; opacity: .35; animation: twinkle 3s ease-in-out infinite; }
+.fa-parts circle:nth-child(2n) { animation-delay: 1.5s; }
+@media (prefers-reduced-motion: reduce) { .fa-batt, .fa-pkt { display: none; } .fa-belt-dash, .fa-orbit, .fa-halo { animation: none; } }
