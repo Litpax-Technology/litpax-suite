@@ -575,3 +575,35 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .ll-bat, .ll-glow, .ll-shine, .ll-meter i, .ll-dots b { animation: none; }
   .ll-meter i { opacity: 1; }
 }
+
+/* =============================================================
+ * Sign out — battery power-down
+ * ============================================================= */
+.ll.out .ll-shine { display: none; }
+.ll.out .ll-bat { animation: lldown 2.2s ease-in forwards; }
+@keyframes lldown {
+  0%   { transform: translateY(-10px); filter: brightness(1); }
+  55%  { transform: translateY(0); filter: brightness(.9); }
+  100% { transform: translateY(6px); filter: brightness(.55) saturate(.6); }
+}
+.ll.out .ll-glow { animation: llglowout 2.2s ease-in forwards; }
+@keyframes llglowout {
+  0%   { background: #46e39b; opacity: .75; }
+  45%  { background: #f5cd47; opacity: .6; }
+  100% { background: #ec4f55; opacity: .25; }
+}
+/* meter: full se khaali, upar (hara) se neeche (laal) */
+.ll.out .ll-meter i { opacity: 1; animation: llsegout .35s ease-in forwards; }
+.ll.out .ll-meter i:nth-child(5) { animation-delay: .15s; }
+.ll.out .ll-meter i:nth-child(4) { animation-delay: .45s; }
+.ll.out .ll-meter i:nth-child(3) { animation-delay: .75s; }
+.ll.out .ll-meter i:nth-child(2) { animation-delay: 1.05s; }
+.ll.out .ll-meter i:nth-child(1) { animation-delay: 1.35s; }
+@keyframes llsegout { from { opacity: 1; box-shadow: 0 0 8px currentColor; } to { opacity: .12; box-shadow: none; } }
+.ll.out .ll-meter { animation: llmeterout 2.2s ease-in forwards; }
+@keyframes llmeterout { 70% { border-color: rgba(255,255,255,.85); } 100% { border-color: rgba(236,79,85,.7); } }
+.ll-tick { color: #46e39b; display: inline-block; animation: lltick .35s cubic-bezier(.2,.8,.2,1.4) both; }
+@keyframes lltick { from { transform: scale(0); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .ll.out .ll-bat, .ll.out .ll-glow, .ll.out .ll-meter, .ll.out .ll-meter i { animation: none; }
+}
