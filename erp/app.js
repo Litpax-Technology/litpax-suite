@@ -3279,11 +3279,27 @@ function dscScan(raw) {
   }).catch(e => dscRender(e.message, 'bad'));
 }
 
+// Scanner Enter na bheje to bhi: typing rukne ke 300ms baad scan apne aap uthao
+let _dscT = null;
+function dscAuto() { clearTimeout(_dscT); _dscT = setTimeout(dscFlush, 300); }
+function dscFlush() {
+  clearTimeout(_dscT);
+  const el = document.getElementById('dsp-scan');
+  if (!el || !el.value.trim()) return;
+  const v = el.value; el.value = '';
+  dscScan(v);
+}
+
 function dscRemove(i) { DSC.list.splice(i, 1); dscRender(''); }
 
 function dscRender(msg, kind) {
   const e = document.getElementById('dsp-emp');
-  if (e) e.innerHTML = DSC.emp ? 'Employee: <b>' + esc(DSC.emp.name) + ' (' + esc(DSC.emp.id) + ')</b> · Scanned: <b>' + DSC.list.length + '</b>'
+  if (e) e.innerHTML = DSC.emp
+    ? '<span style="color:var(--success);font-weight:700;font-size:13px;">👤 ' + esc(DSC.emp.name) + ' (' + esc(DSC.emp.id) + ')</span>' +
+      ' &nbsp;·&nbsp; Batteries scanned: <b>' + DSC.list.length + '</b>'
+    : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
+  const sb = document.getElementById('dsp-scan');
+  if (sb) sb.placeholder = DSC.emp ? 'Ab battery scan karo' : 'Pehle employee badge scan karo';
                                : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
   const l = document.getElementById('dsp-scan-list');
   if (l) l.innerHTML = DSC.list.map((x, i) =>
