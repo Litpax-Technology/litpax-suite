@@ -518,8 +518,9 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .fa-bimg, .fa-bshadow, .fa-bglow, .fa-ring { animation: none; } }
 
 /* battery ke upar charging indicator */
-.fa-chgbox { fill: rgba(8,9,20,.88); stroke: rgba(255,255,255,.85); stroke-width: 1.6; filter: drop-shadow(0 0 8px rgba(70,227,155,.45)); }
-.fa-chgnub { fill: rgba(255,255,255,.85); }
-.fa-chgtxt { fill: #46e39b; font: 700 9.5px Inter, sans-serif; letter-spacing: .22em; text-anchor: middle; animation: chgblink 1.4s ease-in-out infinite; }
+/* battery side face par charging indicator */
+.fa-chgbox { fill: rgba(5,6,14,.92); stroke: rgba(255,255,255,.55); stroke-width: .8; }
+.fa-chgnub { fill: rgba(255,255,255,.55); }
+.fa-seg { filter: drop-shadow(0 0 2.5px rgba(70,227,155,.7)); }
 @keyframes chgblink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .fa-chgtxt { animation: none; } }
