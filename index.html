@@ -339,6 +339,49 @@
   </main>
 </div>
 
+<!-- ============ LOGIN LOADER (full-screen blur + battery) ============ -->
+<div id="loginLoader" class="ll" aria-hidden="true">
+  <div class="ll-box">
+    <div class="ll-bat">
+      <span class="ll-glow"></span>
+      <img src="img/battery.webp" alt="">
+      <span class="ll-shine"></span>
+    </div>
+    <div class="ll-meter"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="ll-title" id="llTitle">Signing in<span class="ll-dots"><b>.</b><b>.</b><b>.</b></span></div>
+    <div class="ll-sub" id="llSub">Connecting Sales, Inventory, Production &amp; Purchase</div>
+  </div>
+</div>
+<script>
+  /* Login button busy → loader dikhao; wapas normal → success par "Welcome", error par hide */
+  (function () {
+    var btn = document.getElementById('loginBtn'), ll = document.getElementById('loginLoader'),
+        ls = document.getElementById('loginScreen'), tt = document.getElementById('llTitle'),
+        st = document.getElementById('llSub'), t0 = 0, hideT;
+    if (!btn || !ll) return;
+    function show() {
+      clearTimeout(hideT); t0 = Date.now(); ll.classList.remove('ok');
+      tt.innerHTML = 'Signing in<span class="ll-dots"><b>.</b><b>.</b><b>.</b></span>';
+      st.textContent = 'Connecting Sales, Inventory, Production & Purchase';
+      ll.classList.add('show');
+    }
+    function done() {
+      var wait = Math.max(0, 900 - (Date.now() - t0));        // kam se kam 0.9 sec dikhe (flicker na ho)
+      hideT = setTimeout(function () {
+        if (ls.classList.contains('hidden')) {                 // login ho gaya
+          ll.classList.add('ok'); tt.textContent = 'Welcome'; st.textContent = 'Opening your workspace';
+          hideT = setTimeout(function () { ll.classList.remove('show', 'ok'); }, 750);
+        } else {
+          ll.classList.remove('show');                         // error → login form par error dikhega
+        }
+      }, wait);
+    }
+    new MutationObserver(function () {
+      if (btn.disabled) show(); else if (ll.classList.contains('show')) done();
+    }).observe(btn, { attributes: true, attributeFilter: ['disabled'] });
+  })();
+</script>
+
 <div id="toast" class="toast"></div>
 
 <script src="config.js"></script>
