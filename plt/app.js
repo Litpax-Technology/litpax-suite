@@ -14,7 +14,9 @@ state = {
 try { state.dsp.token = sessionStorage.getItem('plt_sup') || sessionStorage.getItem('suite_token') || ''; } catch (e) {}
 try {
   var _q = new URLSearchParams(window.location.search);
-  state.lockMode = !!_q.get('mode') || !!_q.get('hall');   // ?hall= ya ?mode= wala page → sirf wahi kaam, tabs nahi
+  // ?mode=packing → sirf Battery Packing station (alag laptop). ?station= se koi bhi station.
+  state.onlyStation = _q.get('mode') === 'packing' ? 'Battery Packing' : (_q.get('station') || '').trim();
+  state.lockMode = !!_q.get('mode') || !!_q.get('hall') || !!state.onlyStation;
 } catch (e) {}
 
 (function () {
