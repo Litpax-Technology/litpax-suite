@@ -3299,8 +3299,7 @@ function dscRender(msg, kind) {
       ' &nbsp;·&nbsp; Batteries scanned: <b>' + DSC.list.length + '</b>'
     : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
   const sb = document.getElementById('dsp-scan');
-  if (sb) sb.placeholder = DSC.emp ? 'Ab battery scan karo' : 'Pehle employee badge scan karo';
-                               : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
+  if (sb) sb.placeholder = DSC.emp ? 'Ab battery scan karo' : 'Pehle employee badge scan karo';                 
   const l = document.getElementById('dsp-scan-list');
   if (l) l.innerHTML = DSC.list.map((x, i) =>
     `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:3px 8px;border-radius:6px;">${esc(x.serial)} <a href="javascript:void 0" onclick="dscRemove(${i})" style="text-decoration:none;color:var(--text3);">×</a></span>`).join('');
