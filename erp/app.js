@@ -3234,6 +3234,7 @@ function loadDispatchHistory(orderID, itemID) {
 
 /* ===== Dispatch scan (PLT) — employee badge + battery serials ===== */
 let DSC = { emp: null, list: [], staff: null };
+const dscEsc = v => String(v == null ? '' : v).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
 
 function pltApi(params) {
   return new Promise((resolve, reject) => {
@@ -3295,14 +3296,15 @@ function dscRemove(i) { DSC.list.splice(i, 1); dscRender(''); }
 function dscRender(msg, kind) {
   const e = document.getElementById('dsp-emp');
   if (e) e.innerHTML = DSC.emp
-    ? '<span style="color:var(--success);font-weight:700;font-size:13px;">👤 ' + esc(DSC.emp.name) + ' (' + esc(DSC.emp.id) + ')</span>' +
-      ' &nbsp;·&nbsp; Batteries scanned: <b>' + DSC.list.length + '</b>'
+    ? '<span style="display:inline-block;background:var(--success-dim);border:1px solid var(--success-b);color:var(--success);font-weight:700;font-size:14px;padding:6px 12px;border-radius:8px;">👤 ' +
+        dscEsc(DSC.emp.name) + ' (' + dscEsc(DSC.emp.id) + ')</span>' +
+      ' &nbsp; Batteries scanned: <b>' + DSC.list.length + '</b>'
     : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
   const sb = document.getElementById('dsp-scan');
   if (sb) sb.placeholder = DSC.emp ? 'Ab battery scan karo' : 'Pehle employee badge scan karo';                 
   const l = document.getElementById('dsp-scan-list');
   if (l) l.innerHTML = DSC.list.map((x, i) =>
-    `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:3px 8px;border-radius:6px;">${esc(x.serial)} <a href="javascript:void 0" onclick="dscRemove(${i})" style="text-decoration:none;color:var(--text3);">×</a></span>`).join('');
+        `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:3px 8px;border-radius:6px;">${dscEsc(x.serial)} <a href="javascript:void 0" onclick="dscRemove(${i})" style="text-decoration:none;color:var(--text3);">×</a></span>`).join('');
   const q = document.getElementById('dsp-qty'); if (q) q.value = DSC.list.length;
   const m = document.getElementById('dsp-scan-msg');
   if (m) { m.textContent = msg || ''; m.style.color = kind === 'bad' ? 'var(--error)' : kind === 'ok' ? 'var(--success)' : 'var(--text3)'; }
