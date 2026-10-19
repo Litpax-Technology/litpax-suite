@@ -353,32 +353,57 @@
   </div>
 </div>
 <script>
-  /* Login button busy → loader dikhao; wapas normal → success par "Welcome", error par hide */
+  /* Login: button busy → loader; success → "Welcome"; error → hide.
+     Logout: app band hote hi battery power-down animation. */
   (function () {
     var btn = document.getElementById('loginBtn'), ll = document.getElementById('loginLoader'),
-        ls = document.getElementById('loginScreen'), tt = document.getElementById('llTitle'),
-        st = document.getElementById('llSub'), t0 = 0, hideT;
+        ls = document.getElementById('loginScreen'), shell = document.getElementById('appShell'),
+        tt = document.getElementById('llTitle'), st = document.getElementById('llSub'),
+        t0 = 0, hideT, outT = [];
     if (!btn || !ll) return;
+
+    function clearOut() { outT.forEach(clearTimeout); outT = []; ll.classList.remove('out'); }
+
     function show() {
-      clearTimeout(hideT); t0 = Date.now(); ll.classList.remove('ok');
+      clearTimeout(hideT); clearOut(); t0 = Date.now(); ll.classList.remove('ok');
       tt.innerHTML = 'Signing in<span class="ll-dots"><b>.</b><b>.</b><b>.</b></span>';
       st.textContent = 'Connecting Sales, Inventory, Production & Purchase';
       ll.classList.add('show');
     }
     function done() {
-      var wait = Math.max(0, 900 - (Date.now() - t0));        // kam se kam 0.9 sec dikhe (flicker na ho)
+      var wait = Math.max(0, 900 - (Date.now() - t0));
       hideT = setTimeout(function () {
-        if (ls.classList.contains('hidden')) {                 // login ho gaya
+        if (ls.classList.contains('hidden')) {
           ll.classList.add('ok'); tt.textContent = 'Welcome'; st.textContent = 'Opening your workspace';
           hideT = setTimeout(function () { ll.classList.remove('show', 'ok'); }, 750);
         } else {
-          ll.classList.remove('show');                         // error → login form par error dikhega
+          ll.classList.remove('show');
         }
       }, wait);
     }
     new MutationObserver(function () {
-      if (btn.disabled) show(); else if (ll.classList.contains('show')) done();
+      if (btn.disabled) show(); else if (ll.classList.contains('show') && !ll.classList.contains('out')) done();
     }).observe(btn, { attributes: true, attributeFilter: ['disabled'] });
+
+    /* ---- Sign out: battery power-down ---- */
+    function playOut() {
+      clearTimeout(hideT); clearOut(); ll.classList.remove('ok');
+      void ll.offsetWidth;                                    // animation fresh restart
+      ll.classList.add('out', 'show');
+      tt.innerHTML = 'Signing out<span class="ll-dots"><b>.</b><b>.</b><b>.</b></span>';
+      st.textContent = 'Saving your session';
+      outT.push(setTimeout(function () { tt.innerHTML = 'Signed out <span class="ll-tick">✓</span>'; st.textContent = 'See you next shift'; }, 1400));
+      outT.push(setTimeout(function () { ll.classList.remove('show'); }, 2500));
+      outT.push(setTimeout(function () { ll.classList.remove('out'); }, 2900));
+    }
+    if (shell) {
+      var wasOpen = !shell.classList.contains('hidden');
+      new MutationObserver(function () {
+        var open = !shell.classList.contains('hidden');
+        if (wasOpen && !open) playOut();
+        wasOpen = open;
+      }).observe(shell, { attributes: true, attributeFilter: ['class'] });
+    }
   })();
 </script>
 
