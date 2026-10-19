@@ -387,3 +387,77 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .fa-scene, .fa-belt-dash, .fa-vdash, .fa-pulse, .fa-halo { animation: none; }
   .flowart, .fa-far, .fa-near { transform: none; }
 }
+/* =============================================================
+ * Login hero — side cover (glass cards, streaks, glow)
+ * ============================================================= */
+.hero-art { position: relative; }
+.flowart { width: min(620px, 100%); max-height: 62vh; position: relative; z-index: 2; }
+
+/* glow blobs */
+.fa-blob { position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; z-index: 0; animation: blob 14s ease-in-out infinite; }
+.fa-blob.b1 { width: 280px; height: 280px; left: -60px; bottom: 0; background: rgba(236,79,85,.22); }
+.fa-blob.b2 { width: 240px; height: 240px; right: -40px; top: 0; background: rgba(192,132,252,.20); animation-delay: -7s; }
+@keyframes blob { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-20px) scale(1.15); } }
+
+/* light streaks */
+.fa-streak { position: absolute; height: 1.5px; width: 160px; border-radius: 2px; z-index: 1; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(245,205,71,.9), transparent); transform: rotate(30deg); animation: streak 6s linear infinite; }
+.fa-streak.s1 { top: 18%; left: -10%; }
+.fa-streak.s2 { top: 55%; left: -20%; animation-delay: 2.2s; background: linear-gradient(90deg, transparent, rgba(142,162,255,.9), transparent); }
+.fa-streak.s3 { top: 80%; left: -5%;  animation-delay: 4.1s; background: linear-gradient(90deg, transparent, rgba(236,79,85,.9), transparent); }
+@keyframes streak { 0% { opacity: 0; translate: 0 0; } 10% { opacity: 1; } 60% { opacity: 1; } 100% { opacity: 0; translate: 520px 300px; } }
+
+/* glass cards */
+.fa-card { position: absolute; z-index: 3; width: 190px; pointer-events: none;
+  transform: translate(calc(var(--mx, 0) * 16px), calc(var(--my, 0) * 11px)); transition: transform .3s ease-out; }
+.fa-card .in { padding: 11px 13px; border-radius: 12px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: cardfloat 6s ease-in-out infinite; }
+.fa-card.c1 { top: 4%;  left: 1%; }
+.fa-card.c2 { top: 4%;  right: 1%; }
+.fa-card.c3 { bottom: 4%; left: 1%; }
+.fa-card.c4 { bottom: 4%; right: 1%; }
+.fa-card.c2 .in { animation-delay: -1.5s; } .fa-card.c3 .in { animation-delay: -3s; } .fa-card.c4 .in { animation-delay: -4.5s; }
+@keyframes cardfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.fc-h { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 7px; }
+.fc-s { font-size: 11.5px; color: #a9abc6; margin: 3px 0 9px; }
+
+/* c1: live dot + station dots */
+.fc-live { width: 7px; height: 7px; border-radius: 50%; background: #46e39b; box-shadow: 0 0 0 0 rgba(70,227,155,.6); animation: live 1.6s infinite; }
+@keyframes live { 70% { box-shadow: 0 0 0 7px rgba(70,227,155,0); } 100% { box-shadow: 0 0 0 0 rgba(70,227,155,0); } }
+.fc-stations { display: flex; align-items: center; gap: 0; }
+.fc-stations span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.14); position: relative; animation: sd 2.5s infinite; }
+.fc-stations span + span { margin-left: 22px; }
+.fc-stations span + span::before { content: ''; position: absolute; right: 12px; top: 4.5px; width: 20px; height: 1px; background: rgba(255,255,255,.15); }
+.fc-stations span:nth-child(2) { animation-delay: .5s; } .fc-stations span:nth-child(3) { animation-delay: 1s; }
+.fc-stations span:nth-child(4) { animation-delay: 1.5s; } .fc-stations span:nth-child(5) { animation-delay: 2s; }
+@keyframes sd { 0%, 35%, 100% { background: rgba(255,255,255,.14); box-shadow: none; } 10%, 25% { background: #46e39b; box-shadow: 0 0 10px #46e39b; } }
+
+/* c2: progress bar */
+.fc-bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+.fc-bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, #f5cd47, #ec4f55, #46e39b); animation: bar 3.2s ease-in-out infinite; }
+@keyframes bar { 0% { width: 0; } 70%, 85% { width: 100%; } 100% { width: 100%; opacity: 0; } }
+.fc-tags { display: flex; gap: 5px; margin-top: 8px; }
+.fc-tags span { font-size: 10px; color: #d8d9ea; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.08); }
+
+/* c3: rolling serial */
+.fc-serial { display: flex; align-items: center; gap: 2px; font: 600 13px var(--mono); color: #fff; height: 18px; overflow: hidden; }
+.fc-serial .roll { display: flex; flex-direction: column; animation: roll 6s steps(1) infinite; }
+.fc-serial .roll span { height: 18px; line-height: 18px; }
+@keyframes roll { 0% { transform: translateY(0); } 33.33% { transform: translateY(-18px); } 66.66% { transform: translateY(-36px); } 100% { transform: translateY(-54px); } }
+.fc-serial .caret { width: 2px; height: 14px; background: #8ea2ff; animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+
+/* c4: ticks */
+.fc-ticks { display: flex; gap: 6px; }
+.fc-ticks span { font-size: 11px; font-weight: 600; color: #d8d9ea; padding: 3px 8px 3px 6px; border-radius: 7px; background: rgba(70,227,155,.08); border: 1px solid rgba(70,227,155,.2);
+  opacity: .25; animation: tick 4s infinite; }
+.fc-ticks span::before { content: '✓ '; color: #46e39b; font-weight: 800; }
+.fc-ticks span:nth-child(2) { animation-delay: .5s; } .fc-ticks span:nth-child(3) { animation-delay: 1s; }
+@keyframes tick { 0%, 5% { opacity: .25; transform: scale(.92); } 15%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: .25; } }
+
+/* chhoti screen par cards scene par chadh jaate — chhupa do */
+@media (max-width: 1280px), (max-height: 720px) { .fa-card, .fa-streak { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .fa-blob, .fa-streak, .fa-card .in, .fc-live, .fc-stations span, .fc-bar i, .fc-serial .roll, .fc-serial .caret, .fc-ticks span { animation: none; }
+  .fa-card { transform: none; } .fc-ticks span { opacity: 1; }
+}
