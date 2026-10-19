@@ -502,3 +502,17 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .fa-wwin, .fa-bolt, .fa-tip { animation: none; }
   .fa-box { animation: none; opacity: 1; }
 }
+
+/* =============================================================
+ * Login hero — real battery photo animations
+ * ============================================================= */
+.fa-bimg { animation: bfloat 5s ease-in-out infinite; }
+@keyframes bfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.fa-bshadow { fill: #000; opacity: .55; filter: blur(8px); transform-box: fill-box; transform-origin: center; animation: bshadow 5s ease-in-out infinite; }
+@keyframes bshadow { 0%, 100% { transform: scale(1); opacity: .55; } 50% { transform: scale(.85); opacity: .35; } }
+.fa-bglow { filter: blur(22px); opacity: .45; animation: bglow 3s ease-in-out infinite; }
+@keyframes bglow { 0%, 100% { opacity: .30; } 50% { opacity: .55; } }
+.fa-ring { fill: none; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: ringx 2.6s ease-out infinite; }
+@keyframes ringx { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
+.fa-cbar { fill: rgba(8,9,20,.85); stroke: rgba(255,255,255,.2); stroke-width: 1; }
+@media (prefers-reduced-motion: reduce) { .fa-bimg, .fa-bshadow, .fa-bglow, .fa-ring { animation: none; } }
