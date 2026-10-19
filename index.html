@@ -84,14 +84,6 @@
                 <animate attributeName="stroke" dur="6s" repeatCount="indefinite" values="#ec4f55;#f5cd47;#46e39b;#46e39b;#ec4f55" keyTimes="0;.3;.6;.85;1"/>
               </ellipse>
 
-              <!-- charge meter (side) -->
-              <rect class="fa-cbar" x="-92" y="-120" width="10" height="132" rx="5"/>
-              <rect x="-90" y="8" width="6" height="2" rx="3">
-                <animate attributeName="y" dur="6s" repeatCount="indefinite" values="8;-116;-116;8" keyTimes="0;.6;.85;1"/>
-                <animate attributeName="height" dur="6s" repeatCount="indefinite" values="2;126;126;2" keyTimes="0;.6;.85;1"/>
-                <animate attributeName="fill" dur="6s" repeatCount="indefinite" values="#ec4f55;#f5cd47;#46e39b;#46e39b;#ec4f55" keyTimes="0;.3;.6;.85;1"/>
-              </rect>
-
               <!-- floating battery -->
               <g class="fa-bimg">
                 <ellipse class="fa-bglow" cx="0" cy="-60" rx="66" ry="92">
@@ -108,11 +100,18 @@
                 <circle class="fa-spark" cx="34" cy="-150" r="2.5"><animateTransform attributeName="transform" type="translate" dur="1.6s" repeatCount="indefinite" values="0,0;-12,-34"/><animate attributeName="opacity" dur="1.6s" repeatCount="indefinite" values="1;0"/></circle>
                 <circle class="fa-spark" cx="34" cy="-150" r="2"><animateTransform attributeName="transform" type="translate" dur="1.6s" begin=".5s" repeatCount="indefinite" values="0,0;12,-38"/><animate attributeName="opacity" dur="1.6s" begin=".5s" repeatCount="indefinite" values="1;0"/></circle>
                 <circle class="fa-spark" cx="34" cy="-150" r="2"><animateTransform attributeName="transform" type="translate" dur="1.6s" begin="1s" repeatCount="indefinite" values="0,0;2,-42"/><animate attributeName="opacity" dur="1.6s" begin="1s" repeatCount="indefinite" values="1;0"/></circle>
-                <!-- bolt -->
-                <g transform="translate(-22,-182)"><g>
-                  <path class="fa-bolt" d="M268 168 l-26 52 h20 l-12 46 l36 -62 h-21 l14 -36 z" transform="scale(.36) translate(-261,-217)"/>
-                  <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="3s" repeatCount="indefinite"/>
-                </g></g>
+                <!-- charging indicator (battery ke upar) -->
+                <g class="fa-chg" transform="translate(-4,-196)">
+                  <text class="fa-chgtxt" x="0" y="-18">CHARGING</text>
+                  <rect class="fa-chgbox" x="-34" y="-11" width="64" height="22" rx="5"/>
+                  <rect class="fa-chgnub" x="31" y="-5" width="4" height="10" rx="1.5"/>
+                  <rect x="-31" y="-8" width="10" height="16" rx="2" fill="#ec4f55"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values=".12;.12;1;1;.12" keyTimes="0;.10;.14;.9;1"/></rect>
+                  <rect x="-19" y="-8" width="10" height="16" rx="2" fill="#f2884e"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values=".12;.12;1;1;.12" keyTimes="0;.24;.28;.9;1"/></rect>
+                  <rect x="-7"  y="-8" width="10" height="16" rx="2" fill="#f5cd47"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values=".12;.12;1;1;.12" keyTimes="0;.38;.42;.9;1"/></rect>
+                  <rect x="5"   y="-8" width="10" height="16" rx="2" fill="#a3dd6c"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values=".12;.12;1;1;.12" keyTimes="0;.52;.56;.9;1"/></rect>
+                  <rect x="17"  y="-8" width="10" height="16" rx="2" fill="#46e39b"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values=".12;.12;1;1;.12" keyTimes="0;.66;.70;.9;1"/></rect>
+                  <path class="fa-bolt" d="M268 168 l-26 52 h20 l-12 46 l36 -62 h-21 l14 -36 z" transform="translate(-2,0) scale(.17) translate(-261,-217)"/>
+                </g>
               </g>
             </g>
 
