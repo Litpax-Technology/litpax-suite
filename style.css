@@ -461,3 +461,44 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .fa-blob, .fa-streak, .fa-card .in, .fc-live, .fc-stations span, .fc-bar i, .fc-serial .roll, .fc-serial .caret, .fc-ticks span { animation: none; }
   .fa-card { transform: none; } .fc-ticks span { opacity: 1; }
 }
+
+/* =============================================================
+ * Login hero — factory diorama extras
+ * ============================================================= */
+.hero-art { position: relative; }
+.flowart { width: min(780px, 100%); max-height: 66vh; }
+
+/* walls */
+.fa-wall { fill: rgba(255,255,255,.018); stroke: rgba(255,255,255,.07); stroke-width: 1; }
+.fa-wwin { fill: #f5cd47; opacity: .06; animation: wblink 4s ease-in-out infinite; }
+@keyframes wblink { 0%, 100% { opacity: .06; } 50% { opacity: .38; } }
+
+/* battery pack */
+.fa-shadow { fill: #000; opacity: .5; filter: blur(8px); }
+.fa-band { fill: #ec4f55; opacity: .85; }
+.fa-term { fill: #5d6080; }
+.fa-termtop { fill: #e9eaf3; } .fa-termtop.pos { fill: #ec4f55; }
+.fa-pwin { fill: rgba(8,9,20,.9); stroke: rgba(255,255,255,.18); stroke-width: 1; }
+.fa-packtxt { fill: rgba(255,255,255,.6); font: 700 11px Inter, sans-serif; letter-spacing: .22em; }
+.fa-packsub { fill: rgba(255,255,255,.35); font: 600 8.5px Inter, sans-serif; letter-spacing: .14em; }
+.fa-spark { fill: #f5cd47; filter: drop-shadow(0 0 5px #f5cd47); }
+.fa-bolt { fill: #fff; filter: drop-shadow(0 0 8px #f5cd47) drop-shadow(0 0 16px #ef5359); animation: zap 2.4s ease-in-out infinite; }
+
+/* rack */
+.fa-post { stroke: rgba(70,227,155,.55); stroke-width: 1.5; }
+.fa-shelf { fill: rgba(70,227,155,.06); stroke: rgba(70,227,155,.45); stroke-width: 1; }
+.fa-box { opacity: 0; animation: stack 10s ease-out infinite; }
+@keyframes stack { 0% { opacity: 0; transform: translateY(-16px); } 6% { opacity: 1; transform: translateY(0); }
+  86% { opacity: 1; transform: translateY(0); } 94%, 100% { opacity: 0; transform: translateY(0); } }
+
+/* robot arm */
+.fa-armbase { fill: #10122a; stroke: #ec4f55; stroke-width: 1.5; }
+.fa-armseg { stroke: #ec4f55; stroke-width: 5; stroke-linecap: round; opacity: .9; }
+.fa-armjoint { fill: #0b0c18; stroke: #f5cd47; stroke-width: 1.5; }
+.fa-tip { fill: #f5cd47; filter: drop-shadow(0 0 6px #f5cd47); animation: tipb .5s steps(1) infinite; }
+@keyframes tipb { 50% { opacity: .15; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-wwin, .fa-bolt, .fa-tip { animation: none; }
+  .fa-box { animation: none; opacity: 1; }
+}
