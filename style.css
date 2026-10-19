@@ -524,3 +524,54 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .fa-seg { filter: drop-shadow(0 0 2.5px rgba(70,227,155,.7)); }
 @keyframes chgblink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .fa-chgtxt { animation: none; } }
+
+/* =============================================================
+ * Login loader — full-screen blur + charging battery
+ * ============================================================= */
+.ll { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,11,24,.55); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease; }
+.ll.show { opacity: 1; visibility: visible; }
+.ll-box { display: flex; flex-direction: column; align-items: center; gap: 14px; transform: scale(.92); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
+.ll.show .ll-box { transform: none; }
+
+/* battery */
+.ll-bat { position: relative; width: 150px; height: 223px; animation: llfloat 2.4s ease-in-out infinite; margin-bottom: 8px; }
+.ll-bat img { position: relative; z-index: 1; width: 100%; height: 100%; display: block; filter: drop-shadow(0 18px 28px rgba(0,0,0,.6)); }
+.ll-bat::after { content: ''; position: absolute; left: 14%; right: 14%; bottom: -16px; height: 14px; border-radius: 50%; background: rgba(0,0,0,.55); filter: blur(6px); }
+@keyframes llfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.ll-glow { position: absolute; inset: 12% 4% 4%; z-index: 0; border-radius: 40%; filter: blur(34px); opacity: .7; animation: llglow 3s linear infinite; }
+@keyframes llglow { 0% { background: #ec4f55; } 40% { background: #f5cd47; } 75%, 100% { background: #46e39b; } }
+.ll-shine { position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.38) 50%, transparent 62%) no-repeat; background-size: 260% 100%;
+  -webkit-mask: url(img/battery.webp) center / 100% 100% no-repeat; mask: url(img/battery.webp) center / 100% 100% no-repeat;
+  animation: llshine 1.8s ease-in-out infinite; }
+@keyframes llshine { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+
+/* charge meter */
+.ll-meter { position: relative; display: flex; gap: 4px; padding: 4px; border: 1.5px solid rgba(255,255,255,.85); border-radius: 7px; }
+.ll-meter::after { content: ''; position: absolute; right: -7px; top: 50%; width: 4px; height: 10px; transform: translateY(-50%); background: rgba(255,255,255,.85); border-radius: 0 2px 2px 0; }
+.ll-meter i { width: 18px; height: 12px; border-radius: 2px; opacity: .15; animation: llseg 1.8s ease-in-out infinite; }
+.ll-meter i:nth-child(1) { background: #ec4f55; }
+.ll-meter i:nth-child(2) { background: #f2884e; animation-delay: .15s; }
+.ll-meter i:nth-child(3) { background: #f5cd47; animation-delay: .3s; }
+.ll-meter i:nth-child(4) { background: #a3dd6c; animation-delay: .45s; }
+.ll-meter i:nth-child(5) { background: #46e39b; animation-delay: .6s; }
+@keyframes llseg { 0% { opacity: .15; } 20%, 75% { opacity: 1; box-shadow: 0 0 8px currentColor; } 100% { opacity: .15; } }
+
+/* text */
+.ll-title { color: #fff; font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin-top: 4px; }
+.ll-dots b { display: inline-block; animation: lldot 1.2s infinite; }
+.ll-dots b:nth-child(2) { animation-delay: .2s; } .ll-dots b:nth-child(3) { animation-delay: .4s; }
+@keyframes lldot { 0%, 60%, 100% { opacity: .2; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.ll-sub { color: #b9bad3; font-size: 13px; }
+
+/* success */
+.ll.ok .ll-meter i { opacity: 1; animation: none; }
+.ll.ok .ll-glow { animation: none; background: #46e39b; }
+.ll.ok .ll-title { color: #46e39b; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-bat, .ll-glow, .ll-shine, .ll-meter i, .ll-dots b { animation: none; }
+  .ll-meter i { opacity: 1; }
+}
