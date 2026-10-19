@@ -516,3 +516,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 @keyframes ringx { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
 .fa-cbar { fill: rgba(8,9,20,.85); stroke: rgba(255,255,255,.2); stroke-width: 1; }
 @media (prefers-reduced-motion: reduce) { .fa-bimg, .fa-bshadow, .fa-bglow, .fa-ring { animation: none; } }
+
+/* battery ke upar charging indicator */
+.fa-chgbox { fill: rgba(8,9,20,.88); stroke: rgba(255,255,255,.85); stroke-width: 1.6; filter: drop-shadow(0 0 8px rgba(70,227,155,.45)); }
+.fa-chgnub { fill: rgba(255,255,255,.85); }
+.fa-chgtxt { fill: #46e39b; font: 700 9.5px Inter, sans-serif; letter-spacing: .22em; text-anchor: middle; animation: chgblink 1.4s ease-in-out infinite; }
+@keyframes chgblink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .fa-chgtxt { animation: none; } }
