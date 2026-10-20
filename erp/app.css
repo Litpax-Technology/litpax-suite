@@ -1,6 +1,6 @@
 /* ============================================================
-   LITPAX ERP — Design System v4 (Premium Light + Motion Pass)
-   Brand: Indigo #635bff accent (Litpax Suite palette) · White surfaces · Slate text
+   LITPAX ERP — Design System v5 (Litpax Red + Navy)
+   Brand: Red #ec4f55 accent · Navy sidebar · White surfaces · Slate text
    Font: Inter (UI) + JetBrains Mono (data/IDs)
    Drop-in replacement — class names unchanged, HTML/JS same.
    ============================================================ */
@@ -8,13 +8,13 @@
 /* ── 1. DESIGN TOKENS ──────────────────────────────────────── */
 :root {
   /* Brand */
-  --navy:        #1e1b4b;
-  --navy-mid:    #2c2870;
-  --navy-light:  #3b3680;
-  --teal:        #635bff;
-  --teal-mid:    #7b74ff;
-  --teal-dim:    #efeeff;
-  --teal-b:      #dcd9fb;
+  --navy:        #161b36;
+  --navy-mid:    #1f2650;
+  --navy-light:  #2b3a8c;
+  --teal:        #ec4f55;
+  --teal-mid:    #f27a7e;
+  --teal-dim:    #fdeeee;
+  --teal-b:      #f8cfd1;
 
   /* Surfaces */
   --bg:          #f6f7fb;
@@ -26,7 +26,7 @@
   --chrome-bg:      #ffffff;
   --chrome-border:  #e6e8f0;
   --chrome-hover:   #f3f4f9;
-  --chrome-active:  #efeeff;
+  --chrome-active:  #fdeeee;
 
   /* Borders */
   --border:      #e6e8f0;
@@ -39,11 +39,11 @@
   --text4:       #a3a6b8;
 
   /* Accent (Teal as primary action) */
-  --accent:      #635bff;
-  --accent2:     #4b44d6;
-  --accent-dim:  #efeeff;
-  --accent-b:    #dcd9fb;
-  --accent-grad: linear-gradient(135deg, #6f68ff 0%, #4b44d6 100%);
+  --accent:      #ec4f55;
+  --accent2:     #d63a40;
+  --accent-dim:  #fdeeee;
+  --accent-b:    #f8cfd1;
+  --accent-grad: linear-gradient(135deg, #f16a6f 0%, #d63a40 100%);
 
   /* Blue (secondary info) */
   --blue:        #2563eb;
@@ -84,7 +84,7 @@
   --sh:     0 1px 2px rgba(20,22,50,0.04), 0 1px 3px rgba(20,22,50,0.05);
   --sh-md:  0 2px 5px rgba(20,22,50,0.05), 0 6px 16px rgba(20,22,50,0.06);
   --sh-lg:  0 6px 16px rgba(20,22,50,0.07), 0 16px 40px rgba(20,22,50,0.11);
-  --ring:   0 0 0 3px rgba(99,91,255,0.10);
+  --ring:   0 0 0 3px rgba(236,79,85,0.10);
 
   /* Radius */
   --r-sm:   5px;
@@ -170,7 +170,7 @@ td, th, .detail-val, .badge {
   color: #fff;
   flex-shrink: 0;
   letter-spacing: -0.3px;
-  box-shadow: 0 2px 6px rgba(99,91,255,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
+  box-shadow: 0 2px 6px rgba(236,79,85,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
 }
 .brand-name {
   font-size: 14px;
@@ -568,7 +568,7 @@ td, th, .detail-val, .badge {
 .pipe-node.active {
   background: var(--accent-dim);
   border-color: var(--accent-b);
-  box-shadow: inset 0 0 0 1px rgba(99,91,255,0.06);
+  box-shadow: inset 0 0 0 1px rgba(236,79,85,0.06);
 }
 .pipe-icon { font-size: 16px; filter: grayscale(0.4); opacity: 0.9; }
 .pipe-count {
@@ -765,13 +765,13 @@ tbody tr:hover td {
   background: var(--accent-grad);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 1px 2px rgba(99,91,255,0.24), inset 0 1px 0 rgba(255,255,255,0.16);
+  box-shadow: 0 1px 2px rgba(236,79,85,0.24), inset 0 1px 0 rgba(255,255,255,0.16);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #6f68ff 0%, #4b44d6 100%);
+  background: linear-gradient(135deg, #f16a6f 0%, #d63a40 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(99,91,255,0.30), inset 0 1px 0 rgba(255,255,255,0.16);
+  box-shadow: 0 3px 10px rgba(236,79,85,0.30), inset 0 1px 0 rgba(255,255,255,0.16);
 }
 
 .btn-sm  { padding: 4px 10px; font-size: 11px; border-radius: var(--r-sm); }
@@ -1263,4 +1263,80 @@ input.field-error:focus {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+
+/* ── 30. v5 BRAND LAYER — Litpax Red + Navy ─────────────────── */
+:root {
+  --ink:      #2b3a8c;   /* IDs, dispatched, readonly values */
+  --ink-dim:  #eceffa;
+  --ink-b:    #cdd3f0;
+  --tri: linear-gradient(90deg, #ec4f55 0 40%, #2b3a8c 40% 75%, #f5a524 75% 100%);
+}
+
+/* Topbar: navy brand block + tri-colour line */
+.topbar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2px; background: var(--tri);
+}
+.topbar-brand {
+  background: linear-gradient(180deg, var(--navy-mid), var(--navy));
+  border-right-color: rgba(255,255,255,0.06);
+}
+.topbar-brand .brand-name { color: #fff; }
+.topbar-brand .brand-name span { color: #ff7a7f; }
+
+/* Sidebar: dark navy */
+.sidebar {
+  background: linear-gradient(180deg, var(--navy-mid) 0%, var(--navy) 100%);
+  border-right: none;
+}
+.nav-sec  { color: rgba(255,255,255,0.38); }
+.nav-item { color: rgba(255,255,255,0.72); }
+.nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(236,79,85,0.22), rgba(236,79,85,0.06));
+  color: #fff;
+}
+.nav-item.active::before { background: #ff6b70; box-shadow: 0 0 8px rgba(236,79,85,0.7); }
+.nav-icon { filter: none; opacity: 0.8; }
+.sidebar-foot { border-top-color: rgba(255,255,255,0.08); }
+.sidebar-ver  { color: rgba(255,255,255,0.35); }
+.sidebar-overlay { background: rgba(10,12,30,0.45); }
+
+/* Red = action only; IDs & dispatched use navy ink (red error se confuse na ho) */
+.td-id { color: var(--ink); }
+.items-table input[readonly] { color: var(--ink); }
+.b-dispatched { background: var(--ink-dim); color: var(--ink); border-color: var(--ink-b); }
+.b-dispatched::before { background: var(--ink); }
+.toast.s { border-left-color: var(--success); }
+
+/* Cards: thin tri-colour accent on stat cards + table cards */
+.stat::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: var(--tri); opacity: 0; transition: opacity var(--tr2);
+}
+.stat:hover::after { opacity: 1; }
+.card-head { border-bottom-color: var(--border); }
+.card-title { display: flex; align-items: center; gap: 8px; }
+.card-title::before {
+  content: ''; width: 3px; height: 14px; border-radius: 2px;
+  background: linear-gradient(180deg, #f16a6f, #d63a40);
+}
+
+/* Table header: navy-tinted */
+th, .items-table th { background: #f3f5fb; color: #4a5277; }
+tbody tr:hover td { background: #fff7f7; }
+
+/* Pipeline active */
+.pipe-node.active { background: linear-gradient(180deg, #fff3f3, #fdeeee); }
+
+/* Modal: stronger blur */
+.modal-overlay { background: rgba(16,20,45,0.45); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+
+/* Mobile: brand block transparent */
+@media (max-width: 768px) {
+  .topbar-brand { background: transparent; }
+  .topbar-brand .brand-name { color: var(--text); }
+  .topbar-brand .brand-name span { color: var(--accent); }
 }
