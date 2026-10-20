@@ -25,15 +25,15 @@
 <!-- ============ CINEMATIC INTRO ============ -->
 <div id="introOv" class="io" aria-hidden="true">
   <span class="io-sp" style="--x:-260px;--y:-120px;animation-delay:0s"></span>
-  <span class="io-sp" style="--x:240px;--y:-160px;animation-delay:.05s"></span>
-  <span class="io-sp" style="--x:-200px;--y:140px;animation-delay:.1s"></span>
-  <span class="io-sp" style="--x:280px;--y:110px;animation-delay:.03s"></span>
-  <span class="io-sp" style="--x:0px;--y:-220px;animation-delay:.08s"></span>
-  <span class="io-sp" style="--x:-320px;--y:10px;animation-delay:.12s"></span>
-  <span class="io-sp" style="--x:320px;--y:-20px;animation-delay:.02s"></span>
-  <span class="io-sp" style="--x:-90px;--y:210px;animation-delay:.07s"></span>
-  <span class="io-sp" style="--x:140px;--y:200px;animation-delay:.11s"></span>
-  <span class="io-sp" style="--x:60px;--y:-260px;animation-delay:.04s"></span>
+  <span class="io-sp" style="--x:240px;--y:-160px;animation-delay:.12s"></span>
+  <span class="io-sp" style="--x:-200px;--y:140px;animation-delay:.24s"></span>
+  <span class="io-sp" style="--x:280px;--y:110px;animation-delay:.06s"></span>
+  <span class="io-sp" style="--x:0px;--y:-220px;animation-delay:.18s"></span>
+  <span class="io-sp" style="--x:-320px;--y:10px;animation-delay:.3s"></span>
+  <span class="io-sp" style="--x:320px;--y:-20px;animation-delay:.04s"></span>
+  <span class="io-sp" style="--x:-90px;--y:210px;animation-delay:.16s"></span>
+  <span class="io-sp" style="--x:140px;--y:200px;animation-delay:.28s"></span>
+  <span class="io-sp" style="--x:60px;--y:-260px;animation-delay:.1s"></span>
   <img class="io-logo" alt="">
   <div class="io-line"></div>
   <div class="io-tag">Powering up your workspace</div>
@@ -373,7 +373,7 @@
     if (!r.classList.contains('intro')) return;
     var lg = document.querySelector('.hero-logo'), il = document.querySelector('.io-logo'), ov = document.getElementById('introOv');
     if (lg && il) il.src = lg.src;
-    var t = setTimeout(end, 3300);
+    var t = setTimeout(end, 6200);
     if (ov) ov.addEventListener('click', end);
     function end() { clearTimeout(t); r.classList.remove('intro'); if (ov) ov.remove(); }
   })();
