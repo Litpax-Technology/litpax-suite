@@ -1418,3 +1418,42 @@ tbody tr:hover td { background: #fafbfc; color: var(--text2); }
   .topbar-brand .brand-name { color: var(--text); }
   .topbar-brand .brand-name span { color: var(--text3); }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   31. LIGHT SIDEBAR — soft, premium (dark sidebar ki jagah)
+   ══════════════════════════════════════════════════════════════ */
+.topbar-brand {
+  background: #fbfbfc;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-brand .brand-name { color: var(--text); font-weight: 650; }
+.topbar-brand .brand-name span { color: var(--text3); font-weight: 500; }
+.brand-mark { background: var(--a); box-shadow: 0 1px 2px rgba(var(--a-rgb),0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
+
+.sidebar {
+  background: #fbfbfc;
+  border-right: 1px solid var(--line);
+}
+.nav-sec { color: var(--text4); font-size: 11px; font-weight: 600; letter-spacing: 0.4px; }
+.nav-item { color: var(--text2); border: 1px solid transparent; }
+.nav-item:hover { background: #f1f2f5; color: var(--text); }
+.nav-item.active {
+  background: #fff;
+  color: var(--text);
+  font-weight: 600;
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(15,23,41,0.06), 0 1px 1px rgba(15,23,41,0.03);
+}
+.nav-item.active::before { left: -13px; background: var(--a); }
+.nav-icon { filter: grayscale(1); opacity: 0.5; }
+.nav-item:hover .nav-icon { filter: grayscale(1); opacity: 0.75; }
+.nav-item.active .nav-icon { filter: none; opacity: 1; }
+.sidebar-foot { border-top: 1px solid var(--line); }
+.sidebar-ver { color: var(--text4); }
+.user-av { background: var(--a); }
+
+@media (max-width: 768px) {
+  .topbar-brand { background: transparent; border: none; }
+  .sidebar { box-shadow: 0 20px 50px -10px rgba(15,23,41,0.25); }
+}
