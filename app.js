@@ -93,6 +93,7 @@
     S.token = ''; S.user = null;
     Object.keys(S.frames).forEach(function (k) { S.frames[k].remove(); });
     S.frames = {};
+    $$('.view').forEach(function (v) { v.classList.add('hidden'); });
     showLogin();
   }
 
@@ -148,7 +149,10 @@
       html += '<div class="nav-item" data-id="' + n.id + '"><span class="nav-ic">' + n.ic + '</span><span>' + esc(n.label) + '</span>' +
         (n.badge ? '<span class="badge hidden" id="aprBadge">0</span>' : '') + '</div>';
     });
-    if (!html) html = '<div class="nav-empty">No access assigned. Please contact the Admin.</div>';
+    if (!html) {
+      html = '<div class="nav-empty">No access assigned. Please contact the Admin. (roles: ' + esc((S.user.roles || []).join(', ') || 'none') + ')</div>';
+      $$('.view').forEach(function (v) { v.classList.add('hidden'); });   // pichhle user ka page band
+    }
     $('#nav').innerHTML = html;
     $$('.nav-item').forEach(function (el) { el.addEventListener('click', function () { go(el.dataset.id); }); });
     // sirf ek app (jaise Purchase → Store Orders) → top bar bhi nahi; logout us app ke apne sidebar se
