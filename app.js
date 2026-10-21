@@ -581,7 +581,7 @@
     Store:      { label: 'Store',              hint: 'Inventory: Inward, Outward, Indent / PO' },
     Purchase:   { label: 'Purchase',           hint: 'Purchase: Orders, Receiving, Inward Approvals' },
     Production: { label: 'Production',         hint: 'Line Scan, Line Admin, Overview, Inventory' },
-    Dispatch:   { label: 'Dispatch',           hint: 'Line Scan: Dispatch station' },
+    Dispatch:   { label: 'Dispatch',           hint: 'ERP: Dispatch page (Role column = Dispatch)' },
     ErpOnly:    { label: 'Sales & Orders only', hint: 'Sales / Accounts / CRM (page set by the Role column)' }
   };
   var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly'];
