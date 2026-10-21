@@ -115,7 +115,7 @@
   function start(d) {
     S.user = d.user; S.sessions = d.sessions || {}; S.hidePages = d.hidePages || [];
     // Dispatch job → ERP ka sirf Dispatch page (backend ne ERP session na bheja ho tab bhi)
-    if (!S.sessions.erp_user && (S.user.roles || []).indexOf('Dispatch') !== -1) {
+    if (!(S.sessions.erp_user && S.sessions.erp_user.role) && (S.user.roles || []).indexOf('Dispatch') !== -1) {
       S.sessions.erp_user = { name: S.user.name, username: S.user.username, role: 'Dispatch' };
     }
     applySessions(S.sessions);
