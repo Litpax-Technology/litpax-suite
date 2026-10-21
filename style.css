@@ -735,3 +735,9 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
   .h-zero, .ms-pill::before, .hero-path::after, .hero-path span::before { animation: none; }
   .hero-path::after { width: 100%; }
 }
+
+/* Milestone block — hero ke centre me */
+.hero-copy { align-self: center; max-width: 600px; margin: 0 auto; text-align: center; }
+.hero-kicker { justify-content: center; }
+.hero-rot .rot { left: 0; right: 0; text-align: center; }
+.hero-path { margin-left: auto; margin-right: auto; }
