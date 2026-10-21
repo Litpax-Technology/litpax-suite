@@ -661,3 +661,77 @@ html.intro .hero-copy > *:nth-child(3) { animation-delay: 4.20s; }
 html.intro .hero-copy > *:nth-child(4) { animation-delay: 4.35s; }
 html.intro .login .login-card { animation: rise .8s cubic-bezier(.2,.8,.2,1) 4.1s both; }
 html.intro .login-copy { animation: ioFade .8s ease 4.5s both; }
+
+/* ══════════════════════════════════════════════════════════════
+   MILESTONE 2027 — login par company ka ambition (poster se)
+   ══════════════════════════════════════════════════════════════ */
+@keyframes msGlow  { 0%,100% { box-shadow: 0 0 0 0 rgba(236,79,85,.45); } 50% { box-shadow: 0 0 0 6px rgba(236,79,85,0); } }
+@keyframes rotQ    { 0% { opacity: 0; transform: translateY(8px); } 4%,30% { opacity: 1; transform: none; } 34%,100% { opacity: 0; transform: translateY(-6px); } }
+@keyframes pathFill{ 0% { width: 0; } 85%,100% { width: 100%; } }
+@keyframes dot1 { 0%, 0.0% { background: rgba(255,255,255,.18); box-shadow: none; } 1.0%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes dot2 { 0%, 14.2% { background: rgba(255,255,255,.18); box-shadow: none; } 15.2%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes dot3 { 0%, 28.3% { background: rgba(255,255,255,.18); box-shadow: none; } 29.3%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes dot4 { 0%, 42.5% { background: rgba(255,255,255,.18); box-shadow: none; } 43.5%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes dot5 { 0%, 56.7% { background: rgba(255,255,255,.18); box-shadow: none; } 57.7%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes dot6 { 0%, 70.8% { background: rgba(255,255,255,.18); box-shadow: none; } 71.8%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes dot7 { 0%, 85.0% { background: rgba(255,255,255,.18); box-shadow: none; } 86.0%, 96% { background: var(--brand-red); box-shadow: 0 0 10px rgba(236,79,85,.8); } 100% { background: rgba(255,255,255,.18); box-shadow: none; } }
+@keyframes zeroShine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* kicker: Milestone 2027 pill */
+.hero-kicker { display: flex; align-items: center; gap: 12px; letter-spacing: .12em; }
+.ms-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px;
+  background: rgba(236,79,85,.14); border: 1px solid rgba(236,79,85,.45); color: #ffd9db; font-weight: 800; }
+.ms-pill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-red); animation: msGlow 2s ease-in-out infinite; }
+.ms-sub { color: rgba(255,255,255,.55); font-weight: 600; letter-spacing: .14em; }
+
+/* headline: "0% defect" chamakta laal */
+.hero-copy h1 { font-size: 36px; letter-spacing: -.03em; }
+.h-zero { background: linear-gradient(90deg, #ff6b70 0%, #ffd2d4 45%, #ec4f55 55%, #ff6b70 100%); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: zeroShine 6s linear infinite; }
+
+/* ghoomte quotes (bina JS) */
+.hero-rot { position: relative; height: 26px; margin-top: 4px !important; }
+.hero-rot .rot { position: absolute; left: 0; top: 0; white-space: nowrap; color: #d6d7ea; font-size: 15.5px; font-style: italic; opacity: 0; animation: rotQ 15s ease-in-out infinite; }
+.hero-rot .rot:nth-child(2) { animation-delay: 5s; }
+.hero-rot .rot:nth-child(3) { animation-delay: 10s; }
+
+/* values ka raasta: Goal → Success */
+.hero-path { position: relative; display: flex; justify-content: space-between; margin-top: 26px; padding-top: 18px; max-width: 520px; }
+.hero-path::before, .hero-path::after { content: ''; position: absolute; top: 4px; left: 4px; height: 2px; border-radius: 2px; }
+.hero-path::before { right: 4px; background: rgba(255,255,255,.12); }
+.hero-path::after { width: 0; background: linear-gradient(90deg, #ec4f55, #f5cd47); box-shadow: 0 0 8px rgba(236,79,85,.6); animation: pathFill 7s linear infinite; }
+.hero-path span { position: relative; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+.hero-path span::before { content: ''; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(255,255,255,.18); border: 2px solid var(--hero, #0f1020); animation: dot1 7s ease-in-out infinite; }
+.hero-path span:first-child::before { left: 4px; }
+.hero-path span:last-child::before { left: auto; right: 0; transform: none; }
+.hero-path span:nth-child(1)::before { animation-name: dot1; }
+.hero-path span:nth-child(2)::before { animation-name: dot2; }
+.hero-path span:nth-child(3)::before { animation-name: dot3; }
+.hero-path span:nth-child(4)::before { animation-name: dot4; }
+.hero-path span:nth-child(5)::before { animation-name: dot5; }
+.hero-path span:nth-child(6)::before { animation-name: dot6; }
+.hero-path span:nth-child(7)::before { animation-name: dot7; }
+.hero-path span:last-child { color: #ffd2d4; }
+
+/* card ke neeche: Our Quality | Our Commitment | Our Future */
+.login-motto { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8a8ea3; }
+.login-motto span { white-space: nowrap; }
+.login-motto b { color: var(--brand-red); font-weight: 800; }
+.login-motto i { width: 1px; height: 12px; background: #d6d9e4; }
+
+/* intro animation me naya 4th child bhi aaye */
+html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1) 4.35s both; }
+
+/* mobile: sirf headline + pill */
+@media (max-width: 900px) {
+  .hero-path, .hero-rot, .ms-sub { display: none; }
+  .hero-kicker { display: flex; }
+  .hero-copy h1 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-rot .rot { animation: none; } .hero-rot .rot:first-child { opacity: 1; }
+  .h-zero, .ms-pill::before, .hero-path::after, .hero-path span::before { animation: none; }
+  .hero-path::after { width: 100%; }
+}
