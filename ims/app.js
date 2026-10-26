@@ -114,6 +114,7 @@ async function doLogin() {
   clearInterval(_lockTimer);
   _currentRole = res.role;
   sessionStorage.setItem('lpx_role', _currentRole);
+  if (res && res.token) sessionStorage.setItem('ims_token', res.token);
   sessionStorage.setItem('lpx_name', res.name || (ROLES[_currentRole]||{}).name || '');
   showApp();
 }
@@ -277,6 +278,9 @@ async function api(action, body) {
   if (_pendingCalls[key]) return _pendingCalls[key]; // same request in-flight — usi ka wait
 
   const isWrite = _writeActions.includes(action);
+  let _tk = '';
+  try { _tk = sessionStorage.getItem('ims_token') || sessionStorage.getItem('suite_token') || ''; } catch (e) {}
+  if (body && _tk && !body.token) body = { ...body, token: _tk };
   const maxAttempts = isWrite ? 1 : 3;   // write = koi retry nahi (duplicate se bachaav)
   if (isWrite && body && !body.reqId) body = { ...body, reqId: newReqId() };
 
