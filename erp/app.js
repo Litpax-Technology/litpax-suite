@@ -341,6 +341,9 @@ function renderRecentOrders(list) {
 function api(params, cb) {
   const key = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   window[key] = function(res) { cb(res); delete window[key]; };
+  let tok = '';
+  try { tok = sessionStorage.getItem('erp_token') || sessionStorage.getItem('suite_token') || localStorage.getItem('erp_token') || ''; } catch (e) {}
+  if (tok && !params.token) params = Object.assign({}, params, { token: tok });
   const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   const s = document.createElement('script');
   s.src = `${API}?${qs}&callback=${key}`;
@@ -3832,6 +3835,7 @@ function searchAccounts() {
 function logout() {
   sessionStorage.removeItem('erp_user');
   localStorage.removeItem('erp_user');   // backup bhi hatao, warna dobara auto-login ho jayega
+  sessionStorage.removeItem('erp_token'); localStorage.removeItem('erp_token');
   window.location.href = 'index.html';
 }
 
@@ -3852,6 +3856,7 @@ function goToLeadTracker() {
   try {
     const cur = sessionStorage.getItem('erp_user');
     if (cur) localStorage.setItem('erp_user', cur);
+    try { const t = sessionStorage.getItem('erp_token'); if (t) localStorage.setItem('erp_token', t); } catch (e) {}
   } catch (e) {}
 
   const ltRole = leadTrackerRoleFor(user);
