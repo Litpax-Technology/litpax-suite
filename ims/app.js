@@ -299,7 +299,7 @@ async function api(action, body) {
             signal: controller.signal,
           });
         } else {
-          r = await fetch(`${API}?action=${action}`, { redirect: 'follow', signal: controller.signal });
+          r = await fetch(`${API}?action=${action}&token=${encodeURIComponent(_tk)}`, { redirect: 'follow', signal: controller.signal });
         }
         const text = await r.text();
         if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
@@ -3052,6 +3052,8 @@ function previewPOBeforeSave(items, supplier, expDate) {
   const supplierJson = JSON.stringify(supplier);
   const expDateJson  = JSON.stringify(expDate);
   const poReqIdJson  = JSON.stringify(newReqId());
+  let _ptk = ''; try { _ptk = sessionStorage.getItem('ims_token') || sessionStorage.getItem('suite_token') || ''; } catch (e) {}
+  const poTokJson    = JSON.stringify(_ptk);
 
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html>
@@ -3151,6 +3153,7 @@ function previewPOBeforeSave(items, supplier, expDate) {
           body: JSON.stringify({
             action: 'createPO',
             reqId: ${poReqIdJson},
+            token: ${poTokJson},
             supplier: ${supplierJson},
             expectedDate: ${expDateJson},
             items: ${itemsJson},
