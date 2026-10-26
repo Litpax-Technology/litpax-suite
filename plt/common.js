@@ -50,6 +50,7 @@ function jsonp(params) {
 function call(action, params) {
   var p = params || {};
   p.action = action;
+  if (!p.token) { try { p.token = sessionStorage.getItem('plt_sup') || sessionStorage.getItem('suite_token') || ''; } catch (e) {} }
   state.pending = (state.pending || 0) + 1;
   updateConn();
   return jsonp(p).then(function (res) {
