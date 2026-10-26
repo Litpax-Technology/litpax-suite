@@ -338,11 +338,17 @@ function renderRecentOrders(list) {
 }
 
 // API
+function erpTok() {
+  try { return sessionStorage.getItem('erp_token') || sessionStorage.getItem('suite_token') || localStorage.getItem('erp_token') || ''; } catch (e) { return ''; }
+}
 function api(params, cb) {
   const key = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-  window[key] = function(res) { cb(res); delete window[key]; };
-  let tok = '';
-  try { tok = sessionStorage.getItem('erp_token') || sessionStorage.getItem('suite_token') || localStorage.getItem('erp_token') || ''; } catch (e) {}
+  window[key] = function(res) {
+    delete window[key];
+    if (res && res.success === false && /^LOGIN:/.test(String(res.message || ''))) { toast('Session khatam — dobara login karo', 'e'); setTimeout(logout, 1500); return; }
+    cb(res);
+  };
+  const tok = erpTok();
   if (tok && !params.token) params = Object.assign({}, params, { token: tok });
   const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   const s = document.createElement('script');
@@ -2113,7 +2119,7 @@ async function runMaterialCheck() {
       const r = await fetch(window.IMS_URL, {
         method: 'POST', redirect: 'follow',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'checkPlanStock', items })
+        body: JSON.stringify({ action: 'checkPlanStock', items, token: erpTok() })
       });
       const t = (await r.text()).trim();
       if (t.startsWith('{')) d = JSON.parse(t);        // HTML/404 aaya to ek baar retry
@@ -3249,6 +3255,7 @@ function pltApi(params) {
     function done() { clearTimeout(t); delete window[key]; s.remove(); }
     window[key] = res => { done(); (res && res.ok === false) ? reject(new Error(res.error || 'PLT error')) : resolve(res || {}); };
     s.onerror = () => { done(); reject(new Error('PLT network error')); };
+    if (!params.token) params = Object.assign({}, params, { token: erpTok() });
     s.src = url + '?' + Object.entries(params).map(([k, v]) => k + '=' + encodeURIComponent(v == null ? '' : v)).join('&') + '&callback=' + key;
     document.body.appendChild(s);
   });
