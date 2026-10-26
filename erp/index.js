@@ -36,6 +36,7 @@ function doLogin(attempt) {
     delete window[cbName];
     if (res.success) {
       sessionStorage.setItem('erp_user', JSON.stringify(res.user));
+      sessionStorage.setItem('erp_token', res.token || '');
       window.location.href = 'app.html';
     } else {
       showErr(res.message || 'Login failed');
