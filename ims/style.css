@@ -5,7 +5,7 @@
    Accent Indigo #635bff | Teal #14b8a6 | Sky #0ea5e9
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ── TOKENS ── */
 :root {
@@ -949,3 +949,154 @@ tbody td { padding: 12px 16px; border-bottom: 1px solid #f0f1f4; }
 .sc.bl { border-color: #c9dafc; }
 .loader { border-top-color: var(--a); }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ══════════════════════════════════════════════════════════════
+   BENTO — Litpax Suite theme (upar ke saare blocks ke baad)
+   Poora block hata do toh pichhla Suite theme wapas aa jayega.
+   Rang badalna ho toh sirf neeche ke :root variables badlo.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --a: #2a4fe0; --a-d: #1b38b0; --a-rgb: 42,79,224;
+  --accent: #2a4fe0; --accent2: #1b38b0; --accent-l: #eef1ff;
+  --ink: #121212; --ink-2: #2a2a2a;
+  --s1: #efefec; --s2: #f6f6f3; --tile-2: #ebebe6;
+  --border: #e3e3de; --navy: #121212; --t2: #3d3d3d; --muted: #5c5c5c; --light: #8a8a84;
+  --ok: #126b3e; --ok-soft: #e4f5ec; --warn: #8a4b00; --warn-soft: #fff1dc; --bad: #a3200f; --bad-soft: #ffe9e6;
+  --sans: 'Geist', 'Inter', system-ui, sans-serif;
+  --mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+}
+html, body { font-family: var(--sans); background: var(--s1); color: var(--t2); }
+.shell, .main { background: var(--s1); }
+h1 { font-size: 24px; font-weight: 600; letter-spacing: -.6px; color: var(--ink); }
+
+/* ── Sidebar: grey, flat, active = black pill ── */
+.sidebar {
+  margin: 0; height: 100vh; border-radius: 0; border: 0; box-shadow: none;
+  background: var(--s1); animation: none;
+}
+.slogo { border-bottom: 0; }
+.slogo-box { background: var(--ink); border-radius: 10px; box-shadow: none; }
+.ng-label { color: var(--light); font-size: 11.5px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.ng-label::after { display: none; }
+.ni { margin: 1px 0; padding: 4px 12px 4px 4px; border: 0; border-radius: 999px; color: var(--t2); box-shadow: none; }
+.ni:hover { background: #e3e3de; color: var(--ink); transform: none; box-shadow: none; padding-left: 4px; }
+.ic { width: 28px; height: 28px; border-radius: 50%; background: transparent; border: 0; filter: grayscale(1); opacity: .7; }
+.ni:hover .ic { transform: none; background: transparent; box-shadow: none; filter: grayscale(1); opacity: 1; }
+.ni.active { background: var(--ink); color: #fff; border: 0; box-shadow: none; }
+.ni.active::before { display: none; }
+.ni.active .ic { background: rgba(255,255,255,.14); border: 0; box-shadow: none; filter: none; opacity: 1; animation: none; }
+.nbadge { background: var(--bad); border-radius: 999px; padding: 1px 7px; font-size: 10.5px; }
+.sfoot { border-top: 0; }
+#logout-btn button { border: 0 !important; border-radius: 999px !important; background: #fff !important; color: var(--ink) !important; font-weight: 600; }
+#logout-btn button:hover { background: var(--ink) !important; color: #fff !important; border: 0 !important; }
+
+/* ── Main + page header ── */
+.main { padding: 22px 24px 32px; }
+.tb { margin-bottom: 14px; }
+
+/* ── Cards = rounded tiles (inline gradient headers bhi saaf) ── */
+.card { border: 0; border-radius: 24px; box-shadow: none; }
+.card:hover { box-shadow: none; }
+.ch { border-bottom: 0; padding: 18px 22px 8px; }
+.card > .ch[style*="background"] { background: transparent !important; }
+.ch h2, .ch h3 { font-size: 15px; font-weight: 600; }
+
+/* ── KPI: left-aligned tiles; pehla = black hero; red = tinted ── */
+.kpi-card {
+  border: 0; border-radius: 24px; box-shadow: none; padding: 20px 22px; min-height: 130px;
+  display: flex; flex-direction: column; justify-content: space-between; text-align: left;
+}
+.kpi-card:hover { transform: none; box-shadow: 0 0 0 2px var(--border); }
+.kpi-card::before { display: none; }
+.kpi-icon { display: none; }
+.kpi-label { order: 1; margin: 0; font-size: 13px; font-weight: 500; color: var(--muted); }
+.kpi-val { order: 2; margin-top: 18px; font-family: var(--sans); font-size: 48px; font-weight: 600; letter-spacing: -2px; color: var(--ink); }
+.kpi-card:first-child { background: var(--ink); }
+.kpi-card:first-child .kpi-label { color: #b9b9b9; }
+.kpi-card:first-child .kpi-val { color: #fff; }
+.kpi-red:not(:first-child) { background: var(--bad-soft); }
+.kpi-red:not(:first-child) .kpi-val { color: var(--bad); }
+.kpi-orange:not(:first-child) { background: var(--warn-soft); }
+.kpi-orange:not(:first-child) .kpi-val { color: #7a4100; }
+.kpi-red:not(:first-child):hover, .kpi-orange:not(:first-child):hover { box-shadow: none; filter: brightness(.98); }
+
+/* ── Tables: har row ek chhota card ── */
+.tw { padding: 0 12px 12px; }
+.tw > table { border-collapse: separate; border-spacing: 0 4px; }
+.tw > table thead th { background: #fff; border-bottom: 0; color: var(--muted); font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: 0; padding: 8px 14px; }
+.tw > table tbody td { background: var(--s2); border-bottom: 0; padding: 12px 14px; font-size: 13px; }
+.tw > table tbody td:first-child { border-radius: 12px 0 0 12px; }
+.tw > table tbody td:last-child { border-radius: 0 12px 12px 0; }
+.tw > table tbody td:only-child, .tw > table .lrow td { background: transparent; }
+.tw > table tbody tr:hover { background: transparent; }
+.tw > table tbody tr:hover td { background: var(--tile-2); }
+
+/* ── Badges: soft pills, bina dot/pulse ── */
+.badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; gap: 0; }
+.badge::before { display: none; }
+.b-ok, .b-in { background: var(--ok-soft); color: var(--ok); }
+.b-ro { background: var(--warn-soft); color: var(--warn); }
+.b-cr, .b-out { background: var(--bad-soft); color: var(--bad); animation: none; }
+.b-rm, .b-dep, .b-con { background: var(--accent-l); color: var(--a-d); }
+.b-pkg { background: var(--tile-2); color: var(--t2); }
+
+/* ── Buttons: pills ── */
+.btn { border-radius: 999px; padding: 8px 16px; font-weight: 600; font-size: 12.5px; }
+.bsm { padding: 6px 12px; }
+.bg { background: var(--tile-2); border: 1px solid transparent; box-shadow: none; color: var(--ink); }
+.bg:hover { background: #e0e0da; border-color: transparent; }
+.bp, .bgn { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: none; }
+.bp:hover, .bgn:hover { background: var(--ink-2); transform: none; box-shadow: none; }
+.brd { background: var(--bad-soft); border-color: transparent; color: var(--bad); box-shadow: none; }
+.brd:hover { background: #ffd9d3; transform: none; box-shadow: none; }
+
+/* ── Inputs: soft filled ── */
+.inp { border: 1px solid transparent; border-radius: 12px; background: var(--s2); padding: 9px 12px; font-size: 13px; }
+.inp:focus { background: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(var(--a-rgb),.14); }
+.inp-label { color: var(--muted); }
+
+/* ── Modal ── */
+.modal { border: 0; border-radius: 24px; }
+.mh { border-bottom: 0; padding: 20px 22px 10px; }
+.mf { background: #fff; border-top: 0; border-radius: 0 0 24px 24px; }
+.mclose { background: var(--s2); }
+
+/* ── Category/brand chips, BOM, reorder, closing, stock tree ── */
+.cat-btn, .brand-btn { border: 1px solid transparent; border-radius: 999px; background: var(--s2); }
+.cat-btn:hover, .brand-btn:hover { border-color: transparent; background: var(--tile-2); color: var(--ink); transform: none; }
+.cat-btn.active, .brand-btn.active { border-color: var(--ink); background: var(--ink); color: #fff; box-shadow: none; }
+.stock-info, .rop-box { background: var(--accent-l); border-radius: 14px; }
+.stock-info strong, .rop-val { color: var(--a-d); }
+.bom-preview { background: var(--s2); border-radius: 16px; }
+.ro-card { border: 0; border-radius: 20px; box-shadow: none; }
+.ro-card:hover { transform: none; box-shadow: 0 0 0 2px var(--border); }
+.ro-card.cr { border-left: 0; background: var(--bad-soft); box-shadow: none; }
+.ro-card.ro { border-left: 0; background: var(--warn-soft); }
+.snum { font-family: var(--sans); font-weight: 600; letter-spacing: -1px; }
+.snum.cr { color: var(--bad); } .snum.ro { color: #7a4100; }
+.sc { border: 0 !important; border-radius: 20px; box-shadow: none; }
+.sc-bar { display: none; }
+.sc.gn { background: var(--ok-soft); } .sc.rd { background: var(--bad-soft); } .sc.or { background: var(--warn-soft); } .sc.bl { background: var(--accent-l); }
+.sc-val { font-family: var(--sans); font-weight: 600; letter-spacing: -1px; }
+.tree-cat { border: 0; border-radius: 20px; box-shadow: none; }
+.tree-cat-header { background: #fff; }
+.tree-cat-header:hover { background: var(--s2); }
+.tree-cat-stock, .tree-brand-stock { font-family: var(--sans); }
+.tree-brand-stock { color: var(--a-d); }
+.tree-model-headers { background: var(--s2); border-top: 0; text-transform: none; letter-spacing: 0; font-size: 11.5px; font-weight: 500; }
+.tree-brand, .tree-model-row { border-top-color: var(--s2); }
+.tree-model-row:hover, .tree-brand-header:hover { background: var(--s2); }
+.item-thumb, .item-pic-box img, .in-photo-th img { border: 0; border-radius: 12px; }
+.ph-btn { border: 0; border-radius: 999px; background: var(--s2); padding: 4px 10px; }
+.ph-btn:hover { background: var(--ink); color: #fff; }
+
+/* ── Toast ── */
+#toast { background: var(--ink); border-radius: 999px; }
+#toast.ok { background: var(--ok); } #toast.err { background: var(--bad); }
+.loader { border-top-color: var(--ink); }
+
+@media (max-width: 640px) {
+  .main { padding: 12px 12px 24px; }
+  .kpi-val { font-size: 36px; }
+  .tw { padding: 0 6px 6px; }
+}
