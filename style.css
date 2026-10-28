@@ -741,3 +741,130 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .hero-kicker { justify-content: center; }
 .hero-rot .rot { left: 0; right: 0; text-align: center; }
 .hero-path { margin-left: auto; margin-right: auto; }
+
+/* =============================================================
+ * BENTO THEME — app shell (login ke baad wala hissa)
+ * Login / hero / loader upar jaisa hi rehta hai — ye block sirf .shell
+ * aur toast par lagta hai. Font: Geist (index.html ke font link me).
+ * ============================================================= */
+.shell {
+  --accent: #2a4fe0; --accent-dark: #1b38b0; --accent-soft: #eef1ff;
+  --ink: #121212; --ink-2: #2a2a2a;
+  --bg: #efefec; --card: #ffffff; --tile: #f6f6f3; --tile-2: #ebebe6;
+  --text: #121212; --muted: #5c5c5c; --line: #e3e3de;
+  --ok: #126b3e; --ok-soft: #e4f5ec;
+  --warn: #8a4b00; --warn-soft: #fff1dc;
+  --bad: #a3200f; --bad-soft: #ffe9e6;
+  --radius: 24px; --r-sm: 14px; --shadow: none;
+  --mono: 'Geist Mono', ui-monospace, monospace;
+  font-family: 'Geist', 'Inter', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+}
+.shell a { color: var(--accent); }
+
+/* ---- top bar: logo · pill app switcher · user ---- */
+.shell .topbar { height: auto; min-height: 60px; padding: 10px 20px; gap: 14px; background: var(--bg); border-bottom: 0; }
+.shell .top-logo { height: 24px; }
+.shell .tabs { flex: 0 1 auto; margin: 0 auto; background: var(--card); border-radius: 999px; padding: 4px; gap: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.shell .tabs .nav-item { min-height: 36px; padding: 0 14px; border-radius: 999px; color: #3d3d3d; font-size: 13px; font-weight: 500; }
+.shell .tabs .nav-item:hover { background: var(--tile); color: var(--text); }
+.shell .tabs .nav-item.active { background: var(--ink); color: #fff; font-weight: 600; }
+.shell .tabs .nav-ic { display: none; }
+.shell .tabs .badge { background: var(--accent); color: #fff; }
+.shell .tabs .nav-item.active .badge { background: #fff; color: var(--ink); }
+.shell .top-user { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--card); color: var(--text); font-weight: 600; }
+.shell .top-ic { width: 36px; height: 36px; border-radius: 50%; background: var(--card); color: var(--text); font-size: 16px; padding: 0; }
+.shell .top-ic:hover { background: var(--ink); color: #fff; }
+
+/* ---- app iframe: patli frame me rounded window ---- */
+.shell:not(.solo) .frames { margin: 0 12px 12px; }
+.shell:not(.solo) .frames iframe { border-radius: 20px; }
+
+/* ---- page + cards = tiles ---- */
+.shell .view { padding: 6px 24px 32px; }
+.shell .wrap { max-width: 1360px; gap: 14px; }
+.shell .grid { gap: 14px; }
+.shell .card { border: 0; border-radius: var(--radius); box-shadow: none; }
+.shell .card-h { border-bottom: 0; padding: 20px 22px 8px; }
+.shell .card-t { font-size: 15px; font-weight: 600; }
+.shell .card-s { font-size: 12.5px; }
+.shell .card-b { padding: 12px 22px 22px; }
+.shell .card .card { background: var(--tile); border-radius: 18px; }
+
+/* ---- KPI tiles: pehla tile bada black hero, warn/bad tiles tinted ---- */
+.shell .kpi { min-height: 140px; padding: 20px 22px; display: flex; flex-direction: column; justify-content: space-between; }
+.shell .kpi-l { font-size: 13px; font-weight: 500; color: var(--muted); }
+.shell .kpi-v { margin-top: 18px; font-size: 48px; font-weight: 600; letter-spacing: -.05em; line-height: 1; }
+.shell .kpi-v.ok { color: var(--ok); } .shell .kpi-v.warn { color: #7a4100; } .shell .kpi-v.bad { color: var(--bad); }
+.shell .kpi:has(.kpi-v.warn) { background: var(--warn-soft); }
+.shell .kpi:has(.kpi-v.bad) { background: var(--bad-soft); }
+.shell .g4 > .kpi:first-child { background: var(--ink); }
+.shell .g4 > .kpi:first-child .kpi-l { color: #b9b9b9; }
+.shell .g4 > .kpi:first-child .kpi-v { color: #fff; font-size: 64px; }
+
+/* ---- buttons: pills ---- */
+.shell .btn { min-height: 38px; padding: 0 16px; border: 1px solid transparent; border-radius: 999px; background: var(--tile-2); color: var(--text); font-weight: 600; font-size: 13px; }
+.shell .btn:hover { border-color: transparent; background: #e0e0da; }
+.shell .btn-primary { background: var(--ink); color: #fff; }
+.shell .btn-primary:hover { background: var(--ink-2); }
+.shell .btn-danger { background: var(--bad-soft); color: var(--bad); }
+.shell .btn-danger:hover { background: #ffd9d3; }
+.shell .btn-ghost { background: transparent; color: var(--muted); }
+.shell .btn-ghost:hover { background: var(--tile); }
+.shell .btn-sm { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
+
+/* ---- inputs: soft filled ---- */
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]), .shell select, .shell textarea {
+  border: 1px solid transparent; border-radius: 12px; background: var(--tile); min-height: 40px; color: var(--text); }
+.shell input:focus, .shell select:focus, .shell textarea:focus { background: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(42, 79, 224, .14); }
+.shell .lbl { font-weight: 500; }
+.shell .scan-box { min-height: 60px; border: 2px solid var(--ink); border-radius: 16px; font-size: 20px; }
+
+/* ---- chips: pills (SHADOW = amber, jaisa mockup me) ---- */
+.shell .chip { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--tile-2); color: #3d3d3d; }
+.shell .chip-live, .shell .chip-ok { background: var(--ok-soft); color: var(--ok); }
+.shell .chip-shadow, .shell .chip-warn { background: var(--warn-soft); color: var(--warn); }
+.shell .chip-bad { background: var(--bad-soft); color: var(--bad); }
+.shell .chip-off { background: var(--tile-2); color: #555; }
+
+/* ---- tables: har row ek chhota card ---- */
+.shell .tbl-wrap { padding: 0 12px 12px; }
+.shell table.tbl { border-collapse: separate; border-spacing: 0 4px; font-size: 13.5px; }
+.shell .tbl th { padding: 6px 14px; border-bottom: 0; background: transparent; font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.shell .tbl td { padding: 12px 14px; border-bottom: 0; background: var(--tile); }
+.shell .tbl th.num { text-align: right; }
+.shell .tbl td:first-child { border-radius: 12px 0 0 12px; }
+.shell .tbl td:last-child { border-radius: 0 12px 12px 0; }
+.shell .tbl tr.click:hover td { background: var(--tile-2); }
+.shell .tbl tr.sel td { background: var(--accent-soft); }
+
+/* ---- notices, in-page tabs, approvals, serials ---- */
+.shell .notice { padding: 14px 18px; border-radius: 16px; background: var(--accent-soft); color: var(--accent-dark); }
+.shell .notice.warn { background: var(--warn-soft); color: var(--warn); }
+.shell .notice.bad { background: var(--bad-soft); color: var(--bad); }
+.shell .notice.ok { background: var(--ok-soft); color: var(--ok); }
+.shell .tab { padding: 0 14px; min-height: 34px; display: inline-flex; align-items: center; border-radius: 999px; font-weight: 500; color: var(--muted); }
+.shell .tab.active { background: var(--ink); color: #fff; font-weight: 600; }
+.shell .apr { margin: 0 12px 8px; padding: 16px 18px; border-bottom: 0; border-radius: 18px; background: var(--tile); }
+.shell .apr:first-child { margin-top: 4px; }
+.shell .apr-title { font-weight: 600; }
+.shell .photos a img, .shell .photo-prev img { border-radius: 12px; border: 0; }
+.shell .serial { border-radius: 999px; padding: 4px 6px 4px 11px; background: var(--accent-soft); color: var(--accent-dark); }
+.shell .serial button { color: var(--accent-dark); }
+
+/* ---- toast ---- */
+.toast { border-radius: 999px; padding: 12px 20px; background: #121212; font-family: 'Geist', 'Inter', system-ui, sans-serif; }
+.toast.ok { background: #126b3e; } .toast.bad { background: #a3200f; }
+
+/* ---- mobile ---- */
+@media (max-width: 760px) {
+  .shell .topbar { padding: 8px 10px; gap: 8px; }
+  .shell .tabs { flex: 1; margin: 0; }
+  .shell .top-user { display: none; }
+  .shell .view { padding: 4px 12px 24px; }
+  .shell:not(.solo) .frames { margin: 0 6px 6px; }
+  .shell .kpi { min-height: 110px; }
+  .shell .kpi-v { font-size: 36px; }
+  .shell .g4 > .kpi:first-child .kpi-v { font-size: 44px; }
+  .shell .apr { margin: 0 6px 8px; }
+}
