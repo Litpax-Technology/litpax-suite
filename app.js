@@ -133,11 +133,12 @@
     var u = S.user, s = S.sessions, M = APPNAMES, items = [];
     if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });
     // Inward Entry ab IMS ke Inward page me hai (SOMS approval ke saath)
-    if (has('Approver')) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
-    if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'dispatch', sec: 'Automation', label: 'Dispatch (manual)', ic: '⇨' });
+    var isAdmin = S.user.roles.indexOf('Admin') !== -1;
+    // Admin ke top bar me Approvals, Dispatch (manual), 2 Wheeler Line nahi dikhte
+    if (has('Approver') && !isAdmin) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
     if (s.erp_user && s.erp_user.role) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
     if (s.ims) items.push({ id: 'm-ims', sec: 'Apps', label: M.ims.label, ic: '▦', mod: 'ims' });
-    if (has('Production') || u.pltSup) items.push({ id: 'm-plt2W', sec: 'Apps', label: SUITE.MODULES.plt2W.label, ic: '⌁', mod: 'plt2W' });
+    if ((has('Production') || u.pltSup) && !isAdmin) items.push({ id: 'm-plt2W', sec: 'Apps', label: SUITE.MODULES.plt2W.label, ic: '⚡', mod: 'plt2W' });
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
