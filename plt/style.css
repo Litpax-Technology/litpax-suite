@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /*
   Pack Line Tracker — light premium theme.
@@ -394,4 +394,135 @@ body:has(.sidebar) .app{max-width:1080px;margin:0;padding:22px 26px 64px;}
 @media print{
   body:has(.sidebar){height:auto !important;overflow:visible !important;}
   .shell,.main{display:block !important;height:auto !important;overflow:visible !important;}
+}
+
+/* ============================================================
+   BENTO — Litpax Suite theme (scan page + admin, sab ke baad)
+   Poora block hata do toh purana design wapas aa jayega.
+   Print (labels/cards) is block se nahi chhuta.
+   ============================================================ */
+:root{
+  --bg:#efefec; --surface:#ffffff; --surface-2:#f6f6f3; --surface-3:#ebebe6;
+  --border:#e3e3de; --border-strong:#d4d4ce;
+  --text:#121212; --text-muted:#5c5c5c; --text-faint:#7a7a74;
+  --accent:#2a4fe0; --accent-hi:#1b38b0; --accent-soft:#eef1ff; --accent-line:#c9d3fb;
+  --ink:#121212; --ink-2:#2a2a2a;
+  --ok:#126b3e; --ok-soft:#e4f5ec; --ok-line:#c3e6d0;
+  --bad:#a3200f; --bad-soft:#ffe9e6; --bad-line:#f5c4bc;
+  --warn:#8a4b00; --warn-soft:#fff1dc; --warn-line:#f0d9b0;
+  --info:#1b38b0; --info-soft:#eef1ff; --info-line:#c9d3fb;
+  --shadow:none; --shadow-lg:none;
+  --sans:'Geist','Inter',system-ui,sans-serif;
+  --mono:'Geist Mono','JetBrains Mono',ui-monospace,monospace;
+}
+html,body{background:var(--bg);}
+body:has(.tabs){background:var(--bg);}
+
+/* ---------- Header / brand ---------- */
+.brand-mark,body:has(.tabs) .brand-mark{background:var(--ink);box-shadow:none;border-radius:12px;}
+.brand h1{font-weight:600;letter-spacing:-.5px;}
+.context-pill{background:#fff;border:0;border-radius:999px;color:var(--ink);font-family:var(--sans);}
+.context-pill.floor{background:var(--ink);color:#fff;border:0;box-shadow:none;}
+.context-pill.empty{background:#fff;border:1px dashed var(--border-strong);}
+
+/* ---------- Panels = rounded tiles ---------- */
+.panel,body:has(.tabs) .panel{background:#fff;border:0;border-radius:24px;box-shadow:none;}
+body:has(.tabs) .panel:hover{box-shadow:none;}
+.panel-title,body:has(.tabs) .panel-title{font-size:15px;font-weight:600;text-transform:none;letter-spacing:-.1px;color:var(--text);}
+body:has(.tabs) .panel-title::before{display:none;}
+.scan-panel{border:0;}
+
+/* ---------- Scan box: bada, saaf, ink border ---------- */
+.scan-box{background:var(--surface-2);border:2px solid var(--ink);border-radius:20px;}
+.app-scan .scan-box{background:#fff;border:3px solid var(--ink);border-radius:24px;box-shadow:none;}
+.scan-box input{color:var(--ink);}
+.scan-box.flash{border-color:var(--accent);background:var(--accent-soft);}
+.scan-box.flash-context{border-color:#18a058;background:var(--ok-soft);}
+.scan-box.flash-error{border-color:var(--bad);background:var(--bad-soft);}
+
+/* ---------- Last scan = black hero strip ---------- */
+.last-scan{background:var(--ink);border:0;border-radius:20px;padding:18px 22px;}
+.last-scan .id{color:#fff;}
+.last-scan .meta{color:#b9b9b9;}
+.last-scan .sync.saved{color:#5fd897;} .last-scan .sync.saving{color:#b9b9b9;} .last-scan .sync.error{color:#ff9b85;}
+
+/* ---------- Live station board ---------- */
+.board-grid{gap:12px;}
+.board-card{background:var(--surface-2);border:0;border-radius:20px;box-shadow:none;padding:14px 16px;}
+.board-card.active{background:#fff;border:0;box-shadow:inset 0 0 0 2px var(--ink);}
+.board-station{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:500;color:var(--text-muted);}
+.board-avatar{background:var(--ink);}
+.board-emp{color:var(--ink);font-weight:600;}
+.board-count{font-family:var(--sans);font-weight:600;letter-spacing:-1px;}
+.board-bar{background:var(--surface-3);border-radius:999px;}
+.board-bar-fill{background:var(--ink);border-radius:999px;}
+.board-lead{background:#18a058;border-radius:999px;padding:1px 8px;}
+
+/* ---------- Stat cards: pehla = black hero ---------- */
+.stat-card,body:has(.tabs) .stat-card{background:#fff;border:0;border-radius:24px;box-shadow:none;padding:18px 20px;}
+body:has(.tabs) .stat-card::before{display:none;}
+body:has(.tabs) .stat-card:hover{transform:none;box-shadow:none;}
+.stat-card .num,body:has(.tabs) .stat-card .num{font-size:40px;font-weight:600;letter-spacing:-1.6px;}
+.stat-grid .stat-card:first-child{background:var(--ink);}
+.stat-grid .stat-card:first-child .num{color:#fff;}
+.stat-grid .stat-card:first-child .lbl{color:#b9b9b9;}
+
+/* ---------- Tables: har row ek chhota card ---------- */
+.table-wrap,body:has(.tabs) .table-wrap{border:0;border-radius:0;background:transparent;overflow-x:auto;}
+.table-wrap > table{border-collapse:separate;border-spacing:0 4px;}
+.table-wrap th,body:has(.tabs) .table-wrap th{background:#fff;border-bottom:0;text-transform:none;letter-spacing:0;font-size:12px;font-weight:500;color:var(--text-muted);border-radius:0;}
+.table-wrap td{background:var(--surface-2);border-bottom:0;padding:12px 14px;}
+.table-wrap td:first-child{border-radius:12px 0 0 12px;}
+.table-wrap td:last-child{border-radius:0 12px 12px 0;}
+.table-wrap td:only-child{background:transparent;}
+.table-wrap tbody tr:hover td{background:var(--surface-3);}
+
+/* ---------- Badges: soft pills ---------- */
+.badge{border:0;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;}
+.hall-tag{border:0;border-radius:999px;background:var(--accent-soft);color:var(--accent-hi);}
+
+/* ---------- Buttons: pills ---------- */
+.btn{background:var(--ink);border:1px solid var(--ink);border-radius:999px;box-shadow:none;}
+.btn:hover{background:var(--ink-2);border-color:var(--ink-2);box-shadow:none;}
+.btn.secondary{background:var(--surface-3);border-color:transparent;color:var(--ink);box-shadow:none;}
+.btn.secondary:hover{background:#e0e0da;box-shadow:none;}
+.icon-btn{border:0;border-radius:999px;background:var(--surface-2);color:var(--text);}
+.icon-btn:hover{background:var(--ink);color:#fff;border-color:transparent;}
+.icon-btn.danger:hover{background:var(--bad-soft);color:var(--bad);}
+.range-btn{border:0;border-radius:999px;background:#fff;box-shadow:none;}
+.range-btn.active{background:var(--ink);border-color:var(--ink);box-shadow:none;}
+body:has(.tabs) .range-bar{background:#fff;border:0;border-radius:999px;box-shadow:none;}
+body:has(.tabs) .range-btn.active{background:var(--ink);color:#fff;box-shadow:none;}
+
+/* ---------- Inputs: soft filled ---------- */
+.field select,.field input,textarea.search-input,.search-input,.hall-inline{background:var(--surface-2);border:1px solid transparent;border-radius:12px;}
+.field select:focus,.field input:focus,.search-input:focus,.hall-inline:focus{background:#fff;border-color:var(--ink);box-shadow:0 0 0 3px rgba(42,79,224,.14);}
+body:has(.tabs) .panel > .row{background:var(--surface-2);border:0;border-radius:18px;}
+body:has(.tabs) .panel > .row .field select,body:has(.tabs) .panel > .row .field input{background:#fff;}
+
+/* ---------- List rows, history, print cards ---------- */
+.list-row,body:has(.tabs) .list-row{background:var(--surface-2);border:0;border-radius:14px;}
+.list-row:hover{box-shadow:none;background:var(--surface-3);}
+.history-detail{background:var(--surface-2);border-left:0;border-radius:14px;}
+.step-num{color:var(--ink);}
+.print-card{border:0;border-radius:18px;background:#fff;box-shadow:inset 0 0 0 1px var(--border);}
+
+/* ---------- Admin sidebar: grey, active = black pill ---------- */
+.sidebar{background:var(--bg);border-right:0;}
+.sidebar .brand{border-bottom:0;}
+body:has(.sidebar) .tab{border-radius:999px;color:#3d3d3d;}
+body:has(.sidebar) .tab:hover{background:#e3e3de;color:var(--ink);}
+body:has(.sidebar) .tab.active{background:var(--ink);color:#fff;}
+body:has(.sidebar) .tab.active::before{display:none;}
+.side-label{text-transform:none;letter-spacing:0;font-size:11.5px;font-weight:500;}
+.side-foot{border-top:0;}
+body:has(.sidebar) .main{background:var(--bg);}
+.page-head h2{font-size:24px;font-weight:600;letter-spacing:-.6px;}
+
+/* ---------- Footer dot ---------- */
+.conn-dot{box-shadow:none;background:#18a058;}
+.conn-dot.off{background:var(--bad);} .conn-dot.busy{background:var(--accent);}
+
+@media (max-width:760px){
+  .sidebar{background:var(--bg);border-bottom:0;}
 }
