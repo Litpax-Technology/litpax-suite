@@ -1598,3 +1598,143 @@ tbody tr:hover td { background: #f8f9fb; color: var(--text2); }
   .stats-row { background: transparent; border: none; box-shadow: none; gap: 10px; overflow: visible; }
   .stats-row .stat { background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-left: 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   36. BENTO — Litpax Suite theme (upar ke saare layers ke baad)
+   Rang/size badalna ho toh sirf is :root ke variables badlo.
+   Font: app.html ke font link me Geist + Geist Mono.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --a: #2a4fe0; --a-d: #1b38b0; --a-rgb: 42,79,224;
+  --ink: #121212; --ink-2: #2a2a2a;
+  --bg: #efefec; --tile: #f6f6f3; --tile-2: #ebebe6;
+  --line: #e3e3de; --line-2: #d4d4ce;
+  --text: #121212; --text2: #3d3d3d; --text3: #5c5c5c; --text4: #8a8a84;
+  --ok: #126b3e; --ok-soft: #e4f5ec; --warn: #8a4b00; --warn-soft: #fff1dc;
+  --bad: #a3200f; --bad-soft: #ffe9e6; --info-soft: #eef1ff;
+  --r-card: 24px; --r-row: 12px;
+  --side-bg: var(--bg);
+}
+body, button, input, select, textarea,
+.btn, .tab-btn, .form-control, .search-input, .items-table input, .items-table select { font-family: 'Geist', 'IBM Plex Sans', system-ui, sans-serif; }
+.td-id, .mono { font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace; }
+body, .app-body, .main { background: var(--bg); color: var(--text); }
+.main { padding: 8px 24px 32px; }
+
+/* ── Topbar: grey ground, pills ── */
+.topbar { background: var(--bg); border-bottom: 0; }
+.topbar-brand { background: var(--bg); border-right: 0; }
+.brand-mark { border-radius: 10px; background: var(--ink); }
+.page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+.user-pill { border: 0; border-radius: 999px; background: #fff; padding: 4px 14px 4px 4px; }
+.user-av { background: var(--ink); color: #fff; }
+.btn-logout { border: 0; border-radius: 999px; background: #fff; color: var(--text); font-weight: 600; padding: 8px 16px; }
+.btn-logout:hover { background: var(--ink); color: #fff; }
+
+/* ── Sidebar: grey, active = black pill ── */
+.sidebar { background: var(--bg); border-right: 0; }
+.nav-sec { color: var(--text4); font-size: 11.5px; padding: 16px 22px 6px; }
+.nav-item { margin: 1px 12px; padding: 8px 14px; border-radius: 999px; border: 0; color: var(--text2); }
+.nav-item:hover { background: #e3e3de; color: var(--text); }
+.nav-item.active { background: var(--ink); color: #fff; border: 0; box-shadow: none; }
+.nav-item.active .nav-icon { filter: grayscale(1) brightness(3); opacity: 1; }
+.sidebar-foot { border-top: 0; }
+.sb-milestone { border: 0; border-radius: 18px; background: #fff; }
+.sb-milestone .k { color: var(--a); }
+.sb-milestone .k::before { background: var(--a); }
+
+/* ── KPI: alag tiles; pehla = black hero; red/amber = tinted ── */
+.stats-row { gap: 14px; background: transparent; border: 0; box-shadow: none; overflow: visible; margin-bottom: 14px; }
+.stat, .stats-row .stat { background: #fff; border: 0; border-radius: var(--r-card); margin-left: 0; padding: 20px 22px; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; }
+.stat:hover { background: #fff; }
+.stat-lbl { font-size: 13px; font-weight: 500; color: var(--text3); }
+.stat-val, .stat[class*="c-"] .stat-val { font-size: 40px; font-weight: 600; letter-spacing: -1.6px; line-height: 1; margin-top: 14px; }
+.stat-sub { color: var(--text3); }
+.stats-row .stat:first-child { background: var(--ink); }
+.stats-row .stat:first-child .stat-lbl, .stats-row .stat:first-child .stat-sub { color: #b9b9b9; }
+.stats-row .stat:first-child .stat-val { color: #fff; }
+/* ek page pe sirf pehli KPI row ka pehla tile black — baaki rows normal */
+.stats-row ~ .stats-row .stat:first-child { background: #fff; }
+.stats-row ~ .stats-row .stat:first-child .stat-lbl, .stats-row ~ .stats-row .stat:first-child .stat-sub { color: var(--text3); }
+.stats-row ~ .stats-row .stat:first-child .stat-val { color: var(--text); }
+.stats-row .stat.c-red:not(:first-child) { background: var(--bad-soft); }
+.stats-row .stat.c-red:not(:first-child) .stat-val { color: var(--bad); }
+.stats-row .stat.c-amber:not(:first-child) { background: var(--warn-soft); }
+.stats-row .stat.c-amber:not(:first-child) .stat-val { color: #7a4100; }
+
+/* ── Cards = tiles ── */
+.card { border: 0; border-radius: var(--r-card); box-shadow: none; margin-bottom: 14px; }
+.card-head { border-bottom: 0; padding: 18px 22px 8px; background: transparent; }
+.card-title { font-size: 15px; font-weight: 600; }
+
+/* ── Pipeline: pills, active = black ── */
+.pipeline { background: transparent; border: 0; box-shadow: none; padding: 0; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.pipe-node { background: #fff; border: 0; border-radius: 999px; padding: 8px 8px 8px 16px; gap: 8px; }
+.pipe-node:hover { background: #fff; border: 0; box-shadow: 0 0 0 2px var(--line-2); }
+.pipe-node.active { background: var(--ink); border: 0; box-shadow: none; }
+.pipe-node.active .pipe-lbl { color: #fff; }
+.pipe-count { background: var(--tile-2); border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 600; }
+.pipe-node.active .pipe-count { background: #fff; color: var(--ink); }
+
+/* ── Tables (list pages): har row ek chhota card ── */
+.table-wrap { padding: 0 12px 12px; }
+.table-wrap > table { border-collapse: separate; border-spacing: 0 4px; font-size: 13.5px; }
+.table-wrap > table th { background: #fff; border-bottom: 0; color: var(--text3); font-size: 12px; font-weight: 500; padding: 8px 14px; }
+.table-wrap > table td { background: var(--tile); border-bottom: 0; padding: 12px 14px; color: var(--text2); white-space: nowrap; }
+.table-wrap > table th { white-space: nowrap; }
+.table-wrap > table td:first-child { border-radius: var(--r-row) 0 0 var(--r-row); }
+.table-wrap > table td:last-child { border-radius: 0 var(--r-row) var(--r-row) 0; }
+.table-wrap > table tbody tr:hover td { background: var(--tile-2); }
+.table-wrap > table td[colspan] { background: transparent; }
+.td-id { color: var(--text); font-weight: 600; }
+/* items-table (form ke andar) — saaf, borders halke */
+th, .items-table th { background: #fff; }
+.items-table td { border-bottom-color: var(--line); }
+
+/* ── Status: wapas soft pills (Bento chips) ── */
+.badge, .badge[class*="b-"] { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; gap: 0; background: var(--tile-2); color: var(--text2); }
+.badge::before { display: none; }
+.b-dispatched, .b-paid, .b-low { background: var(--ok-soft) !important; color: var(--ok) !important; }
+.b-pending, .b-credit, .b-medium { background: var(--warn-soft) !important; color: var(--warn) !important; }
+.b-delay, .b-high { background: var(--bad-soft) !important; color: var(--bad) !important; }
+.b-processing, .b-advance, .b-pdc { background: var(--info-soft) !important; color: var(--a-d) !important; }
+.b-ready { background: var(--ink) !important; color: #fff !important; }
+
+/* ── Buttons: pills ── */
+.btn { border: 1px solid transparent; border-radius: 999px; padding: 8px 16px; background: var(--tile-2); color: var(--text); font-weight: 600; }
+.btn:hover { background: #e0e0da; border-color: transparent; color: var(--text); }
+.btn-sm { padding: 5px 12px; border-radius: 999px; }
+.btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; box-shadow: none; }
+.btn-primary:hover { background: var(--ink-2); border-color: var(--ink-2); color: #fff; }
+
+/* ── Forms: soft filled ── */
+.form-control, .search-input, .items-table input, .items-table select { border: 1px solid transparent; border-radius: 12px; background-color: var(--tile); }
+.search-input { border-radius: 999px; padding-left: 34px !important; background-position: 13px center; }
+.form-control:focus, .search-input:focus, .items-table input:focus, .items-table select:focus { background-color: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(var(--a-rgb),0.14); }
+.form-section { border-bottom-color: var(--line); }
+
+/* ── Tabs: pills ── */
+.tab-bar { border-bottom: 0; gap: 6px; flex-wrap: wrap; }
+.tab-btn { border: 0; border-radius: 999px; padding: 7px 14px; margin: 0; background: #fff; color: var(--text3); font-weight: 500; }
+.tab-btn.active { background: var(--ink); color: #fff; font-weight: 600; }
+
+/* ── Modal, detail, toast ── */
+.modal { border: 0; border-radius: 24px; }
+.modal-head { border-bottom: 0; border-radius: 24px 24px 0 0; padding: 20px 24px 10px; }
+.modal-foot { background: #fff; border-top: 0; border-radius: 0 0 24px 24px; }
+.detail-item { background: var(--tile); border: 0; border-radius: 16px; }
+.toast { background: var(--ink); color: #fff; border: 0; border-radius: 999px; }
+.spin { border-top-color: var(--ink); }
+
+/* ── Suite ke andar: brand Suite top bar me pehle se hai ── */
+html.in-suite .topbar-brand .brand-name { display: none; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .main { padding: 8px 12px 24px; }
+  .sidebar { background: #fff; border-radius: 0 24px 24px 0; }
+  .stat, .stats-row .stat { min-height: 96px; }
+  .stat-val, .stat[class*="c-"] .stat-val { font-size: 30px; }
+  .table-wrap { padding: 0 6px 6px; }
+  .btn-logout { padding: 6px 12px; }
+}
