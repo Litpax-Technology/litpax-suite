@@ -260,10 +260,29 @@ function commitScan(code, station, emp) {
     entry.synced = true; render();
     kickAutomation();
   }, function (err) {
+    if (/^NOT_BATTERY/.test(err.message)) {   // server ne mana kiya: ye battery ka barcode hi nahi
+      undoLocalScan(code, entry, ck);
+      flash('flash-error'); beep(false); render();
+      alert('Ye battery ka barcode nahi hai: ' + code +
+            '\n\nShayad Cell / BMS ka barcode scan ho gaya. Battery ka label scan karo.');
+      return;
+    }
     entry.failed = true; render();
     alert('Not saved: ' + err.message + '\n\nBattery: ' + code +
           '\nUse Retry held scans once the connection is back.');
   });
+}
+
+/* Reject hua scan screen se bhi hata do (count, recent list, last scan) */
+function undoLocalScan(code, entry, ck) {
+  var p = state.packs[code];
+  if (p) {
+    p.history = p.history.filter(function (h) { return h !== entry; });
+    if (!p.history.length) delete state.packs[code];
+  }
+  state.recentScans = state.recentScans.filter(function (r) { return r.entry !== entry; });
+  if (state.sessionCount[ck] > 0) state.sessionCount[ck]--;
+  if (state.lastScan && state.lastScan.entry === entry) state.lastScan = null;
 }
 
 /* Scan save hone ke baad ERP / IMS update turant chalao (background, worker ko wait nahi).
