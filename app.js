@@ -141,6 +141,7 @@
     if ((has('Production') || u.pltSup) && !isAdmin) items.push({ id: 'm-plt2W', sec: 'Apps', label: SUITE.MODULES.plt2W.label, ic: '⚡', mod: 'plt2W' });
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
+    if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
     return items;
   }
