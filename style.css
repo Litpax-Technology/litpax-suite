@@ -544,7 +544,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 @keyframes llglow { 0% { background: #ec4f55; } 40% { background: #f5cd47; } 75%, 100% { background: #46e39b; } }
 .ll-shine { position: absolute; inset: 0; z-index: 2; pointer-events: none;
   background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.38) 50%, transparent 62%) no-repeat; background-size: 260% 100%;
-  -webkit-mask: url(img/battery.webp) center / 100% 100% no-repeat; mask: url(img/battery.webp) center / 100% 100% no-repeat;
+  -webkit-mask: url(assets/battery.png) center / 100% 100% no-repeat; mask: url(assets/battery.png) center / 100% 100% no-repeat;
   animation: llshine 1.8s ease-in-out infinite; }
 @keyframes llshine { from { background-position: 160% 0; } to { background-position: -60% 0; } }
 
