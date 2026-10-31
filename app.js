@@ -76,33 +76,19 @@
     if (saved) { $('#userInput').value = saved; $('#rememberUser').checked = true; }
     setTimeout(function () { (saved ? $('#pinInput') : $('#userInput')).focus(); }, 50);
   }
+  
   function doLogin() {
     var un = $('#userInput').value.trim(), pw = $('#pinInput').value, btn = $('#loginBtn');
     $('#loginError').textContent = '';
     if (!un || !pw) { $('#loginError').textContent = 'Enter username and password'; return; }
     try { if ($('#rememberUser').checked) localStorage.setItem('suite_user', un); else localStorage.removeItem('suite_user'); } catch (e) {}
-// AFTER
     busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
-    // ERP aur Service dono GAS ek saath check — jahan account hai wahi apps milenge
-    var erp = api('ERP', 'suiteLogin', { username: un, password: pw })
-      .then(function (d) { return { ok: true, d: d }; }, function (e) { return { ok: false, e: e }; });
-    var svc = svcLogin(un, pw)
-      .then(function (r) { return { ok: true, r: r }; }, function (e) { return { ok: false, e: e }; });
-    Promise.all([erp, svc]).then(function (res) {
-      var E = res[0], V = res[1];
-      svcClear();
-      if (V.ok) svcSave(V.r, un);
-      if (E.ok) {
-        S.token = E.d.token;
-        try { sessionStorage.setItem('suite_token', E.d.token); } catch (e) {}
-        start(E.d);
-      } else if (V.ok) {
-        try { localStorage.setItem('suite_svc_only', '1'); } catch (e) {}
-        startSvcOnly();
-      } else {
-        $('#loginError').textContent = E.e.message;
-      }
-    }).then(function () { busy(btn, false); $('#pinInput').value = ''; });
+    api('ERP', 'suiteLogin', { username: un, password: pw }).then(function (d) {
+      S.token = d.token;
+      try { sessionStorage.setItem('suite_token', d.token); } catch (e) {}
+      return svcSso().then(function () { start(d); });   // Service Hub bhi isi login se
+    }).catch(function (e) { $('#loginError').textContent = e.message; })
+      .then(function () { busy(btn, false); $('#pinInput').value = ''; });
   }
 
   /* ---------- Service Hub login (apna GAS + apna Users tab) ---------- */
@@ -728,7 +714,7 @@
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
     if (!tok) { svcClear(); return showLogin(); }
     S.token = tok;
-    api('ERP', 'suiteMe').then(function (d) { return (svcRole() ? Promise.resolve() :
+    api('ERP', 'suiteMe').then(function (d) { return (svcRole() ? Promise.resolve() : svcSso()).then(function () { start(d); }); })
       .catch(function () { signOut(); });
   }
   document.addEventListener('DOMContentLoaded', boot);
