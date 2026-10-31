@@ -6,12 +6,12 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <title>Litpax Service Hub</title>
-<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
   <script>
-  if (window.top !== window.self) { document.documentElement.style.display = 'none'; try { window.top.location = window.self.location.href; } catch (e) {} }   // no framing (click-jacking)
+  (function () { var ok = false; try { ok = window.top !== window.self && window.top.location.origin === location.origin; } catch (e) {} if (!ok) { document.documentElement.style.display = 'none'; var u = new URL('../#m-service', location.href).href; try { window.top.location = u; } catch (e) { location.replace(u); } } })();   // Service sirf Suite ke andar khulta hai
   (function () {
     try {
       var HOURS = 6; // intro kitne ghante mein ek baar chale
@@ -29,7 +29,7 @@
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen" class="login">
   <section class="login-hero">
-    <img class="hero-logo" src="assets/logo-white.png" alt="Litpax" width="166" height="48">
+    <img class="hero-logo" src="../assets/logo-white.png" alt="Litpax" width="166" height="48">
         <div class="hero-art">
           <div class="ws" aria-hidden="true">
         <svg class="ws-svg" viewBox="0 0 600 450" preserveAspectRatio="xMidYMid slice">
@@ -125,9 +125,9 @@
             </defs>
             <polygon class="bat-beam" points="322,229 382,229 408,100 296,100" fill="url(#wsBeam)"/>
             <ellipse class="bat-light" cx="352" cy="229" rx="42" ry="9" fill="url(#wsGlow)"/>
-            <image class="bat-img" href="assets/battery.png" x="307.5" y="180" width="89" height="132" clip-path="url(#batBot)"/>
+            <image class="bat-img" href="../assets/battery.png" x="307.5" y="180" width="89" height="132" clip-path="url(#batBot)"/>
             <g class="lid">
-              <image class="bat-img" href="assets/battery.png" x="307.5" y="180" width="89" height="132" clip-path="url(#batTop)"/>
+              <image class="bat-img" href="../assets/battery.png" x="307.5" y="180" width="89" height="132" clip-path="url(#batTop)"/>
             </g>
             <rect class="ws-mouth" x="338" y="224" width="28" height="8" fill="none"/>
           </g></g>
@@ -199,7 +199,7 @@
 
   <section class="login-side">
     <div class="login-card">
-      <img class="card-logo" src="assets/logo.png" alt="Litpax" width="124" height="36">
+      <img class="card-logo" src="../assets/logo.png" alt="Litpax" width="124" height="36">
       <div class="login-hello" id="loginHello">Welcome back</div>
       <div class="login-title">Sign in to Service Hub</div>
 
@@ -237,7 +237,7 @@
 <div id="appWrap" class="app-wrap" style="display:none">
   <aside id="sidebar" class="sidebar">
     <div class="sb-brand">
-      <img src="assets/logo.png" alt="Litpax" width="104" height="30">
+      <img src="../assets/logo.png" alt="Litpax" width="104" height="30">
       <div class="sb-app">Service Hub</div>
     </div>
     <nav id="sbNav" class="sb-nav" aria-label="Main"></nav>
@@ -445,8 +445,9 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="assets/qrcode.min.js"></script>
-<script src="config.js"></script>
+<script src="lib/qrcode.min.js"></script>
+<script src="../config.js"></script>
 <script src="app.js"></script>
+<script src="../suite-bridge.js"></script>
 </body>
 </html>
