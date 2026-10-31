@@ -587,7 +587,7 @@
             '<button class="btn btn-sm" data-save="' + esc(c.key) + '">Save</button></div></td></tr>';
         }).join('') + '</tbody></table></div></div>' +
         '<div class="card"><div class="card-h"><div class="card-t">Connected apps</div></div><div class="tbl-wrap"><table class="tbl"><tbody>' +
-        ['ERP', 'IMS', 'PLT', 'SOMS'].map(function (a) {
+        ['ERP', 'IMS', 'PLT', 'SOMS', 'SERVICE'].map(function (a) {
           var v = (L.urls || {})[a];
           return '<tr><td><b>' + a + '</b></td><td class="mono">' + (v ? esc(v) : '<span class="chip chip-bad">Not registered</span>') + '</td></tr>';
         }).join('') + '</tbody></table></div></div>' +
