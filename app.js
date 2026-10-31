@@ -11,6 +11,7 @@
 
   var S = { token: '', user: null, sessions: {}, hidePages: [], view: '', frames: {}, pending: 0 };
   var SESSION_KEYS = ['erp_user', 'lpx_role', 'lpx_name', 'sms_session', 'plt_sup', 'suite_bridge'];
+  var HUB_KEYS = ['hub_token', 'hub_role', 'hub_user', 'hub_last_act', 'suite_svc_only'];
 
   /* ---------------- API (4 alag GAS) ----------------
    * ERP / IMS: POST JSON  ·  PLT: GET (JSONP text)  — URLs root config.js (SUITE) se */
@@ -21,7 +22,7 @@
     var ctrl = window.AbortController ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, SUITE.TIMEOUT_MS);
     var req;
-    if (app === 'PLT') {
+    if (app === 'PLT' || app === 'SERVICE') {
       var q = Object.keys(body).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(Array.isArray(body[k]) ? body[k].join(',') : body[k]); }).join('&');
       req = fetch(url + '?' + q + '&callback=cb', { redirect: 'follow', signal: ctrl ? ctrl.signal : undefined });
     } else {
@@ -80,16 +81,58 @@
     $('#loginError').textContent = '';
     if (!un || !pw) { $('#loginError').textContent = 'Enter username and password'; return; }
     try { if ($('#rememberUser').checked) localStorage.setItem('suite_user', un); else localStorage.removeItem('suite_user'); } catch (e) {}
+// AFTER
     busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
-    api('ERP', 'suiteLogin', { username: un, password: pw }).then(function (d) {
-      S.token = d.token;
-      try { sessionStorage.setItem('suite_token', d.token); } catch (e) {}
-      start(d);
-    }).catch(function (e) { $('#loginError').textContent = e.message; })
-      .then(function () { busy(btn, false); $('#pinInput').value = ''; });
+    // ERP aur Service dono GAS ek saath check — jahan account hai wahi apps milenge
+    var erp = api('ERP', 'suiteLogin', { username: un, password: pw })
+      .then(function (d) { return { ok: true, d: d }; }, function (e) { return { ok: false, e: e }; });
+    var svc = svcLogin(un, pw)
+      .then(function (r) { return { ok: true, r: r }; }, function (e) { return { ok: false, e: e }; });
+    Promise.all([erp, svc]).then(function (res) {
+      var E = res[0], V = res[1];
+      svcClear();
+      if (V.ok) svcSave(V.r, un);
+      if (E.ok) {
+        S.token = E.d.token;
+        try { sessionStorage.setItem('suite_token', E.d.token); } catch (e) {}
+        start(E.d);
+      } else if (V.ok) {
+        try { localStorage.setItem('suite_svc_only', '1'); } catch (e) {}
+        startSvcOnly();
+      } else {
+        $('#loginError').textContent = E.e.message;
+      }
+    }).then(function () { busy(btn, false); $('#pinInput').value = ''; });
+  }
+
+  /* ---------- Service Hub login (apna GAS + apna Users tab) ---------- */
+  function svcLogin(un, pw) {
+    if (!SUITE.SERVICE_URL) return Promise.reject(new Error('SERVICE_URL is not set'));
+    return api('SERVICE', 'login', { username: un.toLowerCase(), pin: pw, dev: 'Litpax Suite' }).then(function (r) {
+      if (!r || !r.ok || !r.token || !SUITE.SERVICE.ROLES[r.role]) throw new Error((r && r.msg) || 'Service login failed');
+      return r;
+    });
+  }
+  function svcSave(r, un) {
+    try {
+      localStorage.setItem('hub_role', r.role); localStorage.setItem('hub_token', r.token); localStorage.setItem('hub_user', un.toLowerCase());
+      if (r.idleMin != null) localStorage.setItem('hub_idle', String(r.idleMin));
+    } catch (e) {}
+  }
+  function svcClear() { try { HUB_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {} }
+  function svcRole() {
+    try { return localStorage.getItem('hub_token') ? (localStorage.getItem('hub_role') || '') : ''; } catch (e) { return ''; }
+  }
+  function startSvcOnly() {
+    var u = ''; try { u = localStorage.getItem('hub_user') || ''; } catch (e) {}
+    var R = SUITE.SERVICE.ROLES[svcRole()] || {};
+    start({ user: { name: u + (R.label ? ' · ' + R.label : ''), username: u, roles: [] }, sessions: {}, hidePages: [] });
   }
   function signOut() {
+    var htk = ''; try { htk = localStorage.getItem('hub_token') || ''; } catch (e) {}
+    if (htk) api('SERVICE', 'logout', { token: htk }).catch(function () {});
     try { SESSION_KEYS.concat(['suite_token']).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
+    svcClear();
     S.token = ''; S.user = null;
     Object.keys(S.frames).forEach(function (k) { S.frames[k].remove(); });
     S.frames = {};
@@ -142,6 +185,7 @@
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
+    if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
     return items;
   }
@@ -681,7 +725,12 @@
     }
     var tok = '';
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
-    if (!tok) return showLogin();
+        if (!tok) {
+      var svcOnly = ''; try { svcOnly = localStorage.getItem('suite_svc_only'); } catch (e) {}
+      if (svcOnly && svcRole()) return startSvcOnly();   // sirf Service wala user — refresh pe bhi andar
+      svcClear();
+      return showLogin();
+    }
     S.token = tok;
     api('ERP', 'suiteMe').then(function (d) { start(d); })
       .catch(function () { signOut(); });
