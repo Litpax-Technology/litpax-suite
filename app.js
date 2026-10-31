@@ -106,12 +106,12 @@
   }
 
   /* ---------- Service Hub login (apna GAS + apna Users tab) ---------- */
-  function svcLogin(un, pw) {
-    if (!SUITE.SERVICE_URL) return Promise.reject(new Error('SERVICE_URL is not set'));
-    return api('SERVICE', 'login', { username: un.toLowerCase(), pin: pw, dev: 'Litpax Suite' }).then(function (r) {
-      if (!r || !r.ok || !r.token || !SUITE.SERVICE.ROLES[r.role]) throw new Error((r && r.msg) || 'Service login failed');
-      return r;
-    });
+  function svcSso() {
+    svcClear();
+    if (!SUITE.SERVICE_URL || !S.token) return Promise.resolve();
+    return api('SERVICE', 'suiteLogin', { suiteToken: S.token, dev: 'Litpax Suite' }).then(function (r) {
+      if (r && r.ok && r.token && SUITE.SERVICE.ROLES[r.role]) svcSave(r, r.user || '');
+    }).catch(function () {});   // Service band ho to bhi baaki Suite chale
   }
   function svcSave(r, un) {
     try {
@@ -122,11 +122,6 @@
   function svcClear() { try { HUB_KEYS.forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {} }
   function svcRole() {
     try { return localStorage.getItem('hub_token') ? (localStorage.getItem('hub_role') || '') : ''; } catch (e) { return ''; }
-  }
-  function startSvcOnly() {
-    var u = ''; try { u = localStorage.getItem('hub_user') || ''; } catch (e) {}
-    var R = SUITE.SERVICE.ROLES[svcRole()] || {};
-    start({ user: { name: u + (R.label ? ' · ' + R.label : ''), username: u, roles: [] }, sessions: {}, hidePages: [] });
   }
   function signOut() {
     var htk = ''; try { htk = localStorage.getItem('hub_token') || ''; } catch (e) {}
@@ -636,9 +631,13 @@
     Purchase:   { label: 'Purchase',           hint: 'Purchase: Orders, Receiving, Inward Approvals' },
     Production: { label: 'Production',         hint: 'Line Scan, Line Admin, Overview, Inventory' },
     Dispatch:   { label: 'Dispatch',           hint: 'ERP: Dispatch page (Role column = Dispatch)' },
-    ErpOnly:    { label: 'Sales & Orders only', hint: 'Sales / Accounts / CRM (page set by the Role column)' }
+    ErpOnly:    { label: 'Sales & Orders only', hint: 'Sales / Accounts / CRM (page set by the Role column)' },
+    Attendant:  { label: 'Call Attendant',     hint: 'Service Hub: New Ticket, Tracker' },
+    Service:    { label: 'Service Team',       hint: 'Service Hub: Tickets, calls, pickup, receiving' },
+    Repair:     { label: 'Repair Team',        hint: 'Service Hub: Repair Board, Dispatch' }
   };
-  var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly'];
+  var JOB_ORDER = ['Admin', 'Store', 'Purchase', 'Production', 'Dispatch', 'ErpOnly', 'Attendant', 'Service', 'Repair'];
+  var SVC_JOBS = ['Attendant', 'Service', 'Repair'];
   /** Saved access se "Kaam" wapas pehchano (table + form ke liye) */
   function jobsOf(u) {
     var r = u.roles || [];
@@ -648,6 +647,7 @@
     if (u.somsRole === 'Purchase' || u.somsRole === 'Admin') j.push('Purchase');
     if (r.indexOf('Production') !== -1) j.push('Production');
     if (r.indexOf('Dispatch') !== -1) j.push('Dispatch');
+        SVC_JOBS.forEach(function (k) { if (r.indexOf(k) !== -1) j.push(k); });
     if (!j.length) j.push('ErpOnly');
     return j;
   }
@@ -658,7 +658,8 @@
     var roles = [];
     if (has('Store')) roles.push('Store');
     if (has('Production')) roles.push('Production');
-    if (has('Dispatch')) roles.push('Dispatch');
+        if (has('Dispatch')) roles.push('Dispatch');
+    SVC_JOBS.forEach(function (k) { if (has(k)) roles.push(k); });
     return {
       roles: roles,
       imsRole: has('Store') ? 'ajay' : (has('Production') ? 'sandeep' : ''),
@@ -725,14 +726,9 @@
     }
     var tok = '';
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
-        if (!tok) {
-      var svcOnly = ''; try { svcOnly = localStorage.getItem('suite_svc_only'); } catch (e) {}
-      if (svcOnly && svcRole()) return startSvcOnly();   // sirf Service wala user — refresh pe bhi andar
-      svcClear();
-      return showLogin();
-    }
+    if (!tok) { svcClear(); return showLogin(); }
     S.token = tok;
-    api('ERP', 'suiteMe').then(function (d) { start(d); })
+    api('ERP', 'suiteMe').then(function (d) { return (svcRole() ? Promise.resolve() :
       .catch(function () { signOut(); });
   }
   document.addEventListener('DOMContentLoaded', boot);
