@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
+<title>Litpax Service Hub</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+  <script>
+  if (window.top !== window.self) { document.documentElement.style.display = 'none'; try { window.top.location = window.self.location.href; } catch (e) {} }   // no framing (click-jacking)
+  (function () {
+    try {
+      var HOURS = 6; // intro kitne ghante mein ek baar chale
+      var last = +localStorage.getItem('hub_intro_at') || 0;
+      var inApp = localStorage.getItem('hub_role') && localStorage.getItem('hub_token');
+      var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!inApp && !calm && window.innerWidth > 480 && Date.now() - last > HOURS * 3600e3) document.documentElement.classList.add('play-intro');
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen" class="login">
+  <section class="login-hero">
+    <img class="hero-logo" src="assets/logo-white.png" alt="Litpax" width="166" height="48">
+        <div class="hero-art">
+          <div class="ws" aria-hidden="true">
+        <svg class="ws-svg" viewBox="0 0 600 450" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="wsWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1e3d"/><stop offset="1" stop-color="#0e1024"/></linearGradient>
+            <linearGradient id="wsCone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffecc0" stop-opacity=".42"/><stop offset="1" stop-color="#ffecc0" stop-opacity="0"/></linearGradient>
+            <linearGradient id="wsBeam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff1c8" stop-opacity=".9"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></linearGradient>
+            <linearGradient id="wsLabel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a1416"/><stop offset=".45" stop-color="#c23037"/><stop offset=".72" stop-color="#e0a93a"/><stop offset="1" stop-color="#2d8a5c"/></linearGradient>
+            <radialGradient id="wsGlow"><stop offset="0" stop-color="#fff3c9"/><stop offset=".5" stop-color="#ffd27a" stop-opacity=".75"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+            <pattern id="wsHoles" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="1.4" fill="#2c3160"/></pattern>
+          </defs>
+
+          <!-- room -->
+          <rect width="600" height="450" fill="url(#wsWall)"/>
+          <rect y="400" width="600" height="50" fill="#0b0c19"/>
+          <rect y="399" width="600" height="2" fill="#262a4d"/>
+
+                    <!-- wall clock -->
+          <circle cx="120" cy="72" r="22" fill="#141734" stroke="#2c3160" stroke-width="2"/>
+          <circle cx="120" cy="72" r="18" fill="none" stroke="#2c3160" stroke-width="2" stroke-dasharray="1 8.42"/>
+          <line class="ws-min" x1="120" y1="72" x2="120" y2="57" stroke="#a7acc9" stroke-width="2" stroke-linecap="round"/>
+          <line x1="120" y1="72" x2="129" y2="72" stroke="#a7acc9" stroke-width="2.4" stroke-linecap="round"/>
+          <line class="ws-sec" x1="120" y1="76" x2="120" y2="54" stroke="#ef5359" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="120" cy="72" r="2" fill="#ef5359"/>
+
+          <!-- sign -->
+          <rect x="56" y="118" width="128" height="50" rx="6" fill="#141734" stroke="#2c3160"/>
+          <text x="120" y="139" text-anchor="middle" class="ws-t1">REPAIR BAY 02</text>
+          <text x="120" y="156" text-anchor="middle" class="ws-t2">LITPAX SERVICE</text>
+
+          <!-- pegboard + tools -->
+          <rect x="330" y="122" width="230" height="120" rx="8" fill="#161936" stroke="#272b55"/>
+          <rect x="336" y="128" width="218" height="108" rx="5" fill="url(#wsHoles)"/>
+          <g fill="#6d7196">
+            <path transform="translate(440 146) rotate(35) scale(2)" d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
+            <rect x="512" y="142" width="5" height="62" rx="2"/><rect x="500" y="138" width="29" height="10" rx="2"/>
+            <rect x="404" y="140" width="6" height="22" rx="2" fill="#ef5359"/><rect x="406" y="162" width="2" height="26" fill="#8a8eb0"/>
+          </g>
+          <path d="M366 146 l10 52 M388 146 l-10 52" stroke="#6d7196" stroke-width="5" stroke-linecap="round"/>
+
+          <!-- lamp -->
+          <g class="ws-lamp">
+            <line x1="352" y1="0" x2="352" y2="66" stroke="#2a2d48" stroke-width="2"/>
+            <polygon class="ws-cone" points="336,92 368,92 478,312 226,312" fill="url(#wsCone)"/>
+            <g class="ws-dust">
+              <circle cx="330" cy="260" r="1.2" style="--d:0s;--t:7s"/>
+              <circle cx="372" cy="230" r="1" style="--d:-1.5s;--t:8s"/>
+              <circle cx="350" cy="200" r="1.4" style="--d:-3s;--t:6.5s"/>
+              <circle cx="400" cy="270" r="1" style="--d:-4.5s;--t:7.5s"/>
+              <circle cx="310" cy="290" r="1.3" style="--d:-2s;--t:9s"/>
+              <circle cx="385" cy="180" r="1" style="--d:-5.5s;--t:7s"/>
+              <circle cx="355" cy="150" r="1.2" style="--d:-1s;--t:8.5s"/>
+              <circle cx="420" cy="290" r="1.1" style="--d:-6s;--t:6s"/>
+            </g>
+            <path d="M330 66h44l14 26h-72z" fill="#272a45"/>
+            <path d="M316 90h72v3h-72z" fill="#ef5359"/>
+            <ellipse class="ws-bulb" cx="352" cy="93" rx="12" ry="4" fill="#fff3c4"/>
+          </g>
+          <g class="ws-poolg"><ellipse cx="352" cy="313" rx="130" ry="9" fill="#ffecc0" opacity=".14"/></g>
+
+          <!-- bench -->
+          <rect x="312" y="322" width="12" height="78" fill="#3a2c22"/>
+          <rect x="548" y="322" width="12" height="78" fill="#3a2c22"/>
+          <rect x="312" y="370" width="248" height="6" fill="#3a2c22"/>
+          <rect x="300" y="310" width="272" height="14" rx="3" fill="#6b5240"/>
+          <rect x="300" y="310" width="272" height="3" rx="1.5" fill="#8a6c55"/>
+
+          <!-- multimeter + mug -->
+          <rect x="470" y="282" width="30" height="30" rx="4" fill="#f5cd47"/>
+          <rect x="475" y="287" width="20" height="10" rx="1.5" fill="#1b2a1f"/>
+          <text x="485" y="295" class="ws-dig d1">48.6</text><text x="485" y="295" class="ws-dig d2">51.2</text>
+          <circle cx="485" cy="304" r="3.5" fill="#2a2d48"/>
+          <rect x="520" y="292" width="16" height="18" rx="3" fill="#e9ecf6"/>
+          <path d="M536 296h4a4 4 0 0 1 0 8h-4" stroke="#e9ecf6" stroke-width="2.5" fill="none"/>
+          <path class="ws-steam s1" d="M525 286q-4-6 0-12q4-6 0-12"/>
+          <path class="ws-steam s2" d="M531 286q-4-6 0-12q4-6 0-12"/>
+
+          <!-- probe cable: multimeter → battery -->
+          <path d="M480 306C456 334 418 330 398 292" stroke="#1a1b28" stroke-width="2.4" fill="none"/>
+          <path class="ws-flow" d="M480 306C456 334 418 330 398 292"/>
+          <circle cx="398" cy="292" r="2.5" fill="#ef5359"/>
+
+          <!-- stool -->
+          <path d="M234 324L226 400M276 324L284 400" stroke="#2a2d48" stroke-width="5" stroke-linecap="round"/>
+          <path d="M230 365h50" stroke="#2a2d48" stroke-width="3"/>
+          <rect x="224" y="315" width="62" height="9" rx="4" fill="#3d4166"/>
+
+          <!-- battery (real photo: body + lid) -->
+          <g class="bat"><g class="bat-in">
+            <defs>
+              <clipPath id="batBot"><rect x="290" y="228" width="130" height="90"/></clipPath>
+              <clipPath id="batTop"><rect x="290" y="160" width="130" height="69.5"/></clipPath>
+            </defs>
+            <polygon class="bat-beam" points="322,229 382,229 408,100 296,100" fill="url(#wsBeam)"/>
+            <ellipse class="bat-light" cx="352" cy="229" rx="42" ry="9" fill="url(#wsGlow)"/>
+            <image class="bat-img" href="assets/battery.png" x="307.5" y="180" width="89" height="132" clip-path="url(#batBot)"/>
+            <g class="lid">
+              <image class="bat-img" href="assets/battery.png" x="307.5" y="180" width="89" height="132" clip-path="url(#batTop)"/>
+            </g>
+            <rect class="ws-mouth" x="338" y="224" width="28" height="8" fill="none"/>
+          </g></g>
+
+          <!-- live status tag -->
+          <g class="ws-tag">
+            <rect x="404" y="168" width="86" height="22" rx="11" fill="rgba(70,227,155,.14)" stroke="rgba(70,227,155,.55)"/>
+            <circle cx="416" cy="179" r="3" fill="#46e39b"/>
+            <text x="424" y="182">74V · Healthy</text>
+          </g>
+
+          <!-- technician -->
+          <g class="t"><g class="t-bob">
+            <g class="leg leg-b"><rect x="-7" y="-2" width="14" height="46" rx="7"/>
+              <g class="shin"><rect x="-6" y="40" width="12" height="42" rx="6"/><path class="shoe" d="M-7 80h20a5 5 0 0 1 5 5v3h-25z"/></g></g>
+            <g class="leg leg-f"><rect x="-7" y="-2" width="14" height="46" rx="7"/>
+              <g class="shin"><rect x="-6" y="40" width="12" height="42" rx="6"/><path class="shoe" d="M-7 80h20a5 5 0 0 1 5 5v3h-25z"/></g></g>
+            <g class="t-up">
+              <g class="arm arm-b"><rect x="-6" y="-56" width="12" height="38" rx="6"/>
+                <g class="fore"><rect x="-5" y="-22" width="10" height="32" rx="5"/><circle class="hand" cx="0" cy="12" r="6"/></g></g>
+              <rect class="torso" x="-16" y="-64" width="32" height="68" rx="13"/>
+              <rect class="belt" x="-16" y="-6" width="32" height="5"/>
+              <rect x="3" y="-48" width="9" height="6" rx="1.5" fill="#ef5359"/>
+              <rect class="neck" x="-4" y="-72" width="8" height="10" rx="3"/>
+              <g class="head">
+                <circle class="skin" cx="2" cy="-86" r="15"/>
+                <circle class="ear" cx="-3" cy="-85" r="3"/>
+                <circle class="eye" cx="10" cy="-86" r="1.8" fill="#1a1f36"/>
+                <path d="M8-79q4 2 7-1" stroke="#1a1f36" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+                <path d="M-13-90a15 15 0 0 1 30 0z" fill="#ef5359"/>
+                <rect x="12" y="-92" width="13" height="4" rx="2" fill="#c23037"/>
+              </g>
+              <g class="arm arm-f"><rect x="-6" y="-56" width="12" height="38" rx="6"/>
+                <g class="fore"><rect x="-5" y="-22" width="10" height="32" rx="5"/>
+                  <g class="tool">
+                    <rect x="-2.5" y="14" width="5" height="10" rx="1.5" fill="#f5cd47"/><rect x="-1" y="24" width="2" height="12" fill="#c9ccd8"/>
+                    <circle class="sp sp1" cx="0" cy="37" r="1.8"/><circle class="sp sp2" cx="0" cy="37" r="1.5"/>
+                    <circle class="sp sp3" cx="0" cy="37" r="1.6"/><circle class="sp sp4" cx="0" cy="37" r="1.3"/>
+                  </g>
+                  <circle class="hand" cx="0" cy="12" r="6"/></g></g>
+            </g>
+          </g></g>
+
+          <!-- done bubble -->
+          <g class="ws-bubble">
+            <path d="M240 142L260 156L248 138Z" fill="#46e39b"/>
+            <circle cx="232" cy="128" r="17" fill="#46e39b"/>
+            <path d="M224 128l6 6l11-12" fill="none" stroke="#0f1124" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hero-copy promise">
+      <div class="pr-kicker"><span></span>The Litpax Promise<span></span></div>
+      <h1 class="pr-h">
+        <span class="pr-l1">We don't just sell <span class="pr-strike">products</span>.</span>
+        <span class="pr-l2">We sell <span class="pr-rot"><b>service.</b><b>support.</b><b>trust.</b><b>uptime.</b></span></span>
+      </h1>
+      <p class="pr-sub"><b>Every call answered. Every battery tracked.</b> From the first ring to the final dispatch, one ticket keeps every customer in the loop.</p>
+      <div class="pr-journey">
+        <div class="pr-track"><i></i></div>
+        <span style="--i:0;--c:#f5cd47"><em>01</em>Call</span>
+        <span style="--i:1;--c:#7b8cff"><em>02</em>Service</span>
+        <span style="--i:2;--c:#ef5359"><em>03</em>Repair</span>
+        <span style="--i:3;--c:#46e39b"><em>04</em>Dispatch</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="login-side">
+    <div class="login-card">
+      <img class="card-logo" src="assets/logo.png" alt="Litpax" width="124" height="36">
+      <div class="login-hello" id="loginHello">Welcome back</div>
+      <div class="login-title">Sign in to Service Hub</div>
+
+      <div class="field"><label class="lbl" for="loginUser">Username</label>
+        <div class="ifield">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v1.5h16V19c0-2.8-3.6-5-8-5Z"/></svg>
+          <input id="loginUser" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="e.g. service" onkeydown="if(event.key==='Enter')$('loginPass').focus()">
+        </div>
+      </div>
+
+      <div class="field"><label class="lbl" for="loginPass">PIN</label>
+        <div class="ifield">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 9h-1V7a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm2 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg>
+          <input id="loginPass" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" onkeydown="if(event.key==='Enter')authLogin()" onkeyup="capsCheck(event)">
+          <button type="button" class="eye" title="Show PIN" aria-label="Show PIN" onclick="loginTogglePass(this)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>
+          </button>
+        </div>
+        <div class="caps" id="capsWarn" style="display:none">Caps Lock is on</div>
+      </div>
+
+      <label class="remember"><input type="checkbox" id="rememberUser"> Remember my username</label>
+
+      <button id="loginBtn" class="btn btn-brand btn-block" onclick="authLogin()">
+        <span>Sign in</span>
+        <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7M20 12H4"/></svg>
+      </button>
+      <div class="login-foot">Call Attendant · Service Team · Repair Team · Admin</div>
+    </div>
+    <div class="login-copy">© Litpax Technology Pvt. Ltd.<span class="sig"> · crafted by Darpan</span></div>
+  </section>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appWrap" class="app-wrap" style="display:none">
+  <aside id="sidebar" class="sidebar">
+    <div class="sb-brand">
+      <img src="assets/logo.png" alt="Litpax" width="104" height="30">
+      <div class="sb-app">Service Hub</div>
+    </div>
+    <nav id="sbNav" class="sb-nav" aria-label="Main"></nav>
+    <div class="sb-user">
+      <div class="sb-av"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div id="sbRole" class="sb-role"></div>
+      <button class="sb-logout" onclick="logout()" title="Sign out" aria-label="Sign out"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg></button>
+    </div>
+  </aside>
+  <div id="sbOverlay" class="sb-overlay" onclick="toggleSidebar(false)"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="hdr-txt"><div class="hdr-crumb"><span id="hdrGroup">Service</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg><b id="hdrTitle" class="hdr-title"></b></div><div id="hdrSub" class="hdr-sub"></div></div>
+      <label class="gsearch"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="gSearch" placeholder="Search any ID, phone or serial no." autocomplete="off" onkeydown="if(event.key==='Enter')gSearch()"><kbd>/</kbd></label>
+      <div id="hdrDate" class="hdr-date"></div>
+    </header>
+
+    <!-- ===== PHASE 1: NEW TICKET ===== -->
+    <section id="scrNew" class="screen">
+      <div id="newForm" class="card form-card">
+        <div class="card-head"><span>📝 Basic Record</span><span class="chip-soft">Ticket ID is auto-generated</span></div>
+        <div class="form-sec">Customer</div>
+        <div class="form-grid">
+          <div class="fg"><label>Phone <b>*</b></label><input id="n_phone" inputmode="numeric" maxlength="10" placeholder="10 digit" oninput="phoneCheck()"></div>
+          <div class="fg"><label>Contact Person <b>*</b></label><input id="n_person" maxlength="100"></div>
+          <div id="n_phoneInfo" class="fg full" style="display:none"></div>
+          <div class="fg full"><label>Customer Company Name <b>*</b></label><input id="n_company" maxlength="150" placeholder="e.g. ABC Motors"></div>
+          <div class="fg"><label>Customer Type</label><select id="n_ctype"></select></div>
+          <div class="fg"><label>How did they reach us?</label><select id="n_source"></select></div>
+          <div class="fg full"><label>Dealer <span class="opt">(optional)</span></label>
+            <div class="sel-add"><select id="n_brand"></select><button type="button" class="btn btn-ghost" onclick="dealerAddToggle(true)">＋ Add</button></div>
+            <div id="dealerAddRow" class="sel-add" style="display:none;margin-top:8px">
+              <input id="n_dealerNew" maxlength="100" placeholder="New dealer name" onkeydown="if(event.key==='Enter')dealerAdd($('dealerAddBtn'))">
+              <button type="button" id="dealerAddBtn" class="btn btn-primary" onclick="dealerAdd(this)">Save</button>
+              <button type="button" class="btn btn-ghost" onclick="dealerAddToggle(false)">Cancel</button>
+            </div>
+          </div>
+          <div class="fg"><label>City</label><input id="n_city" maxlength="80" placeholder="e.g. Rohtak"></div>
+          <div class="fg"><label>State</label><select id="n_state"></select></div>
+        </div>
+        <div class="form-sec">Product &amp; problem</div>
+        <div class="form-grid">
+          <div class="fg full"><label>Complaint <span class="opt">(what the customer says)</span></label><select id="n_complaint"></select></div>
+          <div class="fg"><label>Vehicle Model</label><input id="n_vehicle" maxlength="80" placeholder="e.g. Zelio Eeva"></div>
+          <div class="fg"><label>Invoice No</label><input id="n_invoice" maxlength="60"></div>
+          <div class="fg"><label>Purchase Date</label><input id="n_pdate" type="date"></div>
+          <div class="fg"></div>
+          <div class="fg"><label>Batteries coming</label><input id="n_expB" type="number" min="0" max="50" placeholder="0"></div>
+          <div class="fg"><label>Chargers coming</label><input id="n_expC" type="number" min="0" max="50" placeholder="0"></div>
+          <div class="fg full"><label>Have the items been sent to the company? <b>*</b></label>
+            <div class="seg" id="n_sentSeg">
+              <button type="button" data-v="Yes" onclick="segPick(this)">🚚 Yes, already sent</button>
+              <button type="button" data-v="No" onclick="segPick(this)">✋ No</button>
+            </div>
+          </div>
+        </div>
+        <button id="n_submit" class="btn btn-primary btn-block" onclick="ticketCreate()">Create Ticket ✓</button>
+      </div>
+
+      <div id="newSuccess" class="card success-card" style="display:none">
+        <div class="success-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <div class="success-title">Ticket created</div>
+        <div id="newId" class="success-id"></div>
+        <div id="newCust" class="success-cust"></div>
+        <div class="success-sub">The Service Team will pick it up from the Tickets list and call the customer.</div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="newReset()">➕ Create another</button>
+        <button class="btn btn-primary" id="newOpenBtn" onclick="openTicketFromNew(this.dataset.id)">Open ticket →</button>
+          <a class="btn btn-wa" id="newWa" target="_blank" rel="noopener" style="display:none" onclick="waMark(this)">📲 Send WhatsApp</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TICKETS LIST ===== -->
+    <section id="scrTickets" class="screen">
+      <div id="tkKpis" class="kpi-row"></div>
+      <div class="tk-wrap">
+        <div class="tbl-card">
+          <div id="tkChips" class="vtabs"></div>
+          <div class="tbl-tools">
+            <label class="tsearch"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="tkSearch" placeholder="Search ticket, company, phone, dealer, city…" oninput="TK_LIMIT = 50; tkRender()"></label>
+            <div class="vt-toggle" role="group" aria-label="View">
+              <button type="button" data-v="list" onclick="tkSetView(this.dataset.v)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>List</button>
+              <button type="button" data-v="board" onclick="tkSetView(this.dataset.v)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>Board</button>
+            </div>
+            <button class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh" onclick="tkLoad(true)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+          </div>
+          <div id="tkList" class="tk-list"></div>
+        </div>
+        <aside id="tkPrev" class="tk-prev" hidden aria-label="Ticket preview"></aside>
+      </div>
+    </section>
+
+        <!-- ===== TICKET TRACKER ===== -->
+    <section id="scrTracker" class="screen">
+      <div id="trkKpis" class="trk-kpis"></div>
+      <div id="trkStages" class="trk-stages"></div>
+      <div class="toolbar">
+        <input id="trkSearch" class="search" placeholder="Search ticket, company, phone, dealer, city…" oninput="trkRender()">
+        <button class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh" onclick="trkLoad(false)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      </div>
+      <div id="trkChips" class="chips"></div>
+      <div id="trkList" class="trk-list"></div>
+    </section>
+
+    <!-- ===== PHASE 3: REPAIR BOARD ===== -->
+    <section id="scrBoard" class="screen">
+      <div class="board-grid">
+        <div class="card">
+          <div class="card-head"><span>⏳ Pending — not planned yet <b id="pendCount" class="count">0</b></span>
+            <button class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh" onclick="boardLoad(true)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button></div>
+          <div id="boardPending"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span>🔧 Planned <b id="repairCount" class="count">0</b></span>
+            <input type="date" id="boardDateFilter" class="date-sm" onchange="boardRender()" title="Plan date (empty = all)"></div>
+          <div id="boardActive" class="board-cards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MASTERS (admin) ===== -->
+    <section id="scrMasters" class="screen">
+      <div id="mstGrid" class="mst-grid"></div>
+      <div class="mst-note">💡 These lists can also be edited directly in the <b>Masters</b> tab of the Google Sheet — one value per row under each column.</div>
+    </section>
+
+    <!-- ===== REPORTS (admin) ===== -->
+    <section id="scrReports" class="screen">
+      <div class="rp-top">
+        <div id="rpTabs" class="vtabs rp-tabs"></div>
+        <button id="rpRefresh" class="btn btn-ghost btn-sm" onclick="rpLoad(true)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>Refresh data</button>
+      </div>
+      <div id="rpBody"></div>
+    </section>
+
+    <!-- ===== RECORDS (every object) ===== -->
+    <section id="scrRecords" class="screen">
+      <div id="recTabs" class="chips"></div>
+      <div class="toolbar">
+        <input id="recSearch" class="search" placeholder="Filter by ID, customer, serial, transport…" oninput="REC_LIMIT = 100; recRender()">
+        <span id="recCount" class="rec-count"></span>
+        <button class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh" onclick="recLoad(true)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      </div>
+      <div id="recList"></div>
+    </section>
+
+    <!-- ===== SETTINGS (admin) ===== -->
+    <section id="scrSettings" class="screen">
+      <div id="setForm" class="set-form"></div>
+    </section>
+
+    <!-- ===== PHASE 3: DISPATCH ===== -->
+    <section id="scrDispatch" class="screen">
+      <div class="card">
+        <div class="card-head"><span>🔁 Replacements to send — <b id="rsCount">0</b></span>
+          <button class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh" onclick="replLoadDispatch()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button></div>
+        <div id="rsList" class="rs-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>♻️ Exchanged batteries — move to stock · <b id="exCount">0</b></span></div>
+        <div class="muted-sm" style="margin:-4px 0 10px">The customer already got a new battery for these — after repair they go to Refurbished stock, Production or Scrap.</div>
+        <div id="exList" class="rs-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>📦 Ready — Final QC &amp; Pack</span>
+          <button class="btn btn-ghost btn-icon" title="Refresh" aria-label="Refresh" onclick="dispLoad(true)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button></div>
+        <input id="dSearch" class="search" placeholder="Search item, ticket, customer, serial…" oninput="dispRender()">
+        <div id="dList" class="d-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>🚚 Dispatch Details — <b id="dSelCount">0</b> selected</span></div>
+        <div class="form-grid">
+          <div class="fg"><label>Dispatch Date <b>*</b></label><input type="date" id="d_date"></div>
+          <div class="fg"><label>Dispatched By <b>*</b></label><select id="d_by"></select></div>
+          <div class="fg"><label>Transport (Outward)</label><input id="d_transport" maxlength="150" placeholder="Transport / courier name"></div>
+          <div class="fg"><label>LR / Docket No</label><input id="d_lr" maxlength="60"></div>
+          <div class="fg"><label>Dispatch Charges (₹) <span class="opt">(whole dispatch)</span></label><input id="d_cost" type="number" min="0" step="1" inputmode="decimal" placeholder="0"></div>
+          <div class="fg full"><label>Actual Problem Found <span class="opt">(fault code per item is set on the Repair Board)</span></label><textarea id="d_problem" maxlength="500"></textarea></div>
+          <div class="fg full"><label>Dispatch Address</label><textarea id="d_address" maxlength="300"></textarea></div>
+          <div class="fg full"><label>Remarks</label><input id="d_remarks" maxlength="500"></div>
+        </div>
+        <button id="dSubmit" class="btn btn-primary btn-block" onclick="dispSubmit()">Dispatch 🚚</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ================= TICKET DRAWER ================= -->
+<div id="drawerOv" class="drawer-ov"></div>
+<aside id="drawer" class="drawer">
+  <div class="drawer-head"><div id="drTitle" class="dr-title"></div><button class="x-btn" onclick="drawerClose()" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+  <div id="drBody" class="drawer-body"></div>
+</aside>
+
+<!-- ================= MODAL ================= -->
+<div id="modalOv" class="modal-ov">
+  <div class="modal">
+    <div class="modal-head"><span id="mdTitle"></span><button class="x-btn" onclick="modalClose()" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+    <div id="mdBody" class="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="assets/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
