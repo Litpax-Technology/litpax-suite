@@ -8,7 +8,7 @@ window.SUITE = {
   IMS_URL:  'https://script.google.com/macros/s/AKfycbxT6THkAgjM6h2xRU6kwsxYqylukrxrwWCkU3Adq498mnTmDmUQ6shR6nzfmqmt12Puww/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbwsfgKLzVOVJq1EpR9eiQUIwY1XKzamgeA0BVYQ30AM2lSlM9_rKvDG2FS5DkQWeyipDw/exec',
-  SERVICE_URL: 'https://script.google.com/macros/s/AKfycbwjQbKR4GD60RoDbgcvKSBCR4LJ4aaObqO3v1YqE6wLf5cA9aELrogzRB6ksSVYOmYP3A/exec',
+  SERVICE_URL: 'https://script.google.com/macros/s/AKfycbzMu4YZIp7bKHMqdY8ZmPN3KDHHLUW3dfXSVO1zgDirwVkf8J0ugc0KPCExWUM3ryKHWw/exec',
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
