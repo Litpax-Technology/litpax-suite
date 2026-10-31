@@ -1659,3 +1659,124 @@ button.kpi:hover { border-color: var(--border-strong); }
 .rp-tabs { gap: 16px; }
 .rp-tabs .chip.rp-sep { margin-left: 2px; padding-left: 14px; }
 @media (max-width: 1360px) { .rp-top .btn { width: 36px; padding: 0; font-size: 0; } .rp-top .btn .ic { margin: 0; } }
+
+
+/* ══════════════════════════════════════════════════════════════
+   BENTO — Litpax Suite theme (Service Hub · file ke end me, sab ke baad)
+   ERP / IMS / SOMS / PLT jaisa: grey zameen, white tiles, black pills.
+   Rang/size badalna ho toh sirf is :root ke variables badlo.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --ink: #121212; --tile: #f6f6f3; --tile-2: #ebebe6;
+  --bg: #efefec; --card: #ffffff; --border: #e3e3de; --border-strong: #d4d4ce;
+  --text: #121212; --text2: #3d3d3d; --muted: #8a8a84; --faint: #a3a39d;
+  --primary: #121212; --primary-ink: #121212; --primary-soft: #ebebe6;
+  --green: #126b3e; --green-soft: #e4f5ec; --amber: #8a4b00; --amber-soft: #fff1dc; --red: #a3200f; --red-soft: #ffe9e6;
+  --radius: 24px; --r-row: 12px;
+  --shadow: none; --shadow-md: none;
+}
+body, button, input, select, textarea, .btn { font-family: 'Geist', 'Inter', system-ui, sans-serif; }
+.mono, .tk-id, .bc-id, .im-id, .tr-id, .success-id, .gsearch kbd { font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace; }
+body, .app-wrap, .main { background: var(--bg); color: var(--text); }
+
+/* ── Sidebar: grey, bina border, active = black pill ── */
+.sidebar { background: var(--bg); border-right: 0; box-shadow: none; }
+.sb-app { border-left-color: var(--border-strong); color: var(--text2); }
+.sb-grp { color: var(--muted); }
+.sb-item { border-radius: 999px; padding: 0 14px; color: var(--text2); }
+.sb-item:hover { background: #e3e3de; color: var(--text); }
+.sb-item.active { background: var(--ink); color: #fff; }
+.sb-item.active .ic { color: #fff; }
+.sb-user { border-top: 0; background: #fff; border-radius: 18px; padding: 10px 10px; margin: 12px 0 0; }
+.sb-av { background: var(--ink); color: #fff; }
+
+/* ── Top bar: grey zameen, search = white pill ── */
+.topbar { background: var(--bg); border-bottom: 0; }
+.hdr-title { font-size: 20px; font-weight: 600; letter-spacing: -.4px; }
+.gsearch { border: 0; border-radius: 999px; background: #fff; padding: 0 10px 0 14px; }
+.gsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
+.gsearch kbd { background: var(--tile); border-color: var(--border); }
+.hdr-date { background: #fff; border-radius: 999px; padding: 7px 14px; color: var(--text2); }
+.menu-btn { background: #fff; border-radius: 999px; }
+
+/* ── Cards / tiles ── */
+.card, .dsec, .rp-head, .rec, .rl, .stepper, .trk-st, .tr-card, .board-card, .form-card, .success-card, .tbl-card { border: 0; box-shadow: none; border-radius: var(--radius); }
+.card-head { font-weight: 600; }
+
+/* ── KPI: alag tiles; pehla = black hero ── */
+.kpi-row { gap: 14px; }
+.kpi { border: 0; box-shadow: none; border-radius: var(--radius); padding: 20px 22px; min-height: 120px; display: flex; flex-direction: column; justify-content: space-between; }
+.kpi span { font-size: 13px; color: #5c5c5c; }
+.kpi b { font-size: 40px; font-weight: 600; letter-spacing: -1.6px; line-height: 1; margin-top: 14px; }
+.kpi small { color: #5c5c5c; }
+.kpi-row .kpi:first-child { background: var(--ink); }
+.kpi-row .kpi:first-child span, .kpi-row .kpi:first-child small { color: #b9b9b9; }
+.kpi-row .kpi:first-child b { color: #fff; }
+.kpi-row .kpi.late:not(:first-child) { background: var(--red-soft); }
+.kpi-row .kpi.risk:not(:first-child) { background: var(--amber-soft); }
+.kpi.on { box-shadow: 0 0 0 2px var(--ink); }
+.kpi-row .kpi.on:first-child { box-shadow: none; }
+
+/* ── Tabs / chips: pills, active = black ── */
+.chips { background: transparent; padding: 0; gap: 6px; }
+.chip { background: #fff; border: 0; border-radius: 999px; padding: 7px 14px; color: var(--text2); box-shadow: none; }
+.chip:hover { box-shadow: 0 0 0 2px var(--border-strong); }
+.chip.active { background: var(--ink); color: #fff; box-shadow: none; }
+.chip b { background: var(--tile-2); color: var(--text2); border-radius: 999px; }
+.chip.active b { background: #fff; color: var(--ink); }
+.vtabs { gap: 6px; padding: 14px 16px 10px; border-bottom: 0; }
+.vtabs .chip { padding: 7px 14px; border: 0; border-radius: 999px; background: var(--tile); color: var(--text2); }
+.vtabs .chip:hover { background: var(--tile-2); color: var(--text); }
+.vtabs .chip.active { background: var(--ink); color: #fff; border: 0; }
+.vtabs .chip b { background: #fff; }
+.vtabs .chip.active b { background: #fff; color: var(--ink); }
+.vtabs .chip.chip-red:not(.active) { color: var(--red); }
+
+/* ── Table: har row ek chhota card ── */
+.tbl-tools { border-bottom: 0; padding: 4px 16px 10px; }
+.tsearch { border: 0; border-radius: 999px; background: var(--tile); }
+.tsearch:focus-within { box-shadow: 0 0 0 2px var(--ink); }
+.vt-toggle { background: var(--tile); border-radius: 999px; }
+.vt-toggle button { border-radius: 999px; }
+.vt-toggle button.on { background: var(--ink); color: #fff; box-shadow: none; }
+.dt-scroll { padding: 0 12px 12px; }
+.dt { border-collapse: separate; border-spacing: 0 4px; }
+.dt th { background: #fff; border-bottom: 0; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: #5c5c5c; }
+.dt td { background: var(--tile); border-bottom: 0; color: var(--text2); }
+.dt td:first-child { border-radius: var(--r-row) 0 0 var(--r-row); }
+.dt td:last-child { border-radius: 0 var(--r-row) var(--r-row) 0; }
+.dt .tk-card:hover td { background: var(--tile-2); }
+.dt .tk-card:hover { background: transparent; }
+.dt .tk-card.sel td, .dt .tk-card.sel:hover td { background: var(--tile-2); }
+.dt .tk-card.due td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+.dt .tk-id { color: var(--text); }
+.dt-foot { border-top: 0; }
+
+/* ── Buttons: pills ── */
+:is(.app-wrap, .drawer, .modal-ov) .btn { border-radius: 999px; }
+.btn-primary, .btn-teal { background: var(--ink); color: #fff; box-shadow: none; }
+.btn-primary:hover, .btn-teal:hover { background: #2a2a2a; }
+.btn-ghost, .btn-violet { background: #fff; border: 0; box-shadow: none; color: var(--text); }
+.btn-ghost:hover, .btn-violet:hover { background: var(--ink); color: #fff; }
+.btn-green { border: 0; box-shadow: none; }
+
+/* ── Inputs ── */
+.app-wrap input:not([type=checkbox]):not([type=radio]):not([type=file]), .app-wrap select, .app-wrap textarea,
+.modal input:not([type=checkbox]):not([type=radio]):not([type=file]), .modal select, .modal textarea,
+.drawer input:not([type=checkbox]):not([type=radio]), .drawer select, .drawer textarea { border-radius: 12px; border-color: var(--border); background: var(--tile); }
+.app-wrap input:focus, .app-wrap select:focus, .app-wrap textarea:focus, .modal input:focus, .modal select:focus, .modal textarea:focus,
+.drawer input:focus, .drawer select:focus, .drawer textarea:focus { border-color: var(--ink); box-shadow: 0 0 0 2px rgba(18,18,18,.12); background: #fff; }
+.fg label { color: var(--text2); }
+
+/* ── Pills / tags (status) — soft, Bento chips ── */
+.pill { border-radius: 999px; }
+.tag { border-radius: 999px; padding: 3px 9px; }
+.note { border-radius: 14px; }
+.empty { border-radius: var(--radius); background: #fff; }
+
+/* ── Drawer / modal ── */
+.drawer { background: var(--bg); }
+.drawer-head { background: var(--bg); border-bottom: 0; }
+.modal { border-radius: var(--radius); }
+.x-btn { border-radius: 999px; }
+.toast { border-radius: 999px; }
