@@ -1,1 +1,0 @@
-# litpax-service-erp
