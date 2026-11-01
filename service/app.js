@@ -895,6 +895,12 @@ function clearSession() {
 function sessionExpired(msg) { clearSession(); toast('🔒 ' + (msg || 'Session expired — please sign in again')); showLogin(); }
 
 function showLogin() {
+  // Suite ke andar: apna login kabhi nahi — Suite se naya session maango (secure, ek hi login)
+  if (window.parent !== window) {
+    $('loginScreen').style.display = 'none'; $('appWrap').style.display = 'none';
+    try { window.parent.postMessage({ source: 'litpax-suite', type: 'svc-relogin' }, location.origin); } catch (e) {}
+    return;
+  }
   $('loginScreen').style.display = 'flex'; $('appWrap').style.display = 'none';
   drawerClose(); modalClose();
   const h = new Date().getHours();
