@@ -87,8 +87,26 @@
       S.token = d.token;
       try { sessionStorage.setItem('suite_token', d.token); } catch (e) {}
       return svcSso().then(function () { start(d); });   // Service Hub bhi isi login se
-    }).catch(function (e) { $('#loginError').textContent = e.message; })
-      .then(function () { busy(btn, false); $('#pinInput').value = ''; });
+    }).catch(function (e) {
+      // Suite (ERP) me user nahi mila → Service Hub ke apne Users tab se try (attendant / service / repair)
+      return svcLogin(un, pw).then(function () { startSvcOnly(); })
+        .catch(function () { $('#loginError').textContent = e.message; });
+    }).then(function () { busy(btn, false); $('#pinInput').value = ''; });
+  }
+
+  /* ---------- Service Hub ke apne Users (Service sheet → Users tab) ---------- */
+  function svcLogin(un, pw) {
+    svcClear();
+    return api('SERVICE', 'login', { username: un.toLowerCase(), pin: pw, dev: 'Litpax Suite' }).then(function (r) {
+      if (!r || !r.ok || !r.token || !SUITE.SERVICE.ROLES[r.role]) throw new Error((r && r.msg) || 'Service login failed');
+      svcSave(r, un);
+      try { localStorage.setItem('suite_svc_only', '1'); } catch (e) {}
+    });
+  }
+  function startSvcOnly() {
+    var u = ''; try { u = localStorage.getItem('hub_user') || ''; } catch (e) {}
+    var R = SUITE.SERVICE.ROLES[svcRole()] || {};
+    start({ user: { name: u + (R.label ? ' · ' + R.label : ''), username: u, roles: [] }, sessions: {}, hidePages: [] });
   }
 
   /* ---------- Service Hub login (apna GAS + apna Users tab) ---------- */
@@ -712,7 +730,12 @@
     }
     var tok = '';
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
-    if (!tok) { svcClear(); return showLogin(); }
+    if (!tok) {
+      var svcOnly = ''; try { svcOnly = localStorage.getItem('suite_svc_only'); } catch (e) {}
+      if (svcOnly && svcRole()) return startSvcOnly();   // Service-only user — refresh pe bhi andar
+      svcClear();
+      return showLogin();
+    }
     S.token = tok;
     api('ERP', 'suiteMe').then(function (d) { return (svcRole() ? Promise.resolve() : svcSso()).then(function () { start(d); }); })
       .catch(function () { signOut(); });
