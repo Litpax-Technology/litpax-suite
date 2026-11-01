@@ -11,7 +11,7 @@
 
   var S = { token: '', user: null, sessions: {}, hidePages: [], view: '', frames: {}, pending: 0 };
   var SESSION_KEYS = ['erp_user', 'lpx_role', 'lpx_name', 'sms_session', 'plt_sup', 'suite_bridge'];
-  var HUB_KEYS = ['hub_token', 'hub_role', 'hub_user', 'hub_last_act', 'suite_svc_only'];
+  var HUB_KEYS = ['hub_token', 'hub_role', 'hub_user', 'hub_last_act', 'suite_svc_only'];   // suite_svc_only: purana, sirf saaf karne ke liye
 
   /* ---------------- API (4 alag GAS) ----------------
    * ERP / IMS: POST JSON  ·  PLT: GET (JSONP text)  — URLs root config.js (SUITE) se */
@@ -87,29 +87,11 @@
       S.token = d.token;
       try { sessionStorage.setItem('suite_token', d.token); } catch (e) {}
       return svcSso().then(function () { start(d); });   // Service Hub bhi isi login se
-    }).catch(function (e) {
-      // Suite (ERP) me user nahi mila → Service Hub ke apne Users tab se try (attendant / service / repair)
-      return svcLogin(un, pw).then(function () { startSvcOnly(); })
-        .catch(function () { $('#loginError').textContent = e.message; });
-    }).then(function () { busy(btn, false); $('#pinInput').value = ''; });
+    }).catch(function (e) { $('#loginError').textContent = e.message; })
+      .then(function () { busy(btn, false); $('#pinInput').value = ''; });
   }
 
-  /* ---------- Service Hub ke apne Users (Service sheet → Users tab) ---------- */
-  function svcLogin(un, pw) {
-    svcClear();
-    return api('SERVICE', 'login', { username: un.toLowerCase(), pin: pw, dev: 'Litpax Suite' }).then(function (r) {
-      if (!r || !r.ok || !r.token || !SUITE.SERVICE.ROLES[r.role]) throw new Error((r && r.msg) || 'Service login failed');
-      svcSave(r, un);
-      try { localStorage.setItem('suite_svc_only', '1'); } catch (e) {}
-    });
-  }
-  function startSvcOnly() {
-    var u = ''; try { u = localStorage.getItem('hub_user') || ''; } catch (e) {}
-    var R = SUITE.SERVICE.ROLES[svcRole()] || {};
-    start({ user: { name: u + (R.label ? ' · ' + R.label : ''), username: u, roles: [] }, sessions: {}, hidePages: [] });
-  }
-
-  /* ---------- Service Hub login (apna GAS + apna Users tab) ---------- */
+  /* ---------- Service Hub: sirf Suite ke login se (Service GAS → suiteLogin) ---------- */
   function svcSso() {
     svcClear();
     if (!SUITE.SERVICE_URL || !S.token) return Promise.resolve();
@@ -722,6 +704,13 @@
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
       if (e.data.type === 'logout') signOut();
+      // Service Hub ka session (idle) khatam → Suite ke token se chupchaap naya, warna poora sign out
+      if (e.data.type === 'svc-relogin') {
+        svcSso().then(function () {
+          if (svcRole() && S.frames.service) S.frames.service.src = SUITE.MODULES.service.path;
+          else signOut();
+        });
+      }
     });
     setInterval(function () { if (S.user) refreshBadge(); }, 120000);
 
@@ -730,12 +719,7 @@
     }
     var tok = '';
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
-    if (!tok) {
-      var svcOnly = ''; try { svcOnly = localStorage.getItem('suite_svc_only'); } catch (e) {}
-      if (svcOnly && svcRole()) return startSvcOnly();   // Service-only user — refresh pe bhi andar
-      svcClear();
-      return showLogin();
-    }
+    if (!tok) { svcClear(); return showLogin(); }
     S.token = tok;
     api('ERP', 'suiteMe').then(function (d) { return (svcRole() ? Promise.resolve() : svcSso()).then(function () { start(d); }); })
       .catch(function () { signOut(); });
