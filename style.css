@@ -868,3 +868,8 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
   .shell .g4 > .kpi:first-child .kpi-v { font-size: 44px; }
   .shell .apr { margin: 0 6px 8px; }
 }
+
+
+/* Native screens (Overview / Settings) scroll — flex column me min-height:0 zaroori */
+.shell .main { min-height: 0; }
+.shell .view { min-height: 0; }
