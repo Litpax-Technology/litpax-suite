@@ -985,3 +985,7 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
   .shell .tbl-wrap { padding: 0 14px 8px; }
   .shell .kpi-v, .shell .g4 > .kpi:first-child .kpi-v { font-size: 38px; }
 }
+
+/* Ask Litpax tab */
+.shell .tabs .nav-item[data-id="m-agent"] { color: var(--accent); font-weight: 600; }
+.shell .tabs .nav-item[data-id="m-agent"]::before { content: '\2726'; margin-right: 6px; }
