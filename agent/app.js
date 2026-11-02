@@ -16,7 +16,7 @@
     var url = CFG.API_URL;
     if (!url || /^PASTE_/.test(url)) return Promise.reject(new Error('AGENT_URL is not set in config.js'));
     var ctrl = window.AbortController ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, CFG.TIMEOUT_MS || 120000);
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, Math.max(CFG.TIMEOUT_MS || 0, 170000));
     var body = JSON.stringify(Object.assign({ action: action, token: token() }, data || {}));
     return fetch(url, { method: 'POST', body: body, redirect: 'follow', signal: ctrl ? ctrl.signal : undefined })
       .then(function (r) { return r.text(); })
@@ -140,7 +140,8 @@
     d.innerHTML = '<div class="av" aria-hidden="true">✦</div><div class="b"><span class="dots"><i></i><i></i><i></i></span><span class="tx">Reading your sheets…</span></div>';
     $('agLog').appendChild(d); scrollEnd();
     var msgs = ['Reading your sheets…', 'Crunching the numbers…', 'Writing the answer…'], k = 0;
-    d._t = setInterval(function () { k = (k + 1) % msgs.length; var t = d.querySelector('.tx'); if (t) t.textContent = msgs[k]; }, 3500);
+    var t0 = Date.now();
+    d._t = setInterval(function () { k = (k + 1) % msgs.length; var t = d.querySelector('.tx'); if (t) t.textContent = msgs[k] + ' ' + Math.round((Date.now() - t0) / 1000) + 's'; }, 3000);
     return d;
   }
 
