@@ -9,6 +9,7 @@ window.SUITE = {
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbwsfgKLzVOVJq1EpR9eiQUIwY1XKzamgeA0BVYQ30AM2lSlM9_rKvDG2FS5DkQWeyipDw/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbxJ5xyF2m3Xn05c7hjV9lil37bE3or6Vwc5wkdSM3ZQ5n2G4R2R23ynBbwUwyVElnIRng/exec',
+  AGENT_URL: 'PASTE_AGENT_URL',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
@@ -31,7 +32,8 @@ window.SUITE = {
     soms:     { label: 'Store Orders',    path: 'soms/index.html' },
     pltPack:  { label: 'Battery Packing', path: 'plt/index.html?mode=packing' },
     cash:     { label: 'Cash Ledger',     path: 'https://litpax-technology.github.io/Cash-Ledger-/' },
-    service:  { label: 'Service Hub',     path: 'service/index.html' }
+    service:  { label: 'Service Hub',     path: 'service/index.html' },
+    agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
 
   // Service Hub settings (service/ ke saare pages yahi padhte hain)
@@ -111,6 +113,8 @@ window.SUITE = {
       ENFORCE_SEQUENCE: S.PLT.ENFORCE_SEQUENCE, TIMEOUT_MS: S.TIMEOUT_MS };
   } else if (/\/service\//.test(p)) {
     window.CONFIG = Object.assign({ API_URL: S.SERVICE_URL, REPAIR_URL: S.SERVICE_URL }, S.SERVICE);
+  } else if (/\/agent\//.test(p)) {
+    window.CONFIG = { API_URL: S.AGENT_URL, TIMEOUT_MS: 120000 };
   } else if (/\/soms\//.test(p)) {
     window.CONFIG = { API_URL: S.SOMS_URL, APP_NAME: 'Litpax SMS', APP_SUBTITLE: 'Store Management System',
       COMPANY: 'Litpax Technology', REQUEST_TIMEOUT: 30000 };
