@@ -873,3 +873,115 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 /* Native screens (Overview / Settings) scroll — flex column me min-height:0 zaroori */
 .shell .main { min-height: 0; }
 .shell .view { min-height: 0; }
+/* =============================================================
+ * GALLERY WHITE — premium white theme (Bento ke upar override)
+ * Ye block style.css ke SABSE END me rahe. Font: Inter Tight.
+ * ============================================================= */
+.shell {
+  --accent: #1f3fff; --accent-dark: #1530c4; --accent-soft: #f0f3ff;
+  --ink: #0a0a0a; --ink-2: #262626;
+  --bg: #ffffff; --card: #ffffff; --tile: #fafafa; --tile-2: #f2f2f2;
+  --text: #0a0a0a; --muted: #737373; --line: #ededed;
+  --ok: #15803d; --ok-soft: #f0fdf4;
+  --warn: #92400e; --warn-soft: #fffbeb;
+  --bad: #dc2626; --bad-soft: #fef2f2;
+  --radius: 20px;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  background: #fff;
+}
+
+/* ---- top bar: white, neeche patli line, active app = soft blue ---- */
+.shell .topbar { background: #fff; border-bottom: 1px solid var(--line); padding: 12px 28px; }
+.shell .tabs { background: transparent; box-shadow: none; padding: 0; gap: 4px; margin: 0 0 0 20px; }
+.shell .tabs .nav-item { min-height: 40px; padding: 0 14px; border-radius: 10px; color: var(--muted); font-size: 14px; font-weight: 500; }
+.shell .tabs .nav-item:hover { background: #f7f7f7; color: var(--text); }
+.shell .tabs .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.shell .tabs .badge { background: var(--accent); color: #fff; }
+.shell .tabs .nav-item.active .badge { background: var(--accent); color: #fff; }
+.shell .topbar-right { margin-left: auto; }
+.shell .top-user { background: transparent; padding: 0 6px; font-weight: 500; }
+.shell .top-ic { width: 40px; height: 40px; border: 1px solid var(--line); background: #fff; }
+.shell .top-ic:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* ---- app window ---- */
+.shell:not(.solo) .frames { margin: 0; }
+.shell:not(.solo) .frames iframe { border-radius: 0; }
+
+/* ---- page + cards: white, hairline border, koi grey tile nahi ---- */
+.shell .view { padding: 32px 40px 44px; }
+.shell .wrap { max-width: 1360px; gap: 20px; }
+.shell .grid { gap: 20px; }
+.shell .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+.shell .card-h { padding: 22px 24px 6px; }
+.shell .card-t { font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.shell .card-s { font-size: 13px; color: var(--muted); }
+.shell .card-b { padding: 12px 24px 24px; }
+.shell .card .card { background: var(--tile); border: 0; border-radius: 14px; }
+
+/* ---- KPI: black hero hata ke bade clean numbers ---- */
+.shell .kpi { min-height: 132px; padding: 20px 22px; background: #fff; }
+.shell .kpi-l { font-size: 13px; font-weight: 500; color: var(--muted); }
+.shell .kpi-v { margin-top: 14px; font-size: 56px; font-weight: 500; letter-spacing: -.05em; color: var(--text); }
+.shell .kpi-v.ok { color: var(--ok); } .shell .kpi-v.warn { color: #d97706; } .shell .kpi-v.bad { color: var(--bad); }
+.shell .kpi:has(.kpi-v.warn), .shell .kpi:has(.kpi-v.bad) { background: #fff; }
+.shell .kpi:has(.kpi-v.bad) { border-color: #fecaca; }
+.shell .g4 > .kpi:first-child { background: #fff; }
+.shell .g4 > .kpi:first-child .kpi-l { color: var(--muted); }
+.shell .g4 > .kpi:first-child .kpi-v { color: var(--text); font-size: 56px; }
+
+/* ---- buttons: blue primary, white secondary ---- */
+.shell .btn { min-height: 42px; padding: 0 18px; border: 1px solid #e5e5e5; border-radius: 999px; background: #fff; color: var(--text); font-weight: 500; font-size: 14px; }
+.shell .btn:hover { background: #fafafa; border-color: #d4d4d4; }
+.shell .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(31, 63, 255, .25); }
+.shell .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.shell .btn-danger { background: #fff; border-color: #fecaca; color: var(--bad); }
+.shell .btn-danger:hover { background: var(--bad-soft); }
+.shell .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.shell .btn-sm { min-height: 34px; padding: 0 14px; font-size: 13px; }
+
+/* ---- inputs: white + border ---- */
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]), .shell select, .shell textarea {
+  background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; min-height: 42px; }
+.shell input:focus, .shell select:focus, .shell textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31, 63, 255, .12); }
+.shell .scan-box { border: 2px solid var(--accent); }
+
+/* ---- chips: soft pill + rangeen dot ---- */
+.shell .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-weight: 500; font-size: 12.5px; background: #f5f5f5; color: #404040; }
+.shell .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.shell .chip-live, .shell .chip-ok { background: var(--ok-soft); color: var(--ok); }
+.shell .chip-shadow, .shell .chip-warn { background: var(--warn-soft); color: var(--warn); }
+.shell .chip-bad { background: var(--bad-soft); color: var(--bad); }
+.shell .chip-off { background: #f5f5f5; color: #525252; }
+
+/* ---- tables: grey row-cards ki jagah clean lines ---- */
+.shell .tbl-wrap { padding: 0 24px 8px; }
+.shell table.tbl { border-collapse: collapse; border-spacing: 0; font-size: 14.5px; }
+.shell .tbl th { padding: 12px 14px; font-size: 12.5px; font-weight: 500; color: #a3a3a3; }
+.shell .tbl td { padding: 15px 14px; background: transparent; border-top: 1px solid var(--line); }
+.shell .tbl td:first-child, .shell .tbl td:last-child { border-radius: 0; }
+.shell .tbl th:first-child, .shell .tbl td:first-child { padding-left: 0; }
+.shell .tbl th:last-child, .shell .tbl td:last-child { padding-right: 0; }
+.shell .tbl tr.click:hover td { background: #fafafa; }
+.shell .tbl tr.sel td { background: var(--accent-soft); }
+.shell .mono { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+
+/* ---- notices, in-page tabs, approvals, serials ---- */
+.shell .notice { border-radius: 14px; }
+.shell .tab { min-height: 34px; padding: 0 14px; border-radius: 999px; color: var(--muted); }
+.shell .tab.active { background: var(--ink); color: #fff; }
+.shell .apr { background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.shell .serial { background: var(--accent-soft); color: var(--accent); }
+
+/* ---- toast ---- */
+.toast { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; background: #0a0a0a; }
+.toast.ok { background: #15803d; } .toast.bad { background: #dc2626; }
+
+/* ---- mobile ---- */
+@media (max-width: 760px) {
+  .shell .topbar { padding: 8px 12px; }
+  .shell .tabs { margin: 0; flex: 1; }
+  .shell .view { padding: 16px 14px 24px; }
+  .shell .tbl-wrap { padding: 0 14px 8px; }
+  .shell .kpi-v, .shell .g4 > .kpi:first-child .kpi-v { font-size: 38px; }
+}
