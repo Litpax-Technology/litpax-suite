@@ -3169,7 +3169,7 @@ async function asAnswer(k, q) {
   }
   return 'Type <b>help</b> to see what I can do.';
 }
-window.addEventListener('load', asBoot);
+// window.addEventListener('load', asBoot);
 
 /* ============================================================
    v10 — REPAIR REPORT · REPLACEMENTS · REFURBISHED STOCK
