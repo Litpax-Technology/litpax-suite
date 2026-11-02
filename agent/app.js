@@ -14,7 +14,7 @@
   function token() { try { return sessionStorage.getItem('suite_token') || ''; } catch (e) { return ''; } }
   function api(action, data) {
     var url = CFG.API_URL;
-    if (!url || /^PASTE_/.test(url)) return Promise.reject(new Error('AGENT_URL config.js me set nahi hai'));
+    if (!url || /^PASTE_/.test(url)) return Promise.reject(new Error('AGENT_URL is not set in config.js'));
     var ctrl = window.AbortController ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, CFG.TIMEOUT_MS || 120000);
     var body = JSON.stringify(Object.assign({ action: action, token: token() }, data || {}));
@@ -23,7 +23,7 @@
       .then(function (t) {
         clearTimeout(timer);
         var j;
-        try { j = JSON.parse(t); } catch (e) { throw new Error('Agent ne sahi jawab nahi diya. AGENT_URL check karo.'); }
+        try { j = JSON.parse(t); } catch (e) { throw new Error('The agent did not respond correctly. Check AGENT_URL.'); }
         if (j && j.ok === false) {
           var err = String(j.error || 'Request failed');
           if (/^LOGIN:/.test(err)) { toSuite('logout'); err = err.replace(/^LOGIN:\s*/, ''); }
@@ -32,7 +32,7 @@
         return j;
       }, function (e) {
         clearTimeout(timer);
-        throw new Error(e && e.name === 'AbortError' ? 'Bahut der lag gayi. Sawaal chhota karke dobara poochiye.' : 'Network error. Connection check karo.');
+        throw new Error(e && e.name === 'AbortError' ? 'This took too long. Please ask a shorter question.' : 'Network error. Check your connection.');
       });
   }
   function toSuite(type) { try { window.parent.postMessage({ source: 'litpax-suite', type: type }, location.origin); } catch (e) {} }
@@ -130,16 +130,16 @@
       (isErr ? '' : '<div class="ag-tools"><button type="button" class="ag-copy">Copy</button></div>') + '</div>';
     var cp = d.querySelector('.ag-copy');
     if (cp) cp.onclick = function () {
-      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { toast('Copied'); }, function () { toast('Copy nahi hua'); });
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { toast('Copied'); }, function () { toast('Could not copy'); });
     };
     $('agLog').appendChild(d); scrollEnd();
   }
   function addTyping() {
     var d = document.createElement('div');
     d.className = 'ag-msg bot typing';
-    d.innerHTML = '<div class="av" aria-hidden="true">✦</div><div class="b"><span class="dots"><i></i><i></i><i></i></span><span class="tx">Sheets padh raha hun…</span></div>';
+    d.innerHTML = '<div class="av" aria-hidden="true">✦</div><div class="b"><span class="dots"><i></i><i></i><i></i></span><span class="tx">Reading your sheets…</span></div>';
     $('agLog').appendChild(d); scrollEnd();
-    var msgs = ['Sheets padh raha hun…', 'Hisaab laga raha hun…', 'Jawab bana raha hun…'], k = 0;
+    var msgs = ['Reading your sheets…', 'Crunching the numbers…', 'Writing the answer…'], k = 0;
     d._t = setInterval(function () { k = (k + 1) % msgs.length; var t = d.querySelector('.tx'); if (t) t.textContent = msgs[k]; }, 3500);
     return d;
   }
@@ -181,7 +181,7 @@
     var t = addTyping();
     api('sources').then(function (r) {
       var rows = (r.sources || []).map(function (s) { return '| ' + s.id + ' | ' + (s.linked ? 'Connected' : 'Not linked') + ' | ' + s.about + ' |'; });
-      addBot('**Main in sheets se padh sakta hun:**\n\n| Source | Status | Kya hai |\n|---|---|---|\n' + rows.join('\n'));
+      addBot('**I can read these sources:**\n\n| Source | Status | What it holds |\n|---|---|---|\n' + rows.join('\n'));
     }).catch(function (e) { addBot(e.message, null, true); })
       .then(function () { clearInterval(t._t); t.remove(); });
   }
@@ -207,7 +207,7 @@
 
     restore();
     api('ping').then(function (r) {
-      $('agStatus').textContent = r.keySet ? 'Online · ' + r.model + ' · read-only' : 'Key set nahi hai — GAS Script Properties me GEMINI_KEY daalo';
+      $('agStatus').textContent = r.keySet ? 'Online · ' + r.model + ' · read-only' : 'Key not set. Add GEMINI_KEY in GAS Script Properties';
       $('agStatus').className = r.keySet ? 'ok' : 'warn';
       if (pre && r.keySet) ask(pre);
     }).catch(function (e) {
