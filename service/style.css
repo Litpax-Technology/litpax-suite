@@ -1780,3 +1780,95 @@ body, .app-wrap, .main { background: var(--bg); color: var(--text); }
 .modal { border-radius: var(--radius); }
 .x-btn { border-radius: 999px; }
 .toast { border-radius: 999px; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   GALLERY WHITE — premium white theme (Bento ke upar override)
+   Ye block style.css ke SABSE END me rahe. Font: Inter Tight.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --ink: #0a0a0a; --tile: #fafafa; --tile-2: #f2f2f2;
+  --bg: #ffffff; --card: #ffffff; --border: #ededed; --border-strong: #e0e0e0;
+  --text: #0a0a0a; --text2: #404040; --muted: #737373; --faint: #a3a3a3;
+  --primary: #1f3fff; --primary-ink: #1530c4; --primary-soft: #f0f3ff;
+  --green: #15803d; --green-soft: #f0fdf4; --amber: #92400e; --amber-soft: #fffbeb; --red: #dc2626; --red-soft: #fef2f2;
+  --radius: 20px; --r-row: 0;
+}
+body, button, input, select, textarea, .btn { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; }
+.mono, .tk-id, .bc-id, .im-id, .tr-id, .success-id, .gsearch kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+body, .app-wrap, .main { background: #fff; }
+
+/* ── Sidebar: white + patli line, active = soft blue ── */
+.sidebar { background: #fff; border-right: 1px solid var(--border); }
+.sb-item { border-radius: 10px; color: var(--muted); }
+.sb-item:hover { background: #f7f7f7; color: var(--text); }
+.sb-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.sb-item.active .ic { color: var(--primary); }
+.sb-user { background: #fff; border: 1px solid var(--border); }
+
+/* ── Top bar: white + patli line ── */
+.topbar { background: #fff; border-bottom: 1px solid var(--border); }
+.hdr-title { font-size: 24px; letter-spacing: -.6px; }
+.gsearch { background: #fff; border: 1px solid #e5e5e5; }
+.gsearch:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(31,63,255,.12); }
+.hdr-date, .menu-btn { background: #fff; border: 1px solid var(--border); }
+
+/* ── Cards: white + hairline ── */
+.card, .dsec, .rp-head, .rec, .rl, .stepper, .trk-st, .tr-card, .board-card, .form-card, .success-card, .tbl-card { background: #fff; border: 1px solid var(--border); }
+
+/* ── KPI: black hero hata ke clean bade numbers ── */
+.kpi-row { gap: 20px; }
+.kpi { background: #fff; border: 1px solid var(--border); }
+.kpi span, .kpi small { color: var(--muted); }
+.kpi b { font-size: 48px; font-weight: 500; letter-spacing: -2px; color: var(--text); }
+.kpi-row .kpi:first-child { background: #fff; }
+.kpi-row .kpi:first-child span, .kpi-row .kpi:first-child small { color: var(--muted); }
+.kpi-row .kpi:first-child b { color: var(--text); }
+.kpi-row .kpi.late, .kpi-row .kpi.late:not(:first-child) { background: #fff; border-color: #fecaca; }
+.kpi-row .kpi.late b { color: var(--red); }
+.kpi-row .kpi.risk, .kpi-row .kpi.risk:not(:first-child) { background: #fff; }
+.kpi-row .kpi.risk b { color: #d97706; }
+.kpi.on, .kpi-row .kpi.on:first-child { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(31,63,255,.12); }
+
+/* ── Tabs / chips: white + border, active = black ── */
+.chip { background: #fff; border: 1px solid var(--border); }
+.chip:hover { box-shadow: none; border-color: #d4d4d4; }
+.chip.active { background: var(--ink); border-color: var(--ink); }
+.chip b { background: #f5f5f5; }
+.vtabs { border-bottom: 1px solid var(--border); }
+.vtabs .chip { background: #fff; border: 1px solid var(--border); }
+.vtabs .chip:hover { background: #fafafa; }
+.vtabs .chip.active { background: var(--ink); border-color: var(--ink); }
+.vtabs .chip b { background: #f5f5f5; }
+
+/* ── Table: grey row-cards ki jagah clean lines ── */
+.tsearch, .vt-toggle { background: #fff; border: 1px solid #e5e5e5; }
+.tsearch:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(31,63,255,.12); }
+.dt-scroll { padding: 0 20px 8px; }
+.dt { border-collapse: collapse; border-spacing: 0; }
+.dt th { background: #fff; color: var(--faint); font-size: 12.5px; border-bottom: 1px solid var(--border); }
+.dt td { background: transparent; border-bottom: 1px solid var(--border); padding-top: 14px; padding-bottom: 14px; }
+.dt td:first-child, .dt td:last-child { border-radius: 0; }
+.dt .tk-card:hover td { background: #fafafa; }
+.dt .tk-card.sel td, .dt .tk-card.sel:hover td { background: var(--primary-soft); }
+.dt .tk-card.due td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+
+/* ── Buttons: blue primary, white secondary ── */
+.btn-primary, .btn-teal { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(31,63,255,.25); }
+.btn-primary:hover, .btn-teal:hover { background: var(--primary-ink); }
+.btn-ghost, .btn-violet { background: #fff; border: 1px solid #e5e5e5; }
+.btn-ghost:hover, .btn-violet:hover { background: #fafafa; border-color: #d4d4d4; color: var(--text); }
+
+/* ── Inputs: white + border ── */
+.app-wrap input:not([type=checkbox]):not([type=radio]):not([type=file]), .app-wrap select, .app-wrap textarea,
+.modal input:not([type=checkbox]):not([type=radio]):not([type=file]), .modal select, .modal textarea,
+.drawer input:not([type=checkbox]):not([type=radio]), .drawer select, .drawer textarea { background: #fff; border-color: #e5e5e5; }
+.app-wrap input:focus, .app-wrap select:focus, .app-wrap textarea:focus, .modal input:focus, .modal select:focus, .modal textarea:focus,
+.drawer input:focus, .drawer select:focus, .drawer textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(31,63,255,.12); }
+
+/* ── Empty, drawer, modal, toast ── */
+.empty { background: #fff; border: 1px dashed var(--border); }
+.drawer, .drawer-head { background: #fff; }
+.drawer-head { border-bottom: 1px solid var(--border); }
+.modal { box-shadow: 0 24px 60px rgba(0,0,0,.14); }
+.toast { border-radius: 999px; background: var(--ink); }
