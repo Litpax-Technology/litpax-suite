@@ -1738,3 +1738,113 @@ html.in-suite .topbar-brand .brand-name { display: none; }
   .table-wrap { padding: 0 6px 6px; }
   .btn-logout { padding: 6px 12px; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   37. GALLERY WHITE — premium white theme (Bento ke upar override)
+   Ye block app.css ke SABSE END me rahe. Font: Inter Tight.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --a: #1f3fff; --a-d: #1530c4; --a-rgb: 31,63,255;
+  --ink: #0a0a0a; --ink-2: #262626;
+  --bg: #ffffff; --tile: #fafafa; --tile-2: #f2f2f2;
+  --line: #ededed; --line-2: #e0e0e0;
+  --text: #0a0a0a; --text2: #404040; --text3: #737373; --text4: #a3a3a3;
+  --ok: #15803d; --ok-soft: #f0fdf4; --warn: #92400e; --warn-soft: #fffbeb;
+  --bad: #dc2626; --bad-soft: #fef2f2; --info-soft: #f0f3ff;
+  --r-card: 20px; --r-row: 0;
+  --side-bg: #fff;
+}
+body, button, input, select, textarea,
+.btn, .tab-btn, .form-control, .search-input, .items-table input, .items-table select { font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; }
+.td-id, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+body, .app-body, .main { background: #fff; }
+.main { padding: 28px 36px 40px; }
+
+/* ── Topbar: white + patli line ── */
+.topbar, .topbar-brand { background: #fff; border-bottom: 1px solid var(--line); }
+.page-title { font-size: 24px; font-weight: 600; letter-spacing: -.6px; }
+.user-pill { background: #fff; border: 1px solid var(--line); }
+.user-av { background: var(--ink); }
+.btn-logout { background: #fff; border: 1px solid var(--line); font-weight: 500; }
+
+/* ── Sidebar: white, active = soft blue ── */
+.sidebar { background: #fff; border-right: 1px solid var(--line); }
+.nav-sec { color: var(--text4); }
+.nav-item { border-radius: 10px; color: var(--text3); font-weight: 500; }
+.nav-item:hover { background: #f7f7f7; color: var(--text); }
+.nav-item.active { background: var(--info-soft); color: var(--a); font-weight: 600; }
+.nav-item.active .nav-icon { filter: none; }
+.sb-milestone { background: #fafafa; border: 1px solid var(--line); }
+
+/* ── KPI: black hero hata ke clean bade numbers, hairline border ── */
+.stats-row { gap: 20px; margin-bottom: 20px; }
+.stat, .stats-row .stat { background: #fff; border: 1px solid var(--line); min-height: 128px; }
+.stat:hover { background: #fff; border-color: var(--line-2); }
+.stat-val, .stat[class*="c-"] .stat-val { font-size: 48px; font-weight: 500; letter-spacing: -2px; }
+.stats-row .stat:first-child { background: #fff; }
+.stats-row .stat:first-child .stat-lbl, .stats-row .stat:first-child .stat-sub { color: var(--text3); }
+.stats-row .stat:first-child .stat-val { color: var(--text); }
+.stats-row .stat.c-red, .stats-row .stat.c-red:not(:first-child) { background: #fff; border-color: #fecaca; }
+.stats-row .stat.c-red .stat-val { color: var(--bad); }
+.stats-row .stat.c-amber, .stats-row .stat.c-amber:not(:first-child) { background: #fff; }
+.stats-row .stat.c-amber .stat-val, .stats-row .stat.c-amber:not(:first-child) .stat-val { color: var(--text); }
+.stats-row .stat.c-red:not(:first-child) .stat-val { color: var(--bad); }
+/* ₹ wale values (inline 16px) bhi bade dikhe */
+.stat-val[style*="font-size"] { font-size: 30px !important; letter-spacing: -1px; margin-top: auto; }
+
+/* ── Cards: white + hairline ── */
+.card { background: #fff; border: 1px solid var(--line); margin-bottom: 20px; }
+.card-head { padding: 20px 24px 8px; }
+.card-title { font-size: 17px; letter-spacing: -.2px; }
+
+/* ── Pipeline: white pills, active = soft blue ── */
+.pipe-node { border: 1px solid var(--line); }
+.pipe-node:hover { box-shadow: none; border-color: var(--line-2); }
+.pipe-node.active { background: var(--info-soft); border: 1px solid #c7d0ff; }
+.pipe-node.active .pipe-lbl { color: var(--a); }
+.pipe-count { background: #f5f5f5; }
+.pipe-node.active .pipe-count { background: var(--a); color: #fff; }
+
+/* ── Tables: grey row-cards ki jagah clean lines ── */
+.table-wrap { padding: 0 24px 8px; }
+.table-wrap > table { border-collapse: collapse; border-spacing: 0; font-size: 14px; }
+.table-wrap > table th { background: #fff; color: var(--text4); font-size: 12.5px; padding: 12px 14px; }
+.table-wrap > table td { background: transparent; border-top: 1px solid var(--line); padding: 15px 14px; }
+.table-wrap > table td:first-child, .table-wrap > table td:last-child { border-radius: 0; }
+.table-wrap > table th:first-child, .table-wrap > table td:first-child { padding-left: 0; }
+.table-wrap > table tbody tr:hover td { background: #fafafa; }
+th, .items-table th { background: #fff; }
+
+/* ── Status: soft pill + rangeen dot ── */
+.badge, .badge[class*="b-"] { gap: 6px; font-weight: 500; font-size: 12.5px; background: #f5f5f5; color: #404040; }
+.badge::before { display: inline-block; content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.b-ready { background: var(--info-soft) !important; color: var(--a) !important; }
+
+/* ── Buttons: blue primary, white secondary ── */
+.btn { border: 1px solid #e5e5e5; background: #fff; font-weight: 500; }
+.btn:hover { background: #fafafa; border-color: #d4d4d4; }
+.btn-primary { background: var(--a); border-color: var(--a); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(var(--a-rgb), .25); }
+.btn-primary:hover { background: var(--a-d); border-color: var(--a-d); }
+
+/* ── Forms: white + border ── */
+.form-control, .search-input, .items-table input, .items-table select { background-color: #fff; border: 1px solid #e5e5e5; }
+.form-control:focus, .search-input:focus, .items-table input:focus, .items-table select:focus { border-color: var(--a); box-shadow: 0 0 0 3px rgba(var(--a-rgb), .12); }
+
+/* ── Tabs ── */
+.tab-btn { background: #fff; border: 1px solid var(--line); }
+.tab-btn.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* ── Modal, detail, toast ── */
+.modal { border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.14); }
+.modal-head { border-radius: 20px 20px 0 0; }
+.modal-foot { border-radius: 0 0 20px 20px; border-top: 1px solid var(--line); }
+.detail-item { background: #fafafa; border: 1px solid var(--line); border-radius: 14px; }
+.toast { background: var(--ink); }
+.spin { border-top-color: var(--a); }
+
+@media (max-width: 768px) {
+  .main { padding: 14px 12px 24px; }
+  .table-wrap { padding: 0 12px 8px; }
+  .stat-val, .stat[class*="c-"] .stat-val { font-size: 32px; }
+}
