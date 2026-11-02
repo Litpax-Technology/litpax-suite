@@ -1,15 +1,15 @@
 /* =============================================================
- * Ask Litpax — ready sawaal (chips). Yahan add / edit karo, code nahi chhedna padega.
+ * Ask Litpax — ready questions (chips). Add / edit here, no code change needed.
  * ============================================================= */
 window.AGENT_PROMPTS = [
-  { label: 'Aaj ka summary',        q: 'Aaj ka poora summary do: naye orders, dispatch, production, stock alerts, late PO aur late service tickets.' },
-  { label: 'Is mahine ke orders',   q: 'Is mahine kitne sales orders aaye aur unki total value kitni hai? Pichhle mahine se compare karo.' },
-  { label: 'Top customers',         q: 'Is mahine order value ke hisaab se top 10 customers kaun hain?' },
-  { label: 'Pending orders',        q: 'Kaunse orders abhi pending hain aur sabse purane kaunse hain?' },
-  { label: 'Reorder / low stock',   q: 'IMS me kaunse items reorder level se neeche hain?' },
-  { label: 'Late POs',              q: 'SOMS me kaunse purchase orders ka maal expected date ke baad bhi nahi aaya?' },
-  { label: 'Production trend',      q: 'Pichhle 14 din ka din-wise production dikhao, chart ke saath.' },
-  { label: 'Line output',           q: 'Aaj PLT line pe kis station pe kitne scans hue aur kaun employee sabse aage hai?' },
-  { label: 'Late service tickets',  q: 'Service Hub me kaunse tickets promised date se late hain?' },
-  { label: 'Warranty by model',     q: 'Is mahine service tickets model-wise kitne aaye? Chart ke saath.' }
+  { label: "Today's summary",       q: "Give me today's summary: new orders, dispatches, production, stock alerts, late POs and late service tickets." },
+  { label: 'Orders this month',     q: 'How many sales orders came in this month and what is their total value? Compare with last month.' },
+  { label: 'Top customers',         q: 'Who are the top 10 customers by order value this month?' },
+  { label: 'Pending orders',        q: 'Which orders are still pending, and which are the oldest?' },
+  { label: 'Low stock',             q: 'Which IMS items are below their reorder level?' },
+  { label: 'Late POs',              q: 'Which purchase orders in SOMS have not been received after their expected date?' },
+  { label: 'Production trend',      q: 'Show day-wise production for the last 14 days with a chart.' },
+  { label: 'Line output',           q: 'How many scans happened at each PLT station today, and which employee is ahead?' },
+  { label: 'Late service tickets',  q: 'Which Service Hub tickets are past their promised date?' },
+  { label: 'Tickets by model',      q: 'How many service tickets came in this month by battery model? Include a chart.' }
 ];
