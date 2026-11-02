@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /*
   Pack Line Tracker — light premium theme.
@@ -525,4 +525,106 @@ body:has(.sidebar) .main{background:var(--bg);}
 
 @media (max-width:760px){
   .sidebar{background:var(--bg);border-bottom:0;}
+}
+
+/* ============================================================
+   GALLERY WHITE — premium white theme (Bento ke upar override)
+   Ye block style.css ke SABSE END me rahe. Font: Inter Tight.
+   Print (labels/cards) is block se nahi chhuta.
+   ============================================================ */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#fafafa; --surface-3:#f2f2f2;
+  --border:#ededed; --border-strong:#e0e0e0;
+  --text:#0a0a0a; --text-muted:#737373; --text-faint:#a3a3a3;
+  --accent:#1f3fff; --accent-hi:#1530c4; --accent-soft:#f0f3ff; --accent-line:#c7d0ff;
+  --ink:#0a0a0a; --ink-2:#262626;
+  --ok:#15803d; --ok-soft:#f0fdf4; --ok-line:#bbf7d0;
+  --bad:#dc2626; --bad-soft:#fef2f2; --bad-line:#fecaca;
+  --warn:#92400e; --warn-soft:#fffbeb; --warn-line:#fde68a;
+  --info:#1f3fff; --info-soft:#f0f3ff; --info-line:#c7d0ff;
+  --sans:'Inter Tight','Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+html,body,body:has(.tabs),body:has(.sidebar) .main{background:#fff;}
+
+/* ---------- Header / brand ---------- */
+.context-pill{background:#fff;border:1px solid var(--border);}
+.context-pill.floor{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);}
+
+/* ---------- Panels: white + hairline ---------- */
+.panel,body:has(.tabs) .panel{background:#fff;border:1px solid var(--border);border-radius:20px;}
+.panel-title,body:has(.tabs) .panel-title{font-size:17px;letter-spacing:-.2px;}
+
+/* ---------- Scan box: floor pe saaf dikhe, blue border ---------- */
+.scan-box{background:#fff;border:2px solid var(--border-strong);}
+.app-scan .scan-box{border:3px solid var(--accent);box-shadow:0 12px 32px rgba(31,63,255,.10);}
+.scan-box input{color:var(--ink);}
+
+/* ---------- Last scan: soft blue strip ---------- */
+.last-scan{background:var(--accent-soft);border:1px solid var(--accent-line);}
+.last-scan .id{color:var(--accent);}
+.last-scan .meta{color:var(--text-muted);}
+.last-scan .sync.saved{color:var(--ok);} .last-scan .sync.saving{color:var(--text-faint);} .last-scan .sync.error{color:var(--bad);}
+
+/* ---------- Live station board ---------- */
+.board-card{background:#fff;border:1px solid var(--border);}
+.board-card.active{background:var(--accent-soft);border:1px solid var(--accent-line);box-shadow:none;}
+.board-avatar{background:var(--accent);}
+.board-bar{background:#f0f0f0;}
+.board-bar-fill{background:var(--accent);}
+.board-lead{background:var(--ok);}
+
+/* ---------- Stat cards: black hero hata ke clean bade numbers ---------- */
+.stat-card,body:has(.tabs) .stat-card{background:#fff;border:1px solid var(--border);border-radius:20px;}
+.stat-card .num,body:has(.tabs) .stat-card .num{font-size:48px;font-weight:500;letter-spacing:-2px;}
+.stat-grid .stat-card:first-child{background:#fff;}
+.stat-grid .stat-card:first-child .num{color:var(--text);}
+.stat-grid .stat-card:first-child .lbl{color:var(--text-muted);}
+
+/* ---------- Tables: grey row-cards ki jagah clean lines ---------- */
+.table-wrap > table{border-collapse:collapse;border-spacing:0;font-size:14px;}
+.table-wrap th,body:has(.tabs) .table-wrap th{background:#fff;color:var(--text-faint);font-size:12.5px;border-bottom:1px solid var(--border);padding:12px 14px;}
+.table-wrap td{background:transparent;border-bottom:1px solid var(--border);padding:15px 14px;}
+.table-wrap td:first-child,.table-wrap td:last-child{border-radius:0;}
+.table-wrap tbody tr:last-child td{border-bottom:0;}
+.table-wrap tbody tr:hover td{background:#fafafa;}
+
+/* ---------- Badges: soft pill + rangeen dot ---------- */
+.badge{display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:12.5px;}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+/* ---------- Buttons: blue primary, white secondary ---------- */
+.btn{background:var(--accent);border:1px solid var(--accent);color:#fff;box-shadow:0 8px 20px rgba(31,63,255,.25);}
+.btn:hover{background:var(--accent-hi);border-color:var(--accent-hi);box-shadow:0 8px 20px rgba(31,63,255,.3);}
+.btn.secondary{background:#fff;border:1px solid #e5e5e5;color:var(--ink);box-shadow:none;}
+.btn.secondary:hover{background:#fafafa;border-color:#d4d4d4;}
+.icon-btn{background:#fff;border:1px solid var(--border);}
+.icon-btn:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line);}
+.range-btn{background:#fff;border:1px solid var(--border);}
+body:has(.tabs) .range-bar{background:transparent;padding:0;}
+body:has(.tabs) .range-btn{border:1px solid var(--border);}
+.range-btn.active,body:has(.tabs) .range-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+/* ---------- Inputs: white + border ---------- */
+.field select,.field input,textarea.search-input,.search-input,.hall-inline{background:#fff;border:1px solid #e5e5e5;}
+.field select:focus,.field input:focus,.search-input:focus,.hall-inline:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,63,255,.12);}
+body:has(.tabs) .panel > .row{background:#fafafa;border:1px solid var(--border);}
+
+/* ---------- List rows, history ---------- */
+.list-row,body:has(.tabs) .list-row{background:#fff;border:1px solid var(--border);}
+.list-row:hover{background:#fafafa;border-color:var(--border-strong);}
+.history-detail{background:#fafafa;border:1px solid var(--border);}
+.step-num{color:var(--accent);}
+
+/* ---------- Admin sidebar: white + patli line, active = soft blue ---------- */
+.sidebar{background:#fff;border-right:1px solid var(--border);}
+body:has(.sidebar) .tab{border-radius:10px;color:var(--text-muted);}
+body:has(.sidebar) .tab:hover{background:#f7f7f7;color:var(--ink);}
+body:has(.sidebar) .tab.active{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.page-head h2{font-size:26px;letter-spacing:-.8px;}
+body:has(.sidebar) .app{padding:28px 36px 64px;}
+
+@media (max-width:760px){
+  .sidebar{background:#fff;border-right:0;border-bottom:1px solid var(--border);}
+  body:has(.sidebar) .app{padding:16px 14px 48px;}
 }
