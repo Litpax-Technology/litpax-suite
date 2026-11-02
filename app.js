@@ -167,6 +167,7 @@
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
+    if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
     return items;
   }
@@ -185,6 +186,9 @@
     // sirf ek app (jaise Purchase → Store Orders) → top bar bhi nahi; logout us app ke apne sidebar se
     var items = navItems();
     $('#appShell').classList.toggle('solo', items.length === 1 && !!items[0].mod);
+  }
+  function openAgent() {
+    if (navItems().some(function (x) { return x.id === 'm-agent'; })) go('m-agent');
   }
   function go(id) {
     if (!id) return;
@@ -704,6 +708,7 @@
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
       if (e.data.type === 'logout') signOut();
+      if (e.data.type === 'agent') openAgent();   // kisi app me Ctrl+K
       // Service Hub ka session (idle) khatam → Suite ke token se chupchaap naya, warna poora sign out
       if (e.data.type === 'svc-relogin') {
         svcSso().then(function () {
@@ -713,6 +718,10 @@
       }
     });
     setInterval(function () { if (S.user) refreshBadge(); }, 120000);
+    // Ctrl+K → Ask Litpax (sirf Admin)
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'k' && S.user) { e.preventDefault(); openAgent(); }
+    });
 
     if (/^PASTE_/.test(SUITE.ERP_URL || 'PASTE_')) {
       showLogin(); $('#loginError').textContent = 'GAS URLs are not set in config.js'; return;
