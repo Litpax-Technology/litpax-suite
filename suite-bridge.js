@@ -50,6 +50,11 @@
     }
   }
 
+  // Ctrl+K kisi bhi app ke andar → Suite ka Ask Litpax
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'k' && !/\/agent\//.test(location.pathname)) { e.preventDefault(); toSuite('agent'); }
+  });
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', patch);
   else patch();
 })();
