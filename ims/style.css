@@ -5,7 +5,7 @@
    Accent Indigo #635bff | Teal #14b8a6 | Sky #0ea5e9
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ── TOKENS ── */
 :root {
@@ -1099,4 +1099,110 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -.6px; color: var(--ink)
   .main { padding: 12px 12px 24px; }
   .kpi-val { font-size: 36px; }
   .tw { padding: 0 6px 6px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GALLERY WHITE — premium white theme (Bento ke upar override)
+   Ye block style.css ke SABSE END me rahe. Font: Inter Tight.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --a: #1f3fff; --a-d: #1530c4; --a-rgb: 31,63,255;
+  --accent: #1f3fff; --accent2: #1530c4; --accent-l: #f0f3ff;
+  --ink: #0a0a0a; --ink-2: #262626;
+  --s1: #ffffff; --s2: #fafafa; --tile-2: #f2f2f2;
+  --border: #ededed; --navy: #0a0a0a; --t2: #404040; --muted: #737373; --light: #a3a3a3;
+  --ok: #15803d; --ok-soft: #f0fdf4; --warn: #92400e; --warn-soft: #fffbeb; --bad: #dc2626; --bad-soft: #fef2f2;
+  --sans: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+html, body, .shell, .main { background: #fff; }
+h1 { font-size: 26px; font-weight: 600; letter-spacing: -.8px; }
+
+/* ── Sidebar: white + patli line, active = soft blue ── */
+.sidebar { background: #fff; border-right: 1px solid var(--border); }
+.ni { border-radius: 10px; color: var(--muted); }
+.ni:hover { background: #f7f7f7; color: var(--ink); }
+.ic { filter: grayscale(1); opacity: .6; }
+.ni.active { background: var(--accent-l); color: var(--a); font-weight: 600; }
+.ni.active .ic { background: transparent; filter: none; opacity: 1; }
+#logout-btn button { border: 1px solid var(--border) !important; background: #fff !important; font-weight: 500; }
+
+/* ── Main ── */
+.main { padding: 28px 36px 40px; }
+.tb { margin-bottom: 20px; }
+
+/* ── Cards: white + hairline ── */
+.card { background: #fff; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; }
+.ch { padding: 20px 24px 8px; }
+.ch h2, .ch h3 { font-size: 17px; letter-spacing: -.2px; }
+
+/* ── KPI: black hero hata ke clean bade numbers ── */
+.kpi-card { background: #fff; border: 1px solid var(--border); border-radius: 20px; min-height: 128px; }
+.kpi-card:hover { box-shadow: none; border-color: #e0e0e0; }
+.kpi-val { font-size: 52px; font-weight: 500; letter-spacing: -2.2px; color: var(--ink); }
+.kpi-card:first-child { background: #fff; }
+.kpi-card:first-child .kpi-label { color: var(--muted); }
+.kpi-card:first-child .kpi-val { color: var(--ink); }
+.kpi-red, .kpi-red:not(:first-child) { background: #fff; border-color: #fecaca; }
+.kpi-red .kpi-val, .kpi-red:not(:first-child) .kpi-val { color: var(--bad); }
+.kpi-orange, .kpi-orange:not(:first-child) { background: #fff; }
+.kpi-orange .kpi-val, .kpi-orange:not(:first-child) .kpi-val { color: #d97706; }
+.kpi-red:not(:first-child):hover, .kpi-orange:not(:first-child):hover { filter: none; }
+
+/* ── Tables: grey row-cards ki jagah clean lines ── */
+.tw { padding: 0 24px 8px; }
+.tw > table { border-collapse: collapse; border-spacing: 0; }
+.tw > table thead th { background: #fff; color: var(--light); font-size: 12.5px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.tw > table tbody td { background: transparent; border-bottom: 1px solid var(--border); padding: 15px 14px; font-size: 14px; }
+.tw > table tbody td:first-child, .tw > table tbody td:last-child { border-radius: 0; }
+.tw > table thead th:first-child, .tw > table tbody td:first-child { padding-left: 0; }
+.tw > table tbody tr:last-child td { border-bottom: 0; }
+.tw > table tbody tr:hover td { background: #fafafa; }
+
+/* ── Badges: soft pill + rangeen dot ── */
+.badge { gap: 6px; font-weight: 500; font-size: 12.5px; }
+.badge::before { display: inline-block; background: currentColor; box-shadow: none; }
+.b-pkg { background: #f5f5f5; color: #404040; }
+
+/* ── Buttons: blue primary, white secondary ── */
+.btn { font-weight: 500; font-size: 13px; padding: 9px 18px; }
+.bsm { padding: 6px 12px; font-size: 12.5px; }
+.bg { background: #fff; border: 1px solid #e5e5e5; color: var(--ink); }
+.bg:hover { background: #fafafa; border-color: #d4d4d4; }
+.bp { background: var(--a); border-color: var(--a); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(var(--a-rgb), .25); }
+.bp:hover { background: var(--a-d); box-shadow: 0 8px 20px rgba(var(--a-rgb), .3); }
+.bgn { background: var(--ok); border-color: var(--ok); color: #fff; }
+.bgn:hover { background: #166534; }
+.brd { background: #fff; border: 1px solid #fecaca; color: var(--bad); }
+.brd:hover { background: var(--bad-soft); }
+
+/* ── Inputs: white + border ── */
+.inp { background: #fff; border: 1px solid #e5e5e5; }
+.inp:focus { border-color: var(--a); box-shadow: 0 0 0 3px rgba(var(--a-rgb), .12); }
+
+/* ── Modal ── */
+.modal { border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.14); }
+.mf { border-top: 1px solid var(--border); border-radius: 0 0 20px 20px; }
+
+/* ── Chips, reorder, closing, stock tree: white + hairline ── */
+.cat-btn, .brand-btn { background: #fff; border: 1px solid var(--border); }
+.cat-btn:hover, .brand-btn:hover { background: #fafafa; border-color: #d4d4d4; }
+.cat-btn.active, .brand-btn.active { background: var(--accent-l); border-color: #c7d0ff; color: var(--a); }
+.ro-card { background: #fff; border: 1px solid var(--border); }
+.ro-card.cr { background: #fff; border-color: #fecaca; }
+.ro-card.ro { background: #fff; border-color: #fde68a; }
+.snum.ro { color: #d97706; }
+.sc { background: #fff !important; border: 1px solid var(--border) !important; }
+.sc.rd { border-color: #fecaca !important; }
+.sc.gn .sc-val { color: var(--ok); } .sc.rd .sc-val { color: var(--bad); } .sc.or .sc-val { color: #d97706; } .sc.bl .sc-val { color: var(--a); }
+.tree-cat { border: 1px solid var(--border); }
+.tree-model-headers { background: #fafafa; }
+
+/* ── Toast ── */
+.loader { border-top-color: var(--a); }
+
+@media (max-width: 640px) {
+  .main { padding: 14px 12px 24px; }
+  .tw { padding: 0 12px 8px; }
+  .kpi-val { font-size: 36px; }
 }
