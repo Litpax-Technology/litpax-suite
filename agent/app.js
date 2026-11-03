@@ -134,6 +134,54 @@
     };
     $('agLog').appendChild(d); scrollEnd();
   }
+  /* ---------------- action cards (badlav / naya record / mail) ---------------- */
+  function addAction(a) {
+    var d = document.createElement('div');
+    d.className = 'ag-msg bot';
+    var body = '';
+    if (a.type === 'email') {
+      body = '<div class="ag-card mail"><div class="ag-card-h">✉ Email draft</div>' +
+        '<label>To<input class="f-to" value="' + esc(a.to) + '"></label>' +
+        '<label>Cc<input class="f-cc" value="' + esc(a.cc || '') + '" placeholder="optional"></label>' +
+        '<label>Subject<input class="f-sub" value="' + esc(a.subject) + '"></label>' +
+        '<label>Message<textarea class="f-body" rows="9">' + esc(a.body) + '</textarea></label>';
+    } else {
+      body = '<div class="ag-card' + (a.risk ? ' risk' : '') + '"><div class="ag-card-h">' + (a.type === 'create' ? '＋ ' : '✎ ') + esc(a.title) + '</div>' +
+        (a.reason ? '<div class="ag-card-r">' + esc(a.reason) + '</div>' : '') +
+        '<table>' + a.rows.map(function (r) {
+          return '<tr><th>' + esc(r.col) + '</th>' + (a.type === 'update' ? '<td class="old">' + esc(r.old) + '</td><td class="arr">→</td>' : '') + '<td class="nw">' + esc(r.nw) + '</td></tr>';
+        }).join('') + '</table>' +
+        (a.risk ? '<div class="ag-card-w">Quantity / amount change. Related totals in other sheets will not update by themselves.</div>' : '');
+    }
+    body += '<div class="ag-card-a"><button type="button" class="go">' + (a.type === 'email' ? 'Send' : 'Confirm') + '</button>' +
+      '<button type="button" class="no">Cancel</button><span class="st"></span></div></div>';
+    d.innerHTML = '<div class="av" aria-hidden="true">✦</div><div class="b">' + body + '</div>';
+    var go = d.querySelector('.go'), no = d.querySelector('.no'), st = d.querySelector('.st'), armed = !a.risk;
+    function done(msg, ok) {
+      go.remove(); no.remove(); st.textContent = msg; st.className = 'st ' + (ok ? 'ok' : 'bad');
+      Array.prototype.forEach.call(d.querySelectorAll('input,textarea'), function (x) { x.disabled = true; });
+    }
+    no.onclick = function () { api('cancel', { id: a.id }).catch(function () {}); done('Cancelled', false); };
+    go.onclick = function () {
+      if (!armed) { armed = true; go.textContent = 'Yes, save it'; go.classList.add('warn'); return; }
+      var edits = a.type === 'email' ? { to: d.querySelector('.f-to').value, cc: d.querySelector('.f-cc').value, subject: d.querySelector('.f-sub').value, body: d.querySelector('.f-body').value } : {};
+      go.disabled = no.disabled = true; st.textContent = a.type === 'email' ? 'Sending…' : 'Saving…';
+      api('execute', { id: a.id, edits: edits }).then(function (r) {
+        done('✓ ' + r.done, true);
+        A.history.push({ role: 'model', text: '[Done] ' + r.done }); save();
+        if (r.undo && r.logId) {
+          var u = document.createElement('button'); u.type = 'button'; u.className = 'undo'; u.textContent = 'Undo';
+          u.onclick = function () {
+            u.disabled = true;
+            api('undo', { logId: r.logId }).then(function (x) { st.textContent = '↺ ' + x.done; u.remove(); }, function (e) { toast(e.message); u.disabled = false; });
+          };
+          st.parentNode.appendChild(u);
+        }
+      }, function (e) { go.disabled = no.disabled = false; st.textContent = e.message; st.className = 'st bad'; });
+    };
+    $('agLog').appendChild(d); scrollEnd();
+  }
+
   function addTyping() {
     var d = document.createElement('div');
     d.className = 'ag-msg bot typing';
@@ -157,6 +205,7 @@
     api('ask', { q: q, history: prior }).then(function (r) {
       A.history.push({ role: 'model', text: r.answer, steps: r.steps || [] }); save();
       addBot(r.answer, r.steps);
+      (r.actions || []).forEach(addAction);
     }).catch(function (e) {
       addBot(e.message, e.steps, true);
     }).then(function () {
@@ -208,7 +257,7 @@
 
     restore();
     api('ping').then(function (r) {
-      $('agStatus').textContent = r.keySet ? 'Online · ' + r.model + ' · read-only' : 'Key not set. Add GEMINI_KEY in GAS Script Properties';
+      $('agStatus').textContent = r.keySet ? 'Online · ' + r.model + ' · changes need your Confirm' : 'Key not set. Add GEMINI_KEY in GAS Script Properties';
       $('agStatus').className = r.keySet ? 'ok' : 'warn';
       if (pre && r.keySet) ask(pre);
     }).catch(function (e) {
