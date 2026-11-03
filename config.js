@@ -32,6 +32,7 @@ window.SUITE = {
     soms:     { label: 'Store Orders',    path: 'soms/index.html' },
     pltPack:  { label: 'Battery Packing', path: 'plt/index.html?mode=packing' },
     cash:     { label: 'Cash Ledger',     path: 'https://litpax-technology.github.io/Cash-Ledger-/' },
+    tasks:    { label: 'Company Tasks',   path: 'https://litpax-technology.github.io/Litpax-Company-Task/' },
     service:  { label: 'Service Hub',     path: 'service/index.html' },
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
