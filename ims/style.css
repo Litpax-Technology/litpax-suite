@@ -1206,3 +1206,48 @@ h1 { font-size: 26px; font-weight: 600; letter-spacing: -.8px; }
   .tw { padding: 0 12px 8px; }
   .kpi-val { font-size: 36px; }
 }
+
+/* ===== Staff — "Who is working?" · sidebar person · Staff & PINs ===== */
+.stf-me { align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px; border-radius: 10px; background: var(--s2); border: 1px solid var(--border); }
+.stf-me .stf-av { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-l); color: var(--accent); font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stf-me .stf-who { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.25; }
+.stf-me .stf-who b { font-size: 12px; color: var(--navy); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stf-me .stf-who small { font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stf-me button { border: 0; background: none; font: 600 11px var(--sans); color: var(--accent); cursor: pointer; padding: 2px 4px; }
+.stf-me button.stf-admin { width: 100%; text-align: center; padding: 4px; }
+.stf-ov { position: fixed; inset: 0; z-index: 900; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(20,22,50,.45); backdrop-filter: blur(4px); }
+.stf-ov.show { display: flex; }
+.stf-box { width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 20px 55px rgba(20,22,50,.18); padding: 24px; font-family: var(--sans); }
+.stf-box.stf-wide { max-width: 780px; }
+.stf-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 11.5px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+.stf-box h2 { margin-top: 14px; font-size: 22px; color: var(--navy); letter-spacing: -.3px; }
+.stf-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stf-top h2 { margin-top: 0; }
+.stf-sub { margin: 4px 0 18px; color: var(--muted); font-size: 13px; }
+.stf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.stf-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px; border: 1px solid var(--border); border-radius: 14px; background: #fff; cursor: pointer; font: inherit; color: var(--navy); transition: border-color .15s, box-shadow .15s, transform .15s; }
+.stf-card:hover, .stf-card:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-l); transform: translateY(-1px); outline: none; }
+.stf-card.on { border-color: var(--accent); background: var(--accent-l); }
+.stf-card b { font-size: 14px; text-align: center; line-height: 1.25; }
+.stf-card small { font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
+.stf-ini { width: 46px; height: 46px; border-radius: 50%; background: var(--accent-l); color: var(--accent); font-weight: 700; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; }
+.stf-pin { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.stf-pin label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.stf-row { display: flex; gap: 8px; }
+.stf-row .inp { flex: 1; min-width: 0; }
+.stf-pin .stf-row .inp { font-size: 20px; letter-spacing: 6px; text-align: center; }
+.stf-tw { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+.stf-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.stf-t th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 9px 12px; background: var(--s1); }
+.stf-t td { padding: 9px 12px; border-top: 1px solid var(--border); white-space: nowrap; }
+.stf-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--s2); color: var(--t2); }
+.stf-tag.ok { background: #e8f7ee; color: var(--green); }
+.stf-tag.bad { background: #fdecec; color: var(--red); }
+.stf-form { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--s1); display: flex; flex-direction: column; gap: 10px; }
+.stf-form h3 { font-size: 15px; color: var(--navy); }
+.stf-list { width: 100%; padding: 4px; }
+.stf-grid2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stf-fixed { display: flex; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.stf-err { padding: 10px 12px; border-radius: 10px; background: #fdecec; color: var(--red); font-size: 13px; }
+.stf-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 560px) { .stf-box { padding: 18px; } .stf-grid { grid-template-columns: repeat(2, 1fr); } .stf-grid2 { grid-template-columns: 1fr; } }
