@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Litpax IMS</title>
-<link rel="stylesheet" href="style.css?v=gw1">
+<link rel="stylesheet" href="style.css?v=stf1">
 
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -94,6 +94,7 @@
         <div class="dot loading" id="api-dot"></div>
         <span class="conn-lbl" id="api-lbl">Connecting...</span>
       </div>
+      <div id="stf-me" class="stf-me" style="display:none"></div>
       <div id="logout-btn" style="display:none;margin-bottom:8px;">
         <button onclick="logout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;font-family:var(--sans);font-size:11px;font-weight:600;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;" onmouseover="this.style.background='rgba(220,38,38,.2)';this.style.color='#fca5a5';this.style.borderColor='rgba(220,38,38,.3)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)';this.style.borderColor='rgba(255,255,255,.12)'">
           <span>🚪</span><span id="logout-role-label"></span><span>Logout</span>
@@ -600,6 +601,7 @@
         <div class="fi" id="in-supplier-wrap"><label class="inp-label">Supplier</label><input class="inp" id="in-supplier" placeholder="Supplier name"></div>
         <div class="fi"><label class="inp-label">Invoice / PO No.</label><input class="inp" id="in-invoice" placeholder="INV-001"></div>
         <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="in-by" placeholder="Name"></div>
+        <div class="fi"><label class="inp-label">Material Handled By <span style="font-size:10px;color:var(--muted);">(store incharge)</span></label><select class="inp" id="in-handled"></select></div>
         <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="in-remarks" placeholder="Optional"></div>
         <div class="fi full">
           <label class="inp-label">Stock Photo <span style="font-size:10px;color:var(--muted);">(optional — max 3)</span></label>
@@ -661,6 +663,7 @@
         </div>
         <div class="fi"><label class="inp-label">Issued To</label><input class="inp" id="out-issuedto" placeholder="Person name"></div>
         <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="out-by" placeholder="Name"></div>
+        <div class="fi"><label class="inp-label">Material Handled By <span style="font-size:10px;color:var(--muted);">(store incharge)</span></label><select class="inp" id="out-handled"></select></div>
         <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="out-remarks" placeholder="Optional"></div>
       </div>
     </div>
@@ -1017,7 +1020,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=50"></script>
+<script src="app.js?v=51"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
