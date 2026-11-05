@@ -7,7 +7,7 @@ window.SUITE = {
   ERP_URL:  'https://script.google.com/macros/s/AKfycbwuXMTWAnv7bdwphFzrEqyoVgjS_MwIzVTd_CQ7x5gpvBYBFl9BmI6KguWFyaigQGJk/exec',
   IMS_URL:  'https://script.google.com/macros/s/AKfycbwqlO2HyCX-_3eK7jkyBIzKeBtDVrD0psX8r0c4hgOKx3rQlgoNl36-lOxy4ZxtmnjyeQ/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
-  SOMS_URL: 'https://script.google.com/macros/s/AKfycbwsfgKLzVOVJq1EpR9eiQUIwY1XKzamgeA0BVYQ30AM2lSlM9_rKvDG2FS5DkQWeyipDw/exec',
+  SOMS_URL: 'https://script.google.com/macros/s/AKfycbz4n5_Cxb_JEbfMx3ycdW3RX04Cm9RTywU2wSdXR--3mMjEwVQlkLssy1LNFTL3pJa9iA/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbzrSV5REShJvCHJz8reLN3L34qojngGhChJYctVDGRk-SCv7HxfglJMJc5wAyCqCtdX/exec',
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwBbK2Ase0S4YSdtgqZQQ3D8AsHNT3nO02ip2YeR4aNoHufSWQkZ96hVdlHdOX6RRLX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
