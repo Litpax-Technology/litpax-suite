@@ -18,6 +18,7 @@ function jsonp(params, onData, onErr) {
   window[cb] = function (d) {
     cleanup();
     if (d && d.auth === false) { sessionExpired(d.msg); onErr && onErr('auth'); return; }
+    if (d && d.needStaff) { staffNeed(d.msg); onErr && onErr('auth'); return; }   // v13
     onData && onData(d);
   };
   s.onerror = () => { if (!done) { cleanup(); onErr && onErr('network'); } };
@@ -41,6 +42,7 @@ async function apiPost(params) {
   } catch (e) { throw 'network'; }
   finally { clearTimeout(timer); }
   if (d && d.auth === false) { sessionExpired(d.msg); throw 'auth'; }
+  if (d && d.needStaff) { staffNeed(d.msg); throw 'auth'; }   // v13
   return d;
 }
 
@@ -49,7 +51,8 @@ async function apiPost(params) {
 // Saves carry a request ID: a retry of the SAME save (timeout, slow network, double tap) reuses it,
 // so the server returns the first result instead of saving twice.
 const READ_ACTIONS = { login: 1, logout: 1, ping: 1, getSite: 1, getTickets: 1, getTicket: 1, getMasters: 1, getTracker: 1, getItems: 1, getReportData: 1,
-  getSettings: 1, lookupPhone: 1, getModels: 1, findRecord: 1, getCustomer: 1, listRecords: 1, getTechJobs: 1, getTracking: 1, touch: 1, getSecurity: 1 };
+  getSettings: 1, lookupPhone: 1, getModels: 1, findRecord: 1, getCustomer: 1, listRecords: 1, getTechJobs: 1, getTracking: 1, touch: 1, getSecurity: 1,
+  getStaff: 1, staffLogin: 1, staffLogout: 1 };
 const PENDING_REQ = {};
 const newReqId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -887,7 +890,7 @@ window.addEventListener('load', () => {
 });
 
 function clearSession() {
-  ['hub_role', 'hub_token', 'hub_user', 'hub_last_act'].forEach(k => localStorage.removeItem(k));
+  ['hub_role', 'hub_token', 'hub_user', 'hub_last_act', 'hub_staff'].forEach(k => localStorage.removeItem(k));
   try { sessionStorage.clear(); } catch (e) {}
   idleStop(); wipeMem();
   MASTERS = null;
@@ -935,7 +938,8 @@ function enterApp(r) {
   if ($('hdrDate')) $('hdrDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   ensureMasters();           // preload dropdown lists in the background
   ensureSettings().then(applySettings);   // SLA, lists, WhatsApp text, screens — from the Settings tab
-  go(R.nav[0]);
+  tkFilter = defaultTkFilter(); BRD_MINE = r === 'repair';
+  staffBoot(R.nav[0]);   // v13 — team ke log hain to pehle naam + PIN
   idleStart(); weakPinBanner();
 }
 
@@ -994,12 +998,13 @@ function newSelects() {
 }
 function newReset() {
   ['n_company', 'n_person', 'n_phone', 'n_brand', 'n_city', 'n_state', 'n_complaint', 'n_ctype', 'n_source',
-   'n_vehicle', 'n_invoice', 'n_pdate', 'n_expB', 'n_expC'].forEach(id => { $(id).value = ''; });
+   'n_vehicle', 'n_invoice', 'n_pdate', 'n_expB', 'n_expC', 'n_assign'].forEach(id => { if ($(id)) $(id).value = ''; });
   $('n_phoneInfo').style.display = 'none'; $('n_phoneInfo').innerHTML = '';
   newSelects();
   ensureMasters().then(newSelects);
   dealerAddToggle(false);
   document.querySelectorAll('#n_sentSeg button').forEach(b => b.classList.remove('on'));
+  newAssignFill(); if (!STF.loaded) staffLoad().then(newAssignFill);   // v13
   $('newForm').style.display = 'block'; $('newSuccess').style.display = 'none';
 }
 
@@ -1013,8 +1018,11 @@ async function ticketCreate() {
   if (!/^\d{10}$/.test(d.phone)) return toast('⚠️ Phone must be 10 digits');
   if (d.purchaseDate && d.purchaseDate > todayStr()) return toast('⚠️ Purchase date cannot be in the future');
   if (!d.batterySent) return toast('⚠️ Select whether the items have been sent');
+  const asTo = $('n_assign') ? $('n_assign').value : '';
   const r = await run(d, $('n_submit'));
   if (!r) return;
+  // v13 — assign to a Service person straight away (ticket is already saved even if this fails)
+  if (asTo) { const a = await run({ action: 'assignTicket', ticketId: r.id, empId: asTo }); if (a && a.to) toast('✅ ' + r.id + ' created → ' + a.to.name); }
   afterChange();
   $('newForm').style.display = 'none'; $('newSuccess').style.display = 'block';
   $('newId').textContent = r.id; $('newOpenBtn').dataset.id = r.id;
@@ -1055,6 +1063,7 @@ let TK = [];
 let tkFilter = 'open';
 const TK_CHIPS = [
   ['open', 'Open'], ['New', 'New'], ['In Follow-up', 'Follow-up'], ['In Transit', 'In Transit'],
+  ['mine', '👤 Mine'], ['unassigned', 'Unassigned'],
   ['repair', 'In Repair'], ['due', '📅 Follow-up Due'], ['cb', '📞 Call-back'], ['fb', '⭐ Feedback Due'], ['lowfb', '🔴 Low Feedback'],
   ['Closed', 'Closed'], ['Cancelled', 'Cancelled'], ['all', 'All']
 ];
@@ -1075,6 +1084,8 @@ function tkMatch(t, f) {
   if (f === 'fb') return isFbDue(t);
   if (f === 'lowfb') return t['Feedback Flag'] === 'Low';
   if (f === 'cb') return !!t['Open Callback'];
+  if (f === 'mine') return isMine(t) && !isEnded(s);                    // v13
+  if (f === 'unassigned') return !t['Assigned ID'] && !isEnded(s);      // v13
   return s === f;
 }
 
@@ -1128,7 +1139,7 @@ function tkKpis() {
 
 function tkRender() {
   tkKpis();
-  $('tkChips').innerHTML = TK_CHIPS.map(([k, l]) => {
+  $('tkChips').innerHTML = TK_CHIPS.filter(([k]) => k !== 'mine' || me()).map(([k, l]) => {
     const n = TK.filter(t => tkMatch(t, k)).length;
     return '<button class="chip' + (k === tkFilter ? ' active' : '') + (['due', 'fb', 'lowfb', 'cb'].indexOf(k) !== -1 && n ? ' chip-red' : '') +
       '" data-f="' + k + '" onclick="tkSetFilter(this.dataset.f)">' + l + ' <b>' + n + '</b></button>';
@@ -1147,7 +1158,7 @@ function tkRender() {
   const shown = rows.slice(0, TK_LIMIT);
   $('tkList').innerHTML = '<div class="dt-scroll"><table class="dt"><thead><tr>' +
     '<th>Ticket</th><th>Customer</th><th class="hide-md">Complaint</th><th class="hide-md">Dealer · City</th><th>Status</th>' +
-    '<th class="hide-sm">Activity</th><th class="hide-sm">Follow-up</th><th class="hide-lg">Flags</th><th class="hide-md">Created</th></tr></thead><tbody>' +
+    '<th>Assigned</th><th class="hide-sm">Activity</th><th class="hide-sm">Follow-up</th><th class="hide-lg">Flags</th><th class="hide-md">Created</th></tr></thead><tbody>' +
     shown.map(t => {
       const d = dueInfo(t), calls = parseInt(t['Total Calls'], 10) || 0, items = parseInt(t['Total Items'], 10) || 0;
       const late = d.cls || t['Feedback Flag'] === 'Low' || t['Open Callback'];
@@ -1159,6 +1170,7 @@ function tkRender() {
         '<td class="hide-md">' + tv(t['Complaint']) + '</td>' +
         '<td class="hide-md">' + tv([dealerOf(t), t['City']].filter(Boolean).join(' · ')) + '</td>' +
         '<td>' + pill(t['Status']) + (t['Outcome'] && t['Status'] === 'Closed' ? '<small class="sub">' + esc(t['Outcome']) + '</small>' : '') + '</td>' +
+        '<td>' + whoTag(t['Assigned To'], isEnded(t['Status']) ? '—' : 'Unassigned') + '</td>' +
         '<td class="hide-sm muted-c">' + ([items && items + ' item' + (items > 1 ? 's' : ''), calls && calls + ' call' + (calls > 1 ? 's' : '')].filter(Boolean).join(' · ') || '—') + '</td>' +
         '<td class="hide-sm ' + d.cls + '">' + (d.txt ? esc(d.txt) : '<span class="muted-c">—</span>') + '</td>' +
         '<td class="hide-lg"><div class="tags">' + tkFlags(t) + '</div></td>' +
@@ -1183,7 +1195,7 @@ function tkBoard(rows) {
           '<div class="kb-top"><span class="mono">' + esc(t['Ticket ID']) + '</span>' + (d.txt ? '<span class="' + d.cls + '">' + esc(d.txt) + '</span>' : '') + '</div>' +
           '<b>' + esc(t['Company Name']) + '</b>' +
           '<small>' + esc([t['Complaint'], t['City']].filter(Boolean).join(' · ') || t['Contact Person'] || '') + '</small>' +
-          '<div class="tags">' + (items ? '<span class="tag">' + items + ' item' + (items > 1 ? 's' : '') + '</span>' : '') + tkFlags(t) + '</div></div>';
+          '<div class="tags">' + whoTag(t['Assigned To']) + (items ? '<span class="tag">' + items + ' item' + (items > 1 ? 's' : '') + '</span>' : '') + tkFlags(t) + '</div></div>';
       }).join('') + (L.length > 60 ? '<div class="muted-sm">+' + (L.length - 60) + ' more — use search</div>' : '') : '<div class="kb-empty">Nothing here</div>') +
       '</section>';
   }).join('') + '</div>';
@@ -1216,12 +1228,14 @@ function tkPrevRender(fetch) {
     '<div class="pv-sub">' + esc(t['Contact Person'] || '') + (ph ? ' · <a href="tel:' + esc(ph) + '">' + esc(t['Phone']) + '</a>' : '') + '</div>' +
     '<div class="pv-act">' +
       (can('service') ? '<button class="btn btn-primary btn-sm" data-id="' + esc(t['Ticket ID']) + '" onclick="pvLogCall(this.dataset.id)">' + ico('phone') + 'Log call</button>' : '') +
+      (can('create') && !isEnded(t['Status']) ? '<button class="btn btn-ghost btn-sm" data-id="' + esc(t['Ticket ID']) + '" onclick="assignTicketOpen(this.dataset.id)">👤 ' + (t['Assigned To'] ? 'Reassign' : 'Assign') + '</button>' : '') +
       '<button class="btn btn-ghost btn-sm" data-id="' + esc(t['Ticket ID']) + '" onclick="drawerOpen(this.dataset.id)">' + ico('open') + 'Open record</button>' +
       (ph ? '<a class="btn btn-ghost btn-sm" href="tel:' + esc(ph) + '">Call</a>' : '') +
     '</div>' +
     (t['Open Callback'] ? '<div class="note note-red">Customer asked for a call back — ' + esc(t['Open Callback']) + '</div>' : '') +
     (t['Feedback Flag'] === 'Low' ? '<div class="note note-red">Low feedback — call the customer and save a call log.</div>' : '') +
     '<div class="pv-grid">' +
+      F('Assigned to', esc(t['Assigned To'] || (isEnded(t['Status']) ? '' : 'Not assigned')), t['Assigned To'] ? '' : 'due-late') +
       F('Complaint', esc(t['Complaint'])) + F('Dealer', esc(dealerOf(t))) +
       F('City', esc([t['City'], t['State']].filter(Boolean).join(', '))) + F('Vehicle', esc(t['Vehicle Model'])) +
       F('Next follow-up', esc(d.txt), d.cls) + F('Last call', esc(t['Last Call At'] ? shortDate(t['Last Call At']) + String(t['Last Call At']).substring(10, 16) : '')) +
@@ -1673,14 +1687,15 @@ function mapItem(it) {
     stageAt: it['Stage Updated At'], customer: it['Customer'] || '', category: it['Category'] || '',
     serial: it['Serial No'] || '', warranty: it['Warranty'] || '', repeat: parseInt(it['Repeat Count'], 10) || 0,
     fault: it['Fault Code'] || '', cost: it['Repair Cost'] === '' || it['Repair Cost'] == null ? '' : it['Repair Cost'],
-    result: it['Repair Result'] || '', replacementId: it['Replacement ID'] || ''
+    result: it['Repair Result'] || '', replacementId: it['Replacement ID'] || '',
+    assignedTo: it['Assigned To'] || '', assignedId: String(it['Assigned ID'] || '').toUpperCase()   // v13
   };
 }
 // "🔋 Battery · 2 Wheeler · LFP-48V"
 const itemDesc = it => typeIco(it.itemType) + ' ' + esc([it.itemType, it.category, it.model].filter(Boolean).join(' · '));
 const typeIco = t => String(t).toLowerCase().indexOf('charg') !== -1 ? '⚡' : '🔋';
 
-function openBoard() { if (!$('boardDateFilter').value) $('boardDateFilter').value = todayStr(); boardLoad(true); }
+function openBoard() { if (!$('boardDateFilter').value) $('boardDateFilter').value = todayStr(); boardLoad(true); if (!STF.loaded) staffLoad().then(boardRender); }
 
 async function boardLoad(force) {
   const c = cacheGet('board_items');
@@ -1697,7 +1712,8 @@ function boardRender() {
   const live = it => !itemDone(it.status);
   const pending = boardItems.filter(it => live(it) && !it.planned);
   const df = $('boardDateFilter').value;
-  const active = boardItems.filter(it => live(it) && it.planned && (!df || it.planDate === df));
+  const techs = staffOf('repair'), mineOn = BRD_MINE && !!me();                    // v13
+  const active = boardItems.filter(it => live(it) && it.planned && (!df || it.planDate === df) && (!mineOn || itMine(it)));
   $('pendCount').textContent = pending.length; $('repairCount').textContent = active.length;
 
   // pending list
@@ -1707,14 +1723,18 @@ function boardRender() {
     $('boardPending').innerHTML =
       '<div class="ms-list">' + pending.map(it =>
         '<label class="ms-opt"><input type="checkbox" data-id="' + esc(it.itemId) + '"' + (boardSel[it.itemId] ? ' checked' : '') + ' onchange="boardToggle(this)">' +
-        '<span><b>' + esc(it.itemId) + '</b> · ' + esc(it.customer) + ' ' + repeatTag(it.repeat) + '<br><small>' + itemDesc(it) + (it.serial ? ' · SN ' + esc(it.serial) : '') + '</small></span></label>'
+        '<span><b>' + esc(it.itemId) + '</b> · ' + esc(it.customer) + ' ' + repeatTag(it.repeat) + whoTag(it.assignedTo) + '<br><small>' + itemDesc(it) + (it.serial ? ' · SN ' + esc(it.serial) : '') + '</small></span></label>'
       ).join('') + '</div>' +
       '<div class="board-pick"><input type="date" id="boardPlanDate" value="' + todayStr() + '">' +
+      (techs.length ? '<select id="boardAssignTo" title="Technician">' + staffOptions('repair', '', 'Technician (optional)') + '</select>' : '') +
       '<button class="btn btn-primary" onclick="boardAddSelected(this)">➕ Plan (<span id="selN">' + n + '</span>)</button></div>';
   }
 
   // planned cards
-  $('boardActive').innerHTML = active.length ? active.map(it => {
+  const mineBar = me() && role() === 'repair' || techs.length ? '<div class="brd-mine vt-toggle">' +
+    '<button type="button" class="' + (mineOn ? 'on' : '') + '" onclick="brdSetMine(true)"' + (me() ? '' : ' disabled title="Pick your name to see your own work"') + '>👤 Mine</button>' +
+    '<button type="button" class="' + (mineOn ? '' : 'on') + '" onclick="brdSetMine(false)">All</button></div>' : '';
+  $('boardActive').innerHTML = mineBar + (active.length ? active.map(it => {
     const idx = STAGES.indexOf(it.status), inPlan = idx === -1, last = STAGES.length - 1;
     const pct = inPlan ? 0 : Math.round((idx + 1) / STAGES.length * 100);
     const opts = STAGES.map(s => '<option value="' + esc(s) + '"' + (s === it.status ? ' selected' : '') + '>' + esc(s) + '</option>').join('');
@@ -1723,6 +1743,8 @@ function boardRender() {
         '<button class="bc-remove" title="Move back to Pending" data-id="' + esc(it.itemId) + '" onclick="boardRemovePlan(this.dataset.id)">✕</button></div>' +
       '<div class="bc-cust">' + esc(it.customer || '—') + '</div>' +
       '<div class="bc-meta">' + itemDesc(it) + ' · 📅 ' + esc(it.planDate) + '</div>' +
+      (techs.length ? '<label class="bc-tech">🧑‍🔧 <select data-id="' + esc(it.itemId) + '" onchange="boardAssign(this.dataset.id, this.value, this)">' +
+        staffOptions('repair', it.assignedId, 'Assign technician') + '</select></label>' : whoTag(it.assignedTo)) +
       '<div class="bc-info">' + (it.serial ? '<span>SN ' + esc(it.serial) + '</span>' : '') + repeatTag(it.repeat) +
         (it.warranty ? '<span>' + esc(it.warranty) + '</span>' : '') + '</div>' +
       '<button type="button" class="bc-fault' + (it.fault ? '' : ' empty') + '" data-id="' + esc(it.itemId) + '" onclick="itemInfoOpen(this.dataset.id)">' +
@@ -1736,7 +1758,7 @@ function boardRender() {
         (inPlan ? '<option value="" selected disabled>-- Select stage --</option>' : '') + opts + '</select>' +
       (it.stageAt ? '<div class="bc-at">Updated: ' + esc(it.stageAt) + '</div>' : '') +
     '</div>';
-  }).join('') : '<div class="empty">' + (df ? 'No items planned for this date 📅' : 'No planned items') + '</div>';
+  }).join('') : '<div class="empty">' + (mineOn ? 'Nothing assigned to you' + (df ? ' for this date' : '') + ' 👍' : df ? 'No items planned for this date 📅' : 'No planned items') + '</div>');
 }
 
 /* ---- item details: fault code, repair cost, serial, warranty ---- */
@@ -1774,10 +1796,12 @@ function boardToggle(el) {
 async function boardAddSelected(btn) {
   const ids = Object.keys(boardSel).filter(k => boardSel[k]);
   if (!ids.length) return toast('⚠️ Select at least one item');
-  const planDate = $('boardPlanDate').value || todayStr();
+  const planDate = $('boardPlanDate').value || todayStr(), tech = $('boardAssignTo') ? $('boardAssignTo').value : '';
   const r = await run({ action: 'markPlanning', itemIds: JSON.stringify(ids), planDate }, btn);
   if (!r) return;
-  boardSel = {}; toast('✅ ' + r.updated + ' item(s) planned for ' + planDate);
+  // v13 — same items → technician
+  const a = tech ? await run({ action: 'assignItems', itemIds: JSON.stringify(ids), empId: tech }) : null;
+  boardSel = {}; toast('✅ ' + r.updated + ' item(s) planned for ' + planDate + (a && a.to ? ' → ' + a.to.name : ''));
   $('boardDateFilter').value = planDate; cacheDel('tickets'); cacheDel('tracker'); boardLoad(true);
 }
 
@@ -1928,6 +1952,7 @@ const MST_LISTS = [
 
 function openMasters() {
   mstRender();
+  staffLoad().then(mstRender);   // v13
   ensureMasters(true).then(mstRender);
   ensureModels().then(mstRender);
 }
@@ -1947,7 +1972,7 @@ function mstRender() {
         'onkeydown="if(event.key===\'Enter\')mstAdd(\'' + k + '\')">' +
         '<button class="btn btn-primary" id="mstBtn_' + k + '" onclick="mstAdd(\'' + k + '\')">Add</button></div>' +
     '</div>';
-  }).join('') + modelsCard();
+  }).join('') + staffCard() + modelsCard();   // v13 — Staff
 }
 
 async function mstAdd(k) {
@@ -2167,7 +2192,7 @@ function trkRender() {
   const q = ($('trkSearch').value || '').toLowerCase().trim();
   const rank = { late: 0, risk: 1, ok: 2, 'closed-late': 3, closed: 3, cancelled: 4 };
   const rows = every.filter(m => trkMatch(m, trkFilter) && (!trkStage || (!m.closed && String(m.curIdx) === trkStage)))
-    .filter(m => !q || [m.t.id, m.t.company, m.t.person, m.t.phone, m.t.brand, m.t.city, m.t.complaint].join(' ').toLowerCase().indexOf(q) !== -1)
+    .filter(m => !q || [m.t.id, m.t.company, m.t.person, m.t.phone, m.t.brand, m.t.city, m.t.complaint, m.t.assignedTo].concat((m.t.items || []).map(i => i.assignedTo)).join(' ').toLowerCase().indexOf(q) !== -1)
     .sort((a, b) => (rank[a.sla] - rank[b.sla]) || (b.created - a.created));
   $('trkList').innerHTML = rows.length ? rows.map(trkCard).join('') : '<div class="empty">' + (TRK.length ? 'No tickets here 🔍' : 'No tickets yet ✅') + '</div>';
 }
@@ -2190,6 +2215,7 @@ function trkCard(m) {
     '<div class="tr-top"><span class="tr-id">' + esc(t.id) + '</span><span class="tr-badge ' + badge[1] + '">' + badge[0] + '</span></div>' +
     '<div class="tr-co">' + esc(t.company) + ' <span>· ' + esc(t.person) + (t.brand ? ' · 🏪 ' + esc(t.brand) : '') + (t.city ? ' · 📍 ' + esc(t.city) : '') +
       (t.complaint ? ' · ⚠️ ' + esc(t.complaint) : '') + '</span></div>' +
+      trkWho(m) +
     '<div class="tr-steps">' + steps + '</div>' +
     '<div class="tr-foot">' + foot.join('') + '</div></div>';
 }
@@ -2210,6 +2236,7 @@ function trkOpen(id) {
 
   const sum = '<div class="trd-sum">' +
     '<div><span>Now</span><b>' + esc(m.nowLabel) + '</b></div>' +
+    '<div><span>Working on it</span><b>' + esc(trkWorker(m) || '—') + '</b></div>' +
     '<div><span>' + (m.closed ? 'Turnaround' : 'Age') + '</span><b>' + fmtDur(m.ageMs) + '</b></div>' +
     '<div><span>' + (m.closed ? 'Closed on' : 'Ready by') + '</span><b>' + (m.closed ? fmtDT(m.closedAt) : (m.eta ? fmtDay(m.eta) : '—')) + '</b></div></div>';
 
@@ -2222,7 +2249,7 @@ function trkOpen(id) {
     '<div class="trd-item"><div class="r1"><b>' + (/charg/i.test(it.type || '') ? '⚡ ' : '🔋 ') + esc(it.id) + '</b><span>' +
     esc([it.category, it.model].filter(Boolean).join(' · ')) + '</span></div>' +
     ((it.serial || it.fault) ? '<div class="r1"><span>' + esc([it.serial && 'SN ' + it.serial, it.fault && 'Fault: ' + it.fault].filter(Boolean).join(' · ')) + '</span>' + repeatTag(it.repeat) + '</div>' : '') +
-    '<div class="r1"><span>' + esc(it.isDisp ? 'Dispatched' : (it.status || 'Received')) + '</span><span>' + it.step + '/' + ST.length + '</span></div>' +
+    '<div class="r1"><span>' + esc(it.isDisp ? 'Dispatched' : (it.status || 'Received')) + (it.assignedTo ? ' · 🧑‍🔧 ' + esc(it.assignedTo) : '') + '</span><span>' + it.step + '/' + ST.length + '</span></div>' +
     '<div class="bar"><i style="width:' + Math.round(it.step / (ST.length || 1) * 100) + '%"></i></div></div>').join('') + '</div>' : '';
 
   const evs = [], add = (ts, title, sub, tag) => { if (ts) evs.push({ ts, title, sub, tag }); };
@@ -2235,6 +2262,8 @@ function trkOpen(id) {
     (it.events || []).forEach(e => add(tsOf(e.t), trkEvLabel(e.e), e.by ? 'by ' + e.by : '', tag));
   });
   if (m.closed) add(m.closedAt, m.cancelled ? 'Ticket cancelled' : m.solved ? 'Solved on call — closed' : 'Ticket closed', m.cancelled ? t.cancelReason : (t.outcome || ''));
+  (t.assigns || []).forEach(a => add(tsOf(a.t), (a.type === 'Item' ? 'Battery ' : 'Ticket ') + (a.to ? (a.from ? 'reassigned to ' : 'assigned to ') + a.to : 'unassigned'),   // v13
+    [a.from && 'from ' + a.from, a.by && 'by ' + a.by].filter(Boolean).join(' · '), a.type === 'Item' ? '🔋 #' + String(a.rec).split('-').pop() : ''));
   evs.sort((a, b) => a.ts - b.ts);
   const tl = '<div class="trd-h2">🧭 Full timeline</div><div class="trd-tl">' + (evs.length ? evs.map((e, i) =>
     '<div class="trd-ev"><span class="trd-dot"></span><div><div class="trd-h"><b>' + esc(e.title) + '</b><span>' + fmtDT(e.ts) + '</span></div>' +
@@ -2495,7 +2524,7 @@ function itemLine(it, tid) {
     esc([it['Category'], it['Model']].filter(Boolean).join(' · ')) +
     '<small>' + esc([it['Model Source'] === 'Other' && 'Other company: ' + it['Brand'], it['Serial No'] && 'SN ' + it['Serial No'], it['Warranty'],
       it['Condition'] && 'Arrived: ' + it['Condition'], it['Fault Code'] && 'Fault: ' + it['Fault Code']].filter(Boolean).join(' · ')) + '</small>' +
-    '<span class="im-links">' + idChip(it['Receipt ID']) + idChip(it['Dispatch ID']) + idChip(it['Replacement ID']) + '</span>' + repeatTag(it['Repeat Count']) +
+    '<span class="im-links">' + idChip(it['Receipt ID']) + idChip(it['Dispatch ID']) + idChip(it['Replacement ID']) + '</span>' + repeatTag(it['Repeat Count']) + whoTag(it['Assigned To']) +
     (it['Repair Result'] ? '<span class="tag' + (it['Repair Result'] === 'Replace' ? ' tag-violet' : it['Repair Result'] === 'Repaired' ? ' tag-green' : '') + '">' + esc(it['Repair Result']) + (it['Repair Cost'] !== '' && it['Repair Cost'] != null ? ' · ' + esc(rupee(it['Repair Cost'])) : '') + '</span>' : '') +
     '</span>' + pill(it['Item Status']) + '</div>';
 }
@@ -2625,7 +2654,9 @@ function renderTicket() {
     ['Customer', t['Customer ID'] ? lk('customer', t['Customer ID'], '', t['Company Name']) : tv(t['Company Name'])],
     ['Contact', tv([t['Contact Person'], t['Phone']].filter(Boolean).join(' · '))],
     ['Complaint', tv(t['Complaint'])],
-    ['Items', items.length ? esc(items.filter(isDisp).length + ' / ' + items.length + ' dispatched') : '—']
+    ['Items', items.length ? esc(items.filter(isDisp).length + ' / ' + items.length + ' dispatched') : '—'],
+    ['Assigned to', (t['Assigned To'] ? esc(t['Assigned To']) + ' <small class="muted-txt">' + esc(t['Assigned ID'] || '') + '</small>' : tv(open ? 'Not assigned' : '')) +
+      (can('create') && open ? ' <button type="button" class="lk" data-id="' + esc(t['Ticket ID']) + '" onclick="assignTicketOpen(this.dataset.id)">' + (t['Assigned To'] ? 'change' : 'assign') + '</button>' : '')]
   ], cu && +cu['Total Tickets'] > 1 ? '🔁 Repeat customer — ' + esc(cu['Total Tickets']) + ' tickets' : '');
   h += cancelled ? '' : stepper(t);
   if (cancelled) h += '<div class="dsec actions"><div class="note note-gray">🚫 <b>Cancelled</b> on ' + esc(t['Closed At']) + '<br>Reason: ' + esc(t['Cancel Reason'] || '—') + '</div>' +
@@ -3425,4 +3456,197 @@ function renderReplacement() {
   h += sec('♻️ Old battery', kvh([['Received', tv(x['Old Received At'])], ['Went to', tv(x['Old Outcome'])], ['Closed', tv(x['Closed At'])], ['Remarks', tv(x['Remarks'])]]));
   h += sec('🕘 History', histList(recHistory(x['Replacement ID'])));
   $('drBody').innerHTML = h;
+}
+
+/* ============================================================
+   v13 — USER-BASED WORK (backend: Staff.gs)
+   Suite login (role) → "Who are you?" → apna naam + PIN → apna portal
+   Ticket → Service staff · Repair item → Repair staff · Attendant sees everyone's work
+   Staff tab khaali ho to app pehle jaisa chalta hai
+   ============================================================ */
+const STF = { list: [], need: false, loaded: false };
+const ROLE_TXT = { attendant: 'Call Attendant', service: 'Service Team', repair: 'Repair Team', admin: 'Admin' };
+function me() { try { return JSON.parse(localStorage.getItem('hub_staff') || 'null'); } catch (e) { return null; } }
+function setMe(m) { try { if (m) localStorage.setItem('hub_staff', JSON.stringify(m)); else localStorage.removeItem('hub_staff'); } catch (e) {} }
+const staffOf = r => STF.list.filter(s => s.role === r && s.active !== false);
+const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase();
+
+async function staffLoad() {
+  try {
+    const r = await api({ action: 'getStaff' });
+    if (r && r.ok) { STF.list = r.staff || []; STF.need = !!r.need; STF.loaded = true; if (!r.me) setMe(null); return r; }
+  } catch (e) {}
+  return null;
+}
+// enterApp → pehle naam (agar is role ke staff hain), phir pehla screen
+async function staffBoot(first) {
+  const r = await staffLoad();
+  sbRoleRender();
+  if (r && r.need && !r.me) return staffPick();
+  go(first);
+}
+let SB_AV = '';
+function sbRoleRender() {
+  const R = CONFIG.ROLES[role()] || {}, m = me(), av = document.querySelector('.sb-av');
+  if (av) { if (!SB_AV) SB_AV = av.innerHTML; av.innerHTML = m ? '<span class="sb-ini">' + esc(initials(m.name)) + '</span>' : SB_AV; av.classList.toggle('is-me', !!m); }
+  $('sbRole').innerHTML = m
+    ? '<b title="' + esc(m.name) + '">' + esc(m.name) + '</b><span title="' + esc(R.label || '') + '">' + esc(m.id) + ' · <button type="button" class="sb-switch" title="Another person on this computer" onclick="staffSwitch()">Switch</button></span>'
+    : '<b>' + esc(R.label || '') + '</b><span>' + esc(localStorage.getItem('hub_user') || '') + '</span>';
+}
+// server bola "pehle naam chuno" (jsonp / apiPost hook)
+function staffNeed(msg) {
+  setMe(null);
+  if ($('staffPick') && $('staffPick').classList.contains('show')) return;
+  toast('👤 ' + (msg || 'Pick your name first'));
+  staffLoad().then(staffPick);
+}
+function staffPick() {
+  let ov = $('staffPick');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'staffPick'; ov.className = 'sp-ov'; document.body.appendChild(ov); }
+  const L = staffOf(role()), R = CONFIG.ROLES[role()] || {};
+  ov.innerHTML = '<div class="sp-box" role="dialog" aria-modal="true" aria-labelledby="spTitle">' +
+    '<div class="sp-head"><img src="../assets/logo.png" alt="Litpax" height="24"><span>' + esc(R.label || 'Service Hub') + '</span></div>' +
+    '<h2 id="spTitle">Who is working?</h2><p class="sp-sub">Pick your name, then enter your PIN.</p>' +
+    (L.length ? '<div class="sp-grid">' + L.map(s => '<button type="button" class="sp-card" data-id="' + esc(s.id) + '" onclick="staffPin(this.dataset.id)">' +
+      '<span class="sp-ini">' + esc(initials(s.name)) + '</span><b>' + esc(s.name) + '</b><small>' + esc(s.id) + '</small></button>').join('') + '</div>'
+      : '<div class="empty">No active people in this team. Ask the admin to add them in Masters → Staff.</div>') +
+    '<div id="spPin"></div></div>';
+  ov.classList.add('show');
+  const f = ov.querySelector('.sp-card'); if (f) f.focus();
+}
+function staffPin(id) {
+  const s = STF.list.find(x => x.id === id); if (!s) return;
+  document.querySelectorAll('.sp-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
+  $('spPin').innerHTML = '<div class="sp-pin"><label for="spPinIn">PIN for <b>' + esc(s.name) + '</b></label>' +
+    '<div class="sp-row"><input id="spPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" ' +
+    'onkeydown="if(event.key===\'Enter\')staffEnter(\'' + esc(id) + '\')">' +
+    '<button type="button" id="spGo" class="btn btn-primary" onclick="staffEnter(\'' + esc(id) + '\')">Enter</button></div></div>';
+  $('spPinIn').focus();
+}
+async function staffEnter(id) {
+  const pin = $('spPinIn').value.trim();
+  if (!/^\d{4,8}$/.test(pin)) return toast('⚠️ Enter your 4-8 digit PIN');
+  const r = await run({ action: 'staffLogin', empId: id, pin, dev: devName() }, $('spGo'));
+  if (!r) { $('spPinIn').value = ''; $('spPinIn').focus(); return; }
+  setMe(r.me);
+  $('staffPick').classList.remove('show');
+  sbRoleRender(); wipeMem(); afterChange();
+  tkFilter = defaultTkFilter(); BRD_MINE = role() === 'repair';
+  toast('👋 Welcome, ' + r.me.name);
+  go(CURRENT && SCREENS[CURRENT] ? CURRENT : CONFIG.ROLES[role()].nav[0]);
+}
+async function staffSwitch() {
+  await api({ action: 'staffLogout' }).catch(() => {});
+  setMe(null); wipeMem(); toggleSidebar(false);
+  await staffLoad(); sbRoleRender(); staffPick();
+}
+
+/* ---------- assign: ticket → Service · item → Repair ---------- */
+function staffOptions(r, selId, ph) {
+  return '<option value="">' + esc(ph || '— Not assigned —') + '</option>' +
+    staffOf(r).map(s => '<option value="' + esc(s.id) + '"' + (s.id === selId ? ' selected' : '') + '>' + esc(s.name + ' · ' + s.id) + '</option>').join('');
+}
+const whoTag = (name, empty) => name ? '<span class="who" title="Assigned to ' + esc(name) + '"><i>' + esc(initials(name)) + '</i><b>' + esc(name) + '</b></span>'
+  : (empty ? '<span class="who who-none">' + esc(empty) + '</span>' : '');
+
+function assignTicketOpen(id) {
+  const t = (CUR && CUR.ticket && CUR.ticket['Ticket ID'] === id) ? CUR.ticket : (TK.find(x => x['Ticket ID'] === id) || { 'Ticket ID': id });
+  if (!staffOf('service').length) return toast('⚠️ No Service staff yet — admin adds them in Masters → Staff');
+  modalOpen('👤 Assign ' + id,
+    '<div class="muted-sm" style="margin:0 0 14px">' + esc([t['Company Name'], t['Complaint']].filter(Boolean).join(' · ')) +
+      (t['Assigned To'] ? '<br>Now with <b>' + esc(t['Assigned To']) + '</b>' : '') + '</div>' +
+    '<div class="form-grid"><div class="fg full"><label>Service person</label><select id="as_to">' + staffOptions('service', String(t['Assigned ID'] || '').toUpperCase()) + '</select></div>' +
+    '<div class="fg full"><label>Note <span class="opt">(optional)</span></label><input id="as_note" maxlength="200" placeholder="e.g. customer speaks Haryanvi"></div></div>' +
+    '<button class="btn btn-primary btn-block" data-id="' + esc(id) + '" onclick="assignTicketSave(this)">Save ✓</button>');
+}
+async function assignTicketSave(btn) {
+  const id = btn.dataset.id, r = await run({ action: 'assignTicket', ticketId: id, empId: $('as_to').value, note: $('as_note').value.trim() }, btn);
+  if (!r) return;
+  modalClose();
+  toast(r.same ? 'ℹ️ No change' : (r.to ? '✅ ' + id + ' → ' + r.to.name : '✅ ' + id + ' unassigned'));
+  const t = TK.find(x => x['Ticket ID'] === id);
+  if (t && !r.same) { t['Assigned To'] = r.to ? r.to.name : ''; t['Assigned ID'] = r.to ? r.to.id : ''; }
+  afterChange();
+  if (CURRENT === 'tickets') tkRender();
+  if ($('drawer').classList.contains('open')) drawerReload();
+}
+
+/* ---------- tickets: Mine / Unassigned ---------- */
+function isMine(t) {
+  const m = me(); if (!m) return false;
+  if (role() === 'attendant') return String(t['Created By'] || '').toLowerCase() === m.name.toLowerCase();
+  return String(t['Assigned ID'] || '').toUpperCase() === m.id;
+}
+function defaultTkFilter() { return me() && role() === 'service' ? 'mine' : 'open'; }
+
+/* ---------- repair board: Mine / All ---------- */
+let BRD_MINE = role() === 'repair';
+function brdSetMine(v) { BRD_MINE = !!v; boardRender(); }
+const itMine = it => { const m = me(); return !!m && it.assignedId === m.id; };
+async function boardAssign(itemId, empId, sel) {
+  const r = await run({ action: 'assignItems', itemIds: JSON.stringify([itemId]), empId });
+  if (!r) { boardRender(); return; }
+  const it = boardItems.find(x => x.itemId === itemId);
+  if (it) { it.assignedTo = r.to ? r.to.name : ''; it.assignedId = r.to ? r.to.id : ''; }
+  cacheSet('board_items', boardItems); cacheDel('tracker'); cacheDel('tickets');
+  toast(r.to ? '✅ ' + itemId + ' → ' + r.to.name : '✅ ' + itemId + ' unassigned');
+  boardRender();
+}
+
+/* ---------- admin: Masters → Staff ---------- */
+function staffCard() {
+  if (!can('admin')) return '';
+  const L = STF.list.slice().sort((a, b) => (a.role + a.name).localeCompare(b.role + b.name));
+  return '<div class="card mst-card stf-card"><div class="card-head"><span>👥 Staff <b class="count">' + L.filter(s => s.active !== false).length + '</b></span>' +
+    '<button class="btn btn-primary btn-sm" onclick="staffEditOpen(\'\')">＋ Add person</button></div>' +
+    '<div class="mst-sub">People inside each team. After the Suite login they pick their name + PIN, and see only their own work.</div>' +
+    (L.length ? '<div class="dt-scroll"><table class="dt stf-t"><thead><tr><th>Emp ID</th><th>Name</th><th>Team</th><th>PIN</th><th>Status</th><th></th></tr></thead><tbody>' +
+      L.map(s => '<tr><td class="mono">' + esc(s.id) + '</td><td><b>' + esc(s.name) + '</b></td><td>' + esc(ROLE_TXT[s.role] || s.role) + '</td>' +
+        '<td>' + (s.hasPin ? '<span class="tag tag-green">set</span>' : '<span class="tag tag-red">not set</span>') + '</td>' +
+        '<td>' + (s.active !== false ? '<span class="tag tag-green">Active</span>' : '<span class="tag">Inactive</span>') + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" data-id="' + esc(s.id) + '" onclick="staffEditOpen(this.dataset.id)">Edit</button></td></tr>').join('') +
+      '</tbody></table></div>' : '<div class="empty sm">No staff yet — add your Service and Repair people here.</div>') + '</div>';
+}
+function staffEditOpen(id) {
+  const s = id ? STF.list.find(x => x.id === id) : null;
+  modalOpen(s ? '✏️ ' + s.name : '＋ Add person',
+    '<div class="form-grid">' +
+      fg('Emp ID', 'sf_id', 'text', s ? s.id : '', ' maxlength="20" placeholder="e.g. LTX102"' + (s ? ' disabled' : '')) +
+      fg('Name', 'sf_name', 'text', s ? s.name : '', ' maxlength="60" placeholder="Full name"') +
+      '<div class="fg"><label>Team</label><select id="sf_role">' + ['attendant', 'service', 'repair'].map(r =>
+        '<option value="' + r + '"' + (s && s.role === r ? ' selected' : '') + '>' + ROLE_TXT[r] + '</option>').join('') + '</select></div>' +
+      '<div class="fg"><label>Status</label><select id="sf_act"><option value="true">Active</option><option value="false"' + (s && s.active === false ? ' selected' : '') + '>Inactive</option></select></div>' +
+      fg(s ? 'New PIN (leave empty to keep)' : 'PIN (4-8 digits)', 'sf_pin', 'password', '', ' inputmode="numeric" maxlength="8" autocomplete="new-password"') +
+    '</div><button class="btn btn-primary btn-block" data-new="' + (s ? '' : '1') + '" onclick="staffEditSave(this)">Save ✓</button>');
+}
+async function staffEditSave(btn) {
+  const d = { action: 'saveStaff', isNew: !!btn.dataset.new, empId: $('sf_id').value.trim().toUpperCase(), name: $('sf_name').value.trim(),
+    role: $('sf_role').value, active: $('sf_act').value, pin: $('sf_pin').value.trim() };
+  if (!d.empId || !d.name) return toast('⚠️ Enter Emp ID and name');
+  if (d.pin && !/^\d{4,8}$/.test(d.pin)) return toast('⚠️ PIN must be 4-8 digits');
+  if (d.isNew && !d.pin) return toast('⚠️ Set a PIN for the new person');
+  const r = await run(d, btn); if (!r) return;
+  modalClose(); toast('✅ Saved'); await staffLoad(); mstRender();
+}
+
+// tracker: who has it right now — repair stage → technician(s), before that → service person
+function trkWorker(m) {
+  const t = m.t, techs = [...new Set((m.items || []).filter(i => !i.isDisp && i.assignedTo).map(i => i.assignedTo))];
+  if (m.closed) return '';
+  if (m.curIdx >= 4 && techs.length) return techs.join(', ');
+  return t.assignedTo || '';
+}
+function trkWho(m) {
+  if (m.closed) return '';
+  const w = trkWorker(m), t = m.t;
+  return '<div class="tr-who">' + (w ? '👤 With <b>' + esc(w) + '</b>' : '<span class="tr-noone">👤 Not assigned yet</span>') +
+    (t.assignedTo && w !== t.assignedTo ? ' <small>· Service: ' + esc(t.assignedTo) + '</small>' : '') + '</div>';
+}
+// New Ticket → "Assign to" (Service people)
+function newAssignFill() {
+  const sel = $('n_assign'), wrap = $('n_assignWrap'); if (!sel || !wrap) return;
+  const L = staffOf('service');
+  wrap.style.display = L.length ? '' : 'none';
+  const keep = sel.value;
+  sel.innerHTML = staffOptions('service', keep, '— Assign later —');
 }
