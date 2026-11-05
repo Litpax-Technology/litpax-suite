@@ -3607,22 +3607,54 @@ function staffCard() {
         '<td><button class="btn btn-ghost btn-sm" data-id="' + esc(s.id) + '" onclick="staffEditOpen(this.dataset.id)">Edit</button></td></tr>').join('') +
       '</tbody></table></div>' : '<div class="empty sm">No staff yet — add your Service and Repair people here.</div>') + '</div>';
 }
-function staffEditOpen(id) {
+// Common Employees sheet ki list (admin "Add person")
+const EMP = { list: null, err: '' };
+async function empLoad(refresh) {
+  const r = await api({ action: 'getStaff', withEmployees: 1, refresh: refresh ? 1 : '' }).catch(() => null);
+  if (r && r.ok) { STF.list = r.staff || STF.list; EMP.list = r.employees || null; EMP.err = r.empError || ''; }
+  else EMP.err = 'Could not load the employee list';
+}
+function empOptions(q) {
+  const have = {}; STF.list.forEach(s => { have[s.id] = 1; });
+  q = String(q || '').toLowerCase().trim();
+  const L = (EMP.list || []).filter(e => !have[e.id] && (!q || (e.name + ' ' + e.id + ' ' + e.dept + ' ' + e.desig).toLowerCase().indexOf(q) !== -1));
+  return '<option value="">' + (L.length ? '— Pick employee (' + L.length + ') —' : 'No match') + '</option>' +
+    L.map(e => '<option value="' + esc(e.id) + '">' + esc(e.name + ' · ' + e.id + (e.dept ? ' · ' + e.dept : '')) + '</option>').join('');
+}
+function empFilter(inp) { const sel = $('sf_emp'); if (sel) { sel.innerHTML = empOptions(inp.value); if (sel.options.length === 2) sel.selectedIndex = 1; } }
+async function empRefresh(btn) {
+  btn.disabled = true; btn.textContent = '⏳';
+  await empLoad(true);
+  btn.disabled = false; btn.textContent = '↻';
+  const box = $('sf_empBox'); if (box) box.outerHTML = empPickHtml();
+  toast(EMP.err ? '❌ ' + EMP.err : '✅ Employee list refreshed');
+}
+function empPickHtml() {
+  if (EMP.err) return '<div id="sf_empBox" class="fg full"><div class="note note-red">⚠️ ' + esc(EMP.err) + '</div></div>';
+  return '<div id="sf_empBox" class="fg full"><label for="sf_emp">Employee <span class="opt">(from Common Employees sheet)</span></label>' +
+    '<div class="emp-pick"><input id="sf_q" placeholder="Search name, Emp ID or department…" autocomplete="off" oninput="empFilter(this)">' +
+    '<button type="button" class="btn btn-ghost btn-sm" title="Reload list from the sheet" onclick="empRefresh(this)">↻</button></div>' +
+    '<select id="sf_emp" size="7" class="emp-list">' + empOptions('') + '</select></div>';
+}
+async function staffEditOpen(id) {
   const s = id ? STF.list.find(x => x.id === id) : null;
+  if (!s && !EMP.list) { modalOpen('＋ Add person', '<div class="skeleton" style="height:180px"></div>'); await empLoad(false); }
   modalOpen(s ? '✏️ ' + s.name : '＋ Add person',
     '<div class="form-grid">' +
-      fg('Emp ID', 'sf_id', 'text', s ? s.id : '', ' maxlength="20" placeholder="e.g. LTX102"' + (s ? ' disabled' : '')) +
-      fg('Name', 'sf_name', 'text', s ? s.name : '', ' maxlength="60" placeholder="Full name"') +
+      (s ? '<div class="fg full"><label>Employee</label><div class="emp-fixed"><b>' + esc(s.name) + '</b><span class="mono">' + esc(s.id) + '</span></div>' +
+           '<input type="hidden" id="sf_emp" value="' + esc(s.id) + '"></div>' : empPickHtml()) +
       '<div class="fg"><label>Team</label><select id="sf_role">' + ['attendant', 'service', 'repair'].map(r =>
         '<option value="' + r + '"' + (s && s.role === r ? ' selected' : '') + '>' + ROLE_TXT[r] + '</option>').join('') + '</select></div>' +
       '<div class="fg"><label>Status</label><select id="sf_act"><option value="true">Active</option><option value="false"' + (s && s.active === false ? ' selected' : '') + '>Inactive</option></select></div>' +
       fg(s ? 'New PIN (leave empty to keep)' : 'PIN (4-8 digits)', 'sf_pin', 'password', '', ' inputmode="numeric" maxlength="8" autocomplete="new-password"') +
     '</div><button class="btn btn-primary btn-block" data-new="' + (s ? '' : '1') + '" onclick="staffEditSave(this)">Save ✓</button>');
+  if (!s && $('sf_q')) $('sf_q').focus();
 }
 async function staffEditSave(btn) {
-  const d = { action: 'saveStaff', isNew: !!btn.dataset.new, empId: $('sf_id').value.trim().toUpperCase(), name: $('sf_name').value.trim(),
+  const d = { action: 'saveStaff', isNew: !!btn.dataset.new, empId: ($('sf_emp') ? $('sf_emp').value : '').trim().toUpperCase(),
     role: $('sf_role').value, active: $('sf_act').value, pin: $('sf_pin').value.trim() };
-  if (!d.empId || !d.name) return toast('⚠️ Enter Emp ID and name');
+  if (!d.empId) return toast('⚠️ Pick the employee from the list');
+  const s = STF.list.find(x => x.id === d.empId); d.name = s ? s.name : '';
   if (d.pin && !/^\d{4,8}$/.test(d.pin)) return toast('⚠️ PIN must be 4-8 digits');
   if (d.isNew && !d.pin) return toast('⚠️ Set a PIN for the new person');
   const r = await run(d, btn); if (!r) return;
