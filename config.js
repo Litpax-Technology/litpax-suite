@@ -5,7 +5,7 @@
  * ============================================================= */
 window.SUITE = {
   ERP_URL:  'https://script.google.com/macros/s/AKfycbwuXMTWAnv7bdwphFzrEqyoVgjS_MwIzVTd_CQ7x5gpvBYBFl9BmI6KguWFyaigQGJk/exec',
-  IMS_URL:  'https://script.google.com/macros/s/AKfycbwqlO2HyCX-_3eK7jkyBIzKeBtDVrD0psX8r0c4hgOKx3rQlgoNl36-lOxy4ZxtmnjyeQ/exec',
+  IMS_URL:  'https://script.google.com/macros/s/AKfycbz4Z846Ca2dQSX9O-Vam9kahb8jQbYxqn7ctxM4Ip5Rlv7wBW8cJ2nAdm7X5eL2PAc2lw/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbz4n5_Cxb_JEbfMx3ycdW3RX04Cm9RTywU2wSdXR--3mMjEwVQlkLssy1LNFTL3pJa9iA/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbzrSV5REShJvCHJz8reLN3L34qojngGhChJYctVDGRk-SCv7HxfglJMJc5wAyCqCtdX/exec',
