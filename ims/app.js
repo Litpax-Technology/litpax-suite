@@ -25,6 +25,7 @@ admin:   { name: 'Admin',   homePage: 'dashboard', pages: ['dashboard','inward',
 // Suite ke andar khula ho to suite_token hota hai → Inward approval ke through jaata hai
 function suiteTok() { try { return sessionStorage.getItem('suite_token') || ''; } catch (e) { return ''; } }
 function byName(def) {
+  const st = stfMe(); if (st) return st.name;   // naam + PIN wala person
   try { const u = JSON.parse(sessionStorage.getItem('erp_user') || 'null'); if (u && u.name) return u.name; } catch (e) {}
   return sessionStorage.getItem('lpx_name') || def || '';
 }
@@ -125,6 +126,7 @@ function showApp() {
   applyRoleUI();
   const role = ROLES[_currentRole];
   showPage(role ? role.homePage : 'dashboard');
+  staffBoot();   // team ke log hain to "Who is working?"
 }
 
 function applyRoleUI() {
@@ -157,6 +159,7 @@ function applyRoleUI() {
 }
 
 function logout() {
+  sessionStorage.removeItem('ims_staff');
   sessionStorage.removeItem('lpx_role');
   sessionStorage.removeItem('lpx_name');
   _currentRole = null; _selectedRole = null;
@@ -281,6 +284,7 @@ async function api(action, body) {
   let _tk = '';
   try { _tk = sessionStorage.getItem('ims_token') || sessionStorage.getItem('suite_token') || ''; } catch (e) {}
   if (body && _tk && !body.token) body = { ...body, token: _tk };
+  const _st = stfMe(); if (body && _st && !body.staffToken) body = { ...body, staffToken: _st.token };   // ImsStaff
   const maxAttempts = isWrite ? 1 : 3;   // write = koi retry nahi (duplicate se bachaav)
   if (isWrite && body && !body.reqId) body = { ...body, reqId: newReqId() };
 
@@ -306,6 +310,7 @@ async function api(action, body) {
           throw new Error('__retry__');            // 404 / HTML aaya — retry
         }
         const d = JSON.parse(text);
+        if (d.needStaff) { staffNeed(d.error); throw new Error(d.error); }   // naam + PIN chahiye
         if (d.error) throw new Error(d.error);       // asli business error — turant fail
         setDot('ok', 'Connected');
         return d;
@@ -493,6 +498,7 @@ function openInwardModal() {
   document.getElementById('in-supplier').value = '';
   document.getElementById('in-invoice').value = '';
   document.getElementById('in-by').value = byName('Store');
+  handledFill('in-handled');
   document.getElementById('in-remarks').value = '';
   document.getElementById('in-stock-info').style.display = 'none';
   resetInPhotos();
@@ -629,6 +635,7 @@ async function saveInward() {
       const r = await api('suiteSubmitInward', {
         token: suiteTok(), item: itemName, qty, poId: _inLine.poId, supplier: _inLine.supplier || '',
         invoice: invoiceVal, photos: photoIds.join(','), remarks: document.getElementById('in-remarks').value,
+        handledBy: document.getElementById('in-handled').value,
       });
       toast(`Sent for approval ✓ (${r.id || ''}). Purchase will approve it in SOMS.`, 'ok');
       closeM('inward-modal');
@@ -644,6 +651,7 @@ async function saveInward() {
       by:       document.getElementById('in-by').value || byName('Store'),
       remarks:  document.getElementById('in-remarks').value,
       photos:   photoIds.join(','),
+      handledBy: document.getElementById('in-handled').value,
     });
     toast('Inward saved ✓', 'ok');
     closeM('inward-modal');
@@ -812,6 +820,7 @@ function openOutwardModal() {
   document.getElementById('out-dept').value = '';
   document.getElementById('out-issuedto').value = '';
   document.getElementById('out-by').value = byName('Store');
+  handledFill('out-handled');
   document.getElementById('out-remarks').value = '';
   document.getElementById('out-stock-info').style.display = 'none';
   document.getElementById('outward-modal').classList.add('open');
@@ -871,6 +880,7 @@ async function saveOutward() {
       issuedTo: document.getElementById('out-issuedto').value,
       by:       document.getElementById('out-by').value || byName('Store'),
       remarks:  document.getElementById('out-remarks').value,
+      handledBy: document.getElementById('out-handled').value,
     });
     toast('Outward saved ✓', 'ok');
     closeM('outward-modal');
@@ -3825,4 +3835,171 @@ function printLedger() {
   </body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 400);
+}
+
+// ============================================================
+// STAFF — naam + PIN (backend: ImsStaff.gs) · "Material Handled By" · Work Log
+// Store login → "Who is working?" (System Incharge team) → har entry us person ke Emp ID se
+// Staff tab khaali ho to IMS pehle jaisa
+// ============================================================
+const STF = { list: [], emp: null, empErr: '', role: '' };
+function stfMe() { try { return JSON.parse(sessionStorage.getItem('ims_staff') || 'null'); } catch (e) { return null; } }
+function stfSet(m) { try { if (m) sessionStorage.setItem('ims_staff', JSON.stringify(m)); else sessionStorage.removeItem('ims_staff'); } catch (e) {} }
+const stfIni = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase();
+const stfEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function stfLoad(withEmp, refresh) {
+  const r = await api('getStaff', { withEmployees: withEmp ? 1 : '', refresh: refresh ? 1 : '' });
+  STF.list = r.staff || []; STF.role = r.role || '';
+  if (withEmp) { STF.emp = r.employees || null; STF.empErr = r.empError || (r.employees ? '' : 'Employee list did not come from the server — deploy a new version of the IMS script'); }
+  return r;
+}
+async function staffBoot() {
+  let r = null;
+  try { r = await stfLoad(true); } catch (e) { stfFoot(); return; }     // purana server → pehle jaisa
+  if (!r.me) stfSet(null);
+  stfFoot();
+  if (r.need && !r.me) staffPick();
+}
+function stfFoot() {
+  const el = document.getElementById('stf-me'); if (!el) return;
+  const m = stfMe();
+  if (m) {
+    el.innerHTML = `<span class="stf-av">${stfEsc(stfIni(m.name))}</span><span class="stf-who"><b>${stfEsc(m.name)}</b><small>${stfEsc(m.team || '')} · ${stfEsc(m.id)}</small></span>
+      <button type="button" onclick="staffSwitch()">Switch</button>`;
+    el.style.display = 'flex';
+  } else if (_currentRole === 'admin') {
+    el.innerHTML = `<button type="button" class="stf-admin" onclick="staffAdminOpen()">👥 Staff &amp; PINs</button>`;
+    el.style.display = 'flex';
+  } else el.style.display = 'none';
+  const rl = document.getElementById('logout-role-label');
+  if (rl && m) rl.textContent = m.name;
+}
+function staffNeed(msg) {
+  stfSet(null); stfFoot();
+  if (document.querySelector('#stfPick.show')) return;
+  toast(msg || 'Pick your name first', 'err');
+  stfLoad(false).then(staffPick).catch(() => {});
+}
+function stfOverlay(id) {
+  let ov = document.getElementById(id);
+  if (!ov) { ov = document.createElement('div'); ov.id = id; ov.className = 'stf-ov'; document.body.appendChild(ov); }
+  return ov;
+}
+function staffPick() {
+  const ov = stfOverlay('stfPick'), L = STF.list.filter(s => s.active !== false);
+  ov.innerHTML = `<div class="stf-box" role="dialog" aria-modal="true" aria-labelledby="stfT">
+    <div class="stf-head"><span>Litpax IMS</span><span>${stfEsc((L[0] && L[0].team) || 'Store')}</span></div>
+    <h2 id="stfT">Who is working?</h2><p class="stf-sub">Pick your name, then enter your PIN.</p>
+    ${L.length ? `<div class="stf-grid">${L.map(s => `<button type="button" class="stf-card" data-id="${stfEsc(s.id)}" onclick="staffPin(this.dataset.id)">
+      <span class="stf-ini">${stfEsc(stfIni(s.name))}</span><b>${stfEsc(s.name)}</b><small>${stfEsc(s.id)}</small></button>`).join('')}</div>`
+      : '<p class="stf-sub">No active people in this team. Ask the admin.</p>'}
+    <div id="stfPin"></div></div>`;
+  ov.classList.add('show');
+  const f = ov.querySelector('.stf-card'); if (f) f.focus();
+}
+function staffPin(id) {
+  const s = STF.list.find(x => x.id === id); if (!s) return;
+  document.querySelectorAll('.stf-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
+  document.getElementById('stfPin').innerHTML = `<div class="stf-pin"><label for="stfPinIn">PIN for <b>${stfEsc(s.name)}</b></label>
+    <div class="stf-row"><input id="stfPinIn" class="inp" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••"
+      onkeydown="if(event.key==='Enter')staffEnter('${stfEsc(id)}')">
+    <button type="button" id="stfGo" class="btn bgn" onclick="staffEnter('${stfEsc(id)}')">Enter</button></div></div>`;
+  document.getElementById('stfPinIn').focus();
+}
+async function staffEnter(id) {
+  const inp = document.getElementById('stfPinIn'), pin = inp.value.trim();
+  if (!/^\d{4,8}$/.test(pin)) { toast('Enter your 4-8 digit PIN', 'err'); return; }
+  const btn = document.getElementById('stfGo'); btn.disabled = true; btn.textContent = '…';
+  try {
+    const r = await api('staffLogin', { empId: id, pin });
+    stfSet({ id: r.me.id, name: r.me.name, team: r.me.team, token: r.staffToken });
+    document.getElementById('stfPick').classList.remove('show');
+    stfFoot(); toast('Welcome, ' + r.me.name, 'ok');
+  } catch (e) { toast(e.message, 'err'); inp.value = ''; inp.focus(); }
+  finally { btn.disabled = false; btn.textContent = 'Enter'; }
+}
+async function staffSwitch() {
+  stfSet(null); stfFoot();
+  try { await stfLoad(false); } catch (e) {}
+  staffPick();
+}
+
+// ---- Inward / Outward: "Material Handled By" (common sheet) ----
+function handledFill(id) {
+  const sel = document.getElementById(id); if (!sel) return;
+  const by = document.getElementById(id.replace('-handled', '-by'));
+  if (by) { by.readOnly = !!stfMe(); by.title = stfMe() ? 'Saved under the person who entered the PIN' : ''; }
+  const fill = () => {
+    const L = STF.emp || [];
+    sel.innerHTML = '<option value="">' + (L.length ? '— Select person —' : 'Loading…') + '</option>' +
+      L.map(e => `<option value="${stfEsc(e.id)}">${stfEsc(e.name + ' · ' + e.id + (e.dept ? ' · ' + e.dept : ''))}</option>`).join('');
+  };
+  fill();
+  if (!STF.emp) stfLoad(true).then(fill).catch(() => { sel.innerHTML = '<option value="">— (list not available) —</option>'; });
+}
+
+// ---- Admin: Staff & PINs ----
+async function staffAdminOpen() {
+  const ov = stfOverlay('stfAdmin');
+  ov.innerHTML = '<div class="stf-box stf-wide"><p class="stf-sub">Loading…</p></div>'; ov.classList.add('show');
+  try { await stfLoad(true); } catch (e) { toast(e.message, 'err'); }
+  staffAdminRender();
+}
+function staffAdminRender() {
+  const ov = document.getElementById('stfAdmin'), L = STF.list.slice().sort((a, b) => a.name.localeCompare(b.name));
+  ov.innerHTML = `<div class="stf-box stf-wide" role="dialog" aria-modal="true">
+    <div class="stf-top"><h2>Staff &amp; PINs</h2><button type="button" class="btn bg" onclick="document.getElementById('stfAdmin').classList.remove('show')">Close</button></div>
+    <p class="stf-sub">People who make IMS entries (System Incharge). After the Store login they pick their name + PIN; every entry goes to the Work Log with their Emp ID.</p>
+    ${L.length ? `<div class="stf-tw"><table class="stf-t"><thead><tr><th>Emp ID</th><th>Name</th><th>Team</th><th>PIN</th><th>Status</th><th></th></tr></thead><tbody>
+      ${L.map(s => `<tr><td>${stfEsc(s.id)}</td><td><b>${stfEsc(s.name)}</b></td><td>${stfEsc(s.team)}</td>
+        <td>${s.hasPin ? '<span class="stf-tag ok">set</span>' : '<span class="stf-tag bad">not set</span>'}</td>
+        <td>${s.active !== false ? '<span class="stf-tag ok">Active</span>' : '<span class="stf-tag">Inactive</span>'}</td>
+        <td><button type="button" class="btn bg" data-id="${stfEsc(s.id)}" onclick="staffEdit(this.dataset.id)">Edit</button></td></tr>`).join('')}
+      </tbody></table></div>` : '<p class="stf-sub"><b>No staff yet.</b></p>'}
+    <div id="stfForm"></div>
+    <div class="stf-actions"><button type="button" class="btn bgn" onclick="staffEdit('')">+ Add person</button></div></div>`;
+}
+function stfEmpOptions(q) {
+  const have = {}; STF.list.forEach(s => { have[s.id] = 1; });
+  q = String(q || '').toLowerCase().trim();
+  const L = (STF.emp || []).filter(e => !have[e.id] && (!q || (e.name + ' ' + e.id + ' ' + e.dept + ' ' + e.desig).toLowerCase().includes(q)));
+  return `<option value="">${L.length ? '— Pick employee (' + L.length + ') —' : 'No match'}</option>` +
+    L.map(e => `<option value="${stfEsc(e.id)}">${stfEsc(e.name + ' · ' + e.id + (e.dept ? ' · ' + e.dept : ''))}</option>`).join('');
+}
+function stfEmpFilter(inp) { const sel = document.getElementById('sfEmp'); if (sel) { sel.innerHTML = stfEmpOptions(inp.value); if (sel.options.length === 2) sel.selectedIndex = 1; } }
+async function stfEmpRefresh(btn) {
+  btn.disabled = true; btn.textContent = '…';
+  try { await stfLoad(true, true); } catch (e) {}
+  btn.disabled = false; btn.textContent = '↻';
+  const sel = document.getElementById('sfEmp'); if (sel) sel.innerHTML = stfEmpOptions(document.getElementById('sfQ').value);
+  toast(STF.empErr || 'Employee list refreshed', STF.empErr ? 'err' : 'ok');
+}
+function staffEdit(id) {
+  const s = id ? STF.list.find(x => x.id === id) : null;
+  document.getElementById('stfForm').innerHTML = `<div class="stf-form"><h3>${s ? 'Edit ' + stfEsc(s.name) : 'Add person'}</h3>
+    ${s ? `<div class="stf-fixed"><b>${stfEsc(s.name)}</b><span>${stfEsc(s.id)}</span></div><input type="hidden" id="sfEmp" value="${stfEsc(s.id)}">`
+        : STF.empErr ? `<div class="stf-err">⚠️ ${stfEsc(STF.empErr)}</div>`
+        : `<label class="inp-label">Employee (from Common Employees sheet)</label>
+           <div class="stf-row"><input id="sfQ" class="inp" placeholder="Search name, Emp ID or department…" autocomplete="off" oninput="stfEmpFilter(this)">
+           <button type="button" class="btn bg" title="Reload list from the sheet" onclick="stfEmpRefresh(this)">↻</button></div>
+           <select id="sfEmp" class="inp stf-list" size="6">${stfEmpOptions('')}</select>`}
+    <div class="stf-grid2">
+      <div><label class="inp-label">Team</label><select id="sfTeam" class="inp"><option>System Incharge</option></select></div>
+      <div><label class="inp-label">Status</label><select id="sfAct" class="inp"><option value="true">Active</option><option value="false"${s && s.active === false ? ' selected' : ''}>Inactive</option></select></div>
+      <div><label class="inp-label">${s ? 'New PIN (leave empty to keep)' : 'PIN (4-8 digits)'}</label><input id="sfPin" class="inp" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
+    </div>
+    <div class="stf-actions"><button type="button" class="btn bg" onclick="document.getElementById('stfForm').innerHTML=''">Cancel</button>
+      <button type="button" class="btn bgn" id="sfSave" data-new="${s ? '' : '1'}" onclick="staffSave(this)">Save</button></div></div>`;
+  const q = document.getElementById('sfQ'); if (q) q.focus();
+}
+async function staffSave(btn) {
+  const d = { isNew: btn.dataset.new ? 'true' : 'false', empId: (document.getElementById('sfEmp') || {}).value || '',
+    team: document.getElementById('sfTeam').value, active: document.getElementById('sfAct').value, pin: document.getElementById('sfPin').value.trim() };
+  if (!d.empId) { toast('Pick the employee from the list', 'err'); return; }
+  if (d.pin && !/^\d{4,8}$/.test(d.pin)) { toast('PIN must be 4-8 digits', 'err'); return; }
+  if (d.isNew === 'true' && !d.pin) { toast('Set a PIN for the new person', 'err'); return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try { await api('saveStaff', d); toast('Saved', 'ok'); await stfLoad(true); staffAdminRender(); }
+  catch (e) { toast(e.message, 'err'); btn.disabled = false; btn.textContent = 'Save'; }
 }
