@@ -11,6 +11,9 @@ if (!uStr) {
 }
 if (!uStr) window.location.href = 'index.html';
 const user = JSON.parse(uStr || '{}');
+// Staff (ErpStaff.gs): team login + naam/PIN → us person ka naam / Sales Name
+const ERP_STAFF = (() => { try { const s = JSON.parse(sessionStorage.getItem('erp_staff') || 'null'); return s && s.login === user.username ? s : null; } catch (e) { return null; } })();
+if (ERP_STAFF) { user.name = ERP_STAFF.name; user.empId = ERP_STAFF.id; if (ERP_STAFF.salesName) user.salesName = ERP_STAFF.salesName; }
 document.getElementById('userNm').textContent = user.name || 'User';
 document.getElementById('userRl').textContent = user.role || '';
 document.getElementById('userAv').textContent = (user.name || 'U')[0].toUpperCase();
@@ -346,10 +349,12 @@ function api(params, cb) {
   window[key] = function(res) {
     delete window[key];
     if (res && res.success === false && /^LOGIN:/.test(String(res.message || ''))) { toast('Session khatam — dobara login karo', 'e'); setTimeout(logout, 1500); return; }
+    if (res && res.needStaff) { erpStaffNeed(res.message); return; }   // naam + PIN chahiye
     cb(res);
   };
   const tok = erpTok();
   if (tok && !params.token) params = Object.assign({}, params, { token: tok });
+  if (ERP_STAFF && !params.staffToken) params = Object.assign({}, params, { staffToken: ERP_STAFF.token });
   const qs = Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   const s = document.createElement('script');
   s.src = `${API}?${qs}&callback=${key}`;
@@ -3840,6 +3845,7 @@ function searchAccounts() {
 }
 
 function logout() {
+  sessionStorage.removeItem('erp_staff');
   sessionStorage.removeItem('erp_user');
   localStorage.removeItem('erp_user');   // backup bhi hatao, warna dobara auto-login ho jayega
   sessionStorage.removeItem('erp_token'); localStorage.removeItem('erp_token');
@@ -5118,3 +5124,142 @@ loadOrders();
   }
 
 })();
+
+// =============================================
+// STAFF — team login → naam + PIN (backend: ErpStaff.gs)
+// sales / accountant / crm / production / dispatch → "Who is working?" → page reload with that person
+// =============================================
+const ESTF = { list: [], emp: null, empErr: '', salesNames: [] };
+const eEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const eIni = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase();
+function eApi(p) { return new Promise(res => api(p, res)); }
+
+(async function erpStaffBoot() {
+  if (user.role === 'Admin') { erpStaffAdminLoad(); return; }
+  const r = await eApi({ action: 'getStaff' });
+  if (!r || r.success === false) return;                     // purana server → pehle jaisa
+  ESTF.list = r.staff || [];
+  if (ERP_STAFF && !r.me) { sessionStorage.removeItem('erp_staff'); location.reload(); return; }
+  if (ERP_STAFF) { document.getElementById('erpSwitch').style.display = ''; document.getElementById('userRl').textContent = (r.me.team || user.role) + ' · ' + r.me.id; return; }
+  if (r.need) erpStaffPick();
+})();
+function erpStaffNeed(msg) {
+  if (document.querySelector('#erpPick.show')) return;
+  sessionStorage.removeItem('erp_staff');
+  toast(msg || 'Pick your name first', 'e');
+  eApi({ action: 'getStaff', staffToken: '' }).then(r => { ESTF.list = (r && r.staff) || []; erpStaffPick(); });
+}
+function erpOverlay(id) {
+  let ov = document.getElementById(id);
+  if (!ov) { ov = document.createElement('div'); ov.id = id; ov.className = 'erp-ov'; document.body.appendChild(ov); }
+  return ov;
+}
+function erpStaffPick() {
+  const ov = erpOverlay('erpPick'), L = ESTF.list.filter(s => s.active !== false);
+  ov.classList.add('solid');
+  ov.innerHTML = `<div class="erp-box" role="dialog" aria-modal="true" aria-labelledby="erpPickT">
+    <div class="erp-head"><span>Litpax ERP</span><span>${eEsc((L[0] && L[0].team) || user.role || '')} team</span></div>
+    <h2 id="erpPickT">Who is working?</h2><p class="erp-stf-sub">Pick your name, then enter your PIN.</p>
+    ${L.length ? `<div class="erp-grid">${L.map(s => `<button type="button" class="erp-card" data-id="${eEsc(s.id)}" onclick="erpStaffPin(this.dataset.id)">
+      <span class="erp-ini">${eEsc(eIni(s.name))}</span><b>${eEsc(s.name)}</b><small>${eEsc(s.id)}${s.salesName ? ' · ' + eEsc(s.salesName) : ''}</small></button>`).join('')}</div>`
+      : '<p class="erp-stf-sub">No active people in this team. Ask the admin.</p>'}
+    <div id="erpPin"></div>
+    <div class="erp-actions"><button type="button" class="btn" onclick="logout()">Sign out</button></div></div>`;
+  ov.classList.add('show');
+  const f = ov.querySelector('.erp-card'); if (f) f.focus();
+}
+function erpStaffPin(id) {
+  const s = ESTF.list.find(x => x.id === id); if (!s) return;
+  document.querySelectorAll('.erp-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
+  document.getElementById('erpPin').innerHTML = `<div class="erp-pin"><label for="erpPinIn">PIN for <b>${eEsc(s.name)}</b></label>
+    <div class="erp-row"><input id="erpPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••"
+      onkeydown="if(event.key==='Enter')erpStaffEnter('${eEsc(id)}')">
+    <button type="button" id="erpGo" class="btn btn-primary" onclick="erpStaffEnter('${eEsc(id)}')">Enter</button></div></div>`;
+  document.getElementById('erpPinIn').focus();
+}
+async function erpStaffEnter(id) {
+  const inp = document.getElementById('erpPinIn'), pin = inp.value.trim();
+  if (!/^\d{4,8}$/.test(pin)) { toast('Enter your 4-8 digit PIN', 'e'); return; }
+  const btn = document.getElementById('erpGo'); btn.disabled = true; btn.textContent = '…';
+  const r = await eApi({ action: 'staffLogin', empId: id, pin, staffToken: '' });
+  if (!r || r.success === false) { toast((r && r.message) || 'Could not sign in', 'e'); btn.disabled = false; btn.textContent = 'Enter'; inp.value = ''; inp.focus(); return; }
+  sessionStorage.setItem('erp_staff', JSON.stringify({ id: r.me.id, name: r.me.name, team: r.me.team, salesName: r.me.salesName || '', token: r.staffToken, login: user.username }));
+  location.reload();                                         // poora ERP us person ke naam / Sales Name se khule
+}
+function erpStaffSwitch() { sessionStorage.removeItem('erp_staff'); location.reload(); }
+
+// ---- Admin: Users page → Team Staff & PINs ----
+async function erpStaffAdminLoad(withEmp, refresh) {
+  const r = await eApi({ action: 'getStaff', withEmployees: withEmp ? 1 : '', refresh: refresh ? 1 : '' });
+  if (!r || r.success === false) { const t = document.getElementById('staffTable'); if (t) t.innerHTML = '<tr><td colspan="7">Staff list not available — deploy the new ERP script version.</td></tr>'; return; }
+  ESTF.list = r.staff || [];
+  if (withEmp) { ESTF.emp = r.employees || null; ESTF.empErr = r.empError || (r.employees ? '' : 'Employee list did not come from the server'); ESTF.salesNames = r.salesNames || []; }
+  erpStaffTable();
+}
+function erpStaffTable() {
+  const t = document.getElementById('staffTable'); if (!t) return;
+  const L = ESTF.list.slice().sort((a, b) => (a.team + a.name).localeCompare(b.team + b.name));
+  t.innerHTML = L.length ? L.map(s => `<tr><td>${eEsc(s.id)}</td><td><b>${eEsc(s.name)}</b></td><td>${eEsc(s.team)}</td><td>${eEsc(s.salesName || '—')}</td>
+    <td>${s.hasPin ? '<span class="badge b-paid">set</span>' : '<span class="badge b-delay">not set</span>'}</td>
+    <td>${s.active !== false ? '<span class="badge b-paid">Active</span>' : '<span class="badge b-pending">Inactive</span>'}</td>
+    <td><button class="btn" data-id="${eEsc(s.id)}" onclick="erpStaffEdit(this.dataset.id)">Edit</button></td></tr>`).join('')
+    : '<tr><td colspan="7">No staff yet — add your Sales, Accounts, CRM, Production and Dispatch people.</td></tr>';
+}
+function erpEmpOptions(q) {
+  const have = {}; ESTF.list.forEach(s => { have[s.id] = 1; });
+  q = String(q || '').toLowerCase().trim();
+  const L = (ESTF.emp || []).filter(e => !have[e.id] && (!q || (e.name + ' ' + e.id + ' ' + e.dept + ' ' + e.desig).toLowerCase().includes(q)));
+  return `<option value="">${L.length ? '— Pick employee (' + L.length + ') —' : 'No match'}</option>` +
+    L.map(e => `<option value="${eEsc(e.id)}">${eEsc(e.name + ' · ' + e.id + (e.dept ? ' · ' + e.dept : ''))}</option>`).join('');
+}
+function erpEmpFilter(inp) { const sel = document.getElementById('esEmp'); if (sel) { sel.innerHTML = erpEmpOptions(inp.value); if (sel.options.length === 2) sel.selectedIndex = 1; } }
+async function erpEmpRefresh(btn) {
+  btn.disabled = true; btn.textContent = '…';
+  await erpStaffAdminLoad(true, true);
+  btn.disabled = false; btn.textContent = '↻';
+  const sel = document.getElementById('esEmp'); if (sel) sel.innerHTML = erpEmpOptions((document.getElementById('esQ') || {}).value);
+  toast(ESTF.empErr || 'Employee list refreshed', ESTF.empErr ? 'e' : 's');
+}
+function erpSalesToggle() { const w = document.getElementById('esSalesWrap'); if (w) w.style.display = document.getElementById('esTeam').value === 'Sales' ? '' : 'none'; }
+async function erpStaffEdit(id) {
+  const s = id ? ESTF.list.find(x => x.id === id) : null;
+  const ov = erpOverlay('erpAdmin');
+  if (!ESTF.emp || !ESTF.salesNames.length) { ov.innerHTML = '<div class="erp-box"><p class="erp-stf-sub">Loading…</p></div>'; ov.classList.add('show'); await erpStaffAdminLoad(true); }
+  const teams = ['Sales', 'Accounts', 'CRM', 'Production', 'Dispatch'];
+  ov.innerHTML = `<div class="erp-box" role="dialog" aria-modal="true">
+    <div class="erp-top"><h2>${s ? 'Edit ' + eEsc(s.name) : 'Add person'}</h2><button type="button" class="btn" onclick="document.getElementById('erpAdmin').classList.remove('show')">Close</button></div>
+    <div class="erp-form">
+      ${s ? `<div class="erp-fixed"><b>${eEsc(s.name)}</b><span>${eEsc(s.id)}</span></div><input type="hidden" id="esEmp" value="${eEsc(s.id)}">`
+          : ESTF.empErr ? `<div class="erp-err">⚠️ ${eEsc(ESTF.empErr)}</div>`
+          : `<label>Employee (from Common Employees sheet)</label>
+             <div class="erp-row"><input id="esQ" placeholder="Search name, Emp ID or department…" autocomplete="off" oninput="erpEmpFilter(this)">
+             <button type="button" class="btn" title="Reload list from the sheet" onclick="erpEmpRefresh(this)">↻</button></div>
+             <select id="esEmp" size="6" class="erp-list">${erpEmpOptions('')}</select>`}
+      <div class="erp-grid2">
+        <div><label>Team</label><select id="esTeam" onchange="erpSalesToggle()">${teams.map(t => `<option ${s && s.team === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <div id="esSalesWrap"><label>Sales Name <small>(name used on orders)</small></label><input id="esSales" list="esSalesList" value="${eEsc(s ? s.salesName : '')}" placeholder="e.g. Vijay">
+          <datalist id="esSalesList">${ESTF.salesNames.map(n => `<option value="${eEsc(n)}">`).join('')}</datalist></div>
+        <div><label>Status</label><select id="esAct"><option value="true">Active</option><option value="false" ${s && s.active === false ? 'selected' : ''}>Inactive</option></select></div>
+        <div><label>${s ? 'New PIN (leave empty to keep)' : 'PIN (4-8 digits)'}</label><input id="esPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
+      </div>
+    </div>
+    <div class="erp-actions"><button type="button" class="btn" onclick="document.getElementById('erpAdmin').classList.remove('show')">Cancel</button>
+      <button type="button" class="btn btn-primary" id="esSave" data-new="${s ? '' : '1'}" onclick="erpStaffSave(this)">Save</button></div></div>`;
+  ov.classList.add('show');
+  erpSalesToggle();
+  const q = document.getElementById('esQ'); if (q) q.focus();
+}
+async function erpStaffSave(btn) {
+  const d = { action: 'saveStaff', isNew: btn.dataset.new ? 'true' : 'false', empId: (document.getElementById('esEmp') || {}).value || '',
+    team: document.getElementById('esTeam').value, salesName: document.getElementById('esSales').value.trim(),
+    active: document.getElementById('esAct').value, pin: document.getElementById('esPin').value.trim() };
+  if (!d.empId) { toast('Pick the employee from the list', 'e'); return; }
+  if (d.team === 'Sales' && !d.salesName) { toast('Pick the Sales Name used on orders', 'e'); return; }
+  if (d.pin && !/^\d{4,8}$/.test(d.pin)) { toast('PIN must be 4-8 digits', 'e'); return; }
+  if (d.isNew === 'true' && !d.pin) { toast('Set a PIN for the new person', 'e'); return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const r = await eApi(d);
+  if (!r || r.success === false) { toast((r && r.message) || 'Could not save', 'e'); btn.disabled = false; btn.textContent = 'Save'; return; }
+  toast('Saved', 's'); document.getElementById('erpAdmin').classList.remove('show');
+  erpStaffAdminLoad();
+}
