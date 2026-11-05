@@ -12,7 +12,7 @@ const State = {
 };
 
 /* ---------- JSONP ---------- */
-const NO_ALL = ['getAll','login','getIMSPendingPOs','addNote','setNoteStatus','inwardApprovals'];
+const NO_ALL = ['getAll','login','getIMSPendingPOs','addNote','setNoteStatus','inwardApprovals','getStaff','staffLogin','saveStaff'];
 function api(params){
   return new Promise((resolve, reject)=>{
     if(!CONFIG.API_URL || CONFIG.API_URL.indexOf('PASTE_') === 0){
@@ -24,6 +24,7 @@ function api(params){
     function cleanup(){ clearTimeout(timer); delete window[cb]; if(script.parentNode) script.parentNode.removeChild(script); }
     window[cb] = (res)=>{
       cleanup();
+      if(res && res.needStaff){ staffNeed(res.error); return reject(new Error(res.error || 'Pick your name first')); }   // SomsStaff
       if(!(res && res.ok)) return reject(new Error((res && res.error) || 'Unknown error'));
       let data = res.data;
       if(data && data.__all){ applyAll(data.__all); State._freshAt = Date.now(); data = data.result; }
@@ -127,6 +128,7 @@ async function doLogin(){
     $('#userName').textContent = u.Name;
     $('#userRole').textContent = u.Role;
     $('#userAvatar').textContent = (u.Name||'A').charAt(0).toUpperCase();
+    await staffBoot();                    // team ke log hain to pehle "Who is working?"
     await loadAll();
     if(allowedViews().includes('inward')) api({action:'inwardApprovals',status:'Pending'}).then(l=>setInwardBadge((l||[]).length)).catch(()=>{});
     applyRoleNav();
@@ -148,6 +150,7 @@ async function resumeSession(u){
   $('#userRole').textContent = u.Role;
   $('#userAvatar').textContent = (u.Name||'A').charAt(0).toUpperCase();
   try{
+    await staffBoot();                    // team ke log hain to pehle "Who is working?"
     await loadAll();
     if(allowedViews().includes('inward')) api({action:'inwardApprovals',status:'Pending'}).then(l=>setInwardBadge((l||[]).length)).catch(()=>{});
     applyRoleNav();
@@ -1182,6 +1185,7 @@ function renderMasters(){
     </div>
     <p class="masters-note">Below lists feed the dropdowns across the app. Changes save to the Config sheet instantly.</p>
     ${MASTER_GROUPS.map(masterPanel).join('')}`;
+  staffPanelMount();   // Admin → Staff (SomsStaff)
 }
 
 let itemFormCat='';
@@ -1827,3 +1831,157 @@ function init(){
   }
 }
 document.addEventListener('DOMContentLoaded', init);
+
+/* =========================================================
+ *  STAFF — user-based work (backend: SomsStaff.gs)
+ *  Suite login (Purchase / Transport) → "Who is working?" → naam + PIN
+ *  Admin → Masters → Staff. Staff tab khaali ho to SOMS pehle jaisa.
+ * ========================================================= */
+const STF = { list: [], resolve: null };
+const STF_ROLES = ['Purchase', 'Transport'];
+const ini = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase();
+function saveSession(){ try{ sessionStorage.setItem('sms_session', JSON.stringify(State.user)); }catch(e){} }
+function userChip(){
+  const u = State.user || {};
+  $('#userName').textContent = u.Name || '';
+  $('#userAvatar').textContent = ini(u.Name || 'A');
+  $('#userRole').innerHTML = esc(u.Role || '') + (u.empId ? ' · ' + esc(u.empId) + ' · <button type="button" class="stf-switch" onclick="staffSwitch()">Switch</button>' : '');
+}
+// login ke baad: naam chunna zaroori ho to tab tak ruko jab tak naam + PIN na ho jaye
+async function staffBoot(){
+  if (State.user && State.user.Role === 'Admin') return;
+  let r = null;
+  try { r = await api({ action: 'getStaff' }); } catch(e){ return; }    // purana server → pehle jaisa
+  STF.list = r.staff || [];
+  if (r.me) { userChip(); return; }
+  if (!r.need) return;
+  await new Promise(res => { STF.resolve = res; staffPick(); });
+}
+function staffNeed(msg){
+  if ($('#staffPick') && $('#staffPick').classList.contains('show')) return;
+  if (State.user && State.user.base) { State.user = State.user.base; State.token = State.user.token; saveSession(); userChip(); }
+  toast(msg || 'Pick your name first', 'error');
+  api({ action: 'getStaff' }).then(r => { STF.list = r.staff || []; staffPick(); }).catch(()=>{});
+}
+function staffPick(){
+  let ov = $('#staffPick');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'staffPick'; ov.className = 'stf-ov'; document.body.appendChild(ov); }
+  const role = State.user && State.user.Role, L = STF.list.filter(s => s.role === role);
+  ov.innerHTML = `<div class="stf-box" role="dialog" aria-modal="true" aria-labelledby="stfTitle">
+    <div class="stf-head"><span>Litpax SMS</span><span>${esc(role || '')} team</span></div>
+    <h2 id="stfTitle">Who is working?</h2><p class="stf-sub">Pick your name, then enter your PIN.</p>
+    ${L.length ? `<div class="stf-grid">${L.map(s => `<button type="button" class="stf-card" data-id="${esc(s.id)}" onclick="staffPin(this.dataset.id)">
+      <span class="stf-ini">${esc(ini(s.name))}</span><b>${esc(s.name)}</b><small>${esc(s.id)}</small></button>`).join('')}</div>`
+      : emptyState('No active people in this team', 'Ask the admin to add them in Masters → Staff')}
+    <div id="stfPin"></div></div>`;
+  ov.classList.add('show');
+  const f = ov.querySelector('.stf-card'); if (f) f.focus();
+}
+function staffPin(id){
+  const s = STF.list.find(x => x.id === id); if (!s) return;
+  $$('.stf-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
+  $('#stfPin').innerHTML = `<div class="stf-pin"><label for="stfPinIn">PIN for <b>${esc(s.name)}</b></label>
+    <div class="stf-row"><input id="stfPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••"
+      onkeydown="if(event.key==='Enter')staffEnter('${esc(id)}')">
+    <button type="button" id="stfGo" class="btn btn-primary" onclick="staffEnter('${esc(id)}')">Enter</button></div></div>`;
+  $('#stfPinIn').focus();
+}
+async function staffEnter(id){
+  const pin = $('#stfPinIn').value.trim();
+  if (!/^\d{4,8}$/.test(pin)) return toast('Enter your 4-8 digit PIN', 'error');
+  const btn = $('#stfGo'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await api({ action: 'staffLogin', empId: id, pin });
+    const base = (State.user && State.user.base) || State.user;
+    State.user = { Name: r.Name, Role: r.Role, empId: r.empId, token: r.token, base };
+    State.token = r.token; saveSession(); userChip();
+    $('#staffPick').classList.remove('show');
+    toast('Welcome, ' + r.Name, 'success');
+    if (STF.resolve) { const f = STF.resolve; STF.resolve = null; f(); }
+    else { await loadAll(true); render(); }
+  } catch(e){ toast(e.message, 'error'); $('#stfPinIn').value = ''; $('#stfPinIn').focus(); }
+  finally { if (document.body.contains(btn)) { btn.disabled = false; btn.textContent = 'Enter'; } }
+}
+async function staffSwitch(){
+  if (!State.user || !State.user.base) return;
+  State.user = State.user.base; State.token = State.user.token; saveSession(); userChip(); closeSidebar();
+  try { const r = await api({ action: 'getStaff' }); STF.list = r.staff || []; } catch(e){}
+  staffPick();
+}
+
+/* ---------- Admin → Masters → Staff ---------- */
+const EMP = { list: null, err: '' };
+async function staffAdminLoad(withEmp, refresh){
+  try {
+    const r = await api({ action: 'getStaff', withEmployees: withEmp ? 1 : '', refresh: refresh ? 1 : '' });
+    STF.list = r.staff || [];
+    if (withEmp) { EMP.list = r.employees || null; EMP.err = r.empError || (r.employees ? '' : 'Employee list did not come from the server. Apps Script → Deploy → Manage deployments → Edit → New version'); }
+  } catch(e){ if (withEmp) EMP.err = e.message; }
+}
+function staffPanelHTML(){
+  const L = STF.list.slice().sort((a, b) => (a.role + a.name).localeCompare(b.role + b.name));
+  return `<div class="panel" id="staffPanel">
+    <div class="panel-head"><h3>Staff</h3><span class="stat-hint">${L.filter(s => s.active !== false).length} active</span>
+      <div class="spacer"></div><button class="btn btn-primary btn-sm" onclick="staffEditOpen('')">+ Add person</button></div>
+    <div class="panel-body">
+      <p class="stat-hint" style="margin-bottom:12px">People inside each team. After the Suite login they pick their name + PIN; orders and receiving are saved under their name.</p>
+      ${L.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Emp ID</th><th>Name</th><th>Team</th><th>PIN</th><th>Status</th><th></th></tr></thead><tbody>
+        ${L.map(s => `<tr><td class="mono">${esc(s.id)}</td><td class="row-strong">${esc(s.name)}</td><td>${esc(s.role)}</td>
+          <td>${s.hasPin ? '<span class="badge b-green">set</span>' : '<span class="badge b-red">not set</span>'}</td>
+          <td>${s.active !== false ? '<span class="badge b-green">Active</span>' : '<span class="badge b-gray">Inactive</span>'}</td>
+          <td><button class="btn btn-light btn-sm" data-id="${esc(s.id)}" onclick="staffEditOpen(this.dataset.id)">Edit</button></td></tr>`).join('')}
+        </tbody></table></div>` : emptyState('No staff yet', 'Add your Purchase / Transport people here')}
+    </div></div>`;
+}
+function staffPanelMount(){
+  if (!State.user || State.user.Role !== 'Admin') return;
+  const root = $('#viewRoot'); if (!root) return;
+  root.insertAdjacentHTML('afterbegin', staffPanelHTML());
+  staffAdminLoad(false).then(() => { const p = $('#staffPanel'); if (p && State.view === 'masters') p.outerHTML = staffPanelHTML(); });
+}
+function empOptions(q){
+  const have = {}; STF.list.forEach(s => { have[s.id] = 1; });
+  q = String(q || '').toLowerCase().trim();
+  const L = (EMP.list || []).filter(e => !have[e.id] && (!q || (e.name + ' ' + e.id + ' ' + e.dept + ' ' + e.desig).toLowerCase().includes(q)));
+  return `<option value="">${L.length ? '— Pick employee (' + L.length + ') —' : 'No match'}</option>` +
+    L.map(e => `<option value="${esc(e.id)}">${esc(e.name + ' · ' + e.id + (e.dept ? ' · ' + e.dept : ''))}</option>`).join('');
+}
+function empFilter(inp){ const sel = $('#sfEmp'); if (sel) { sel.innerHTML = empOptions(inp.value); if (sel.options.length === 2) sel.selectedIndex = 1; } }
+function empPickHTML(){
+  if (EMP.err) return `<div id="sfEmpBox" class="field full"><div class="stf-err">⚠️ ${esc(EMP.err)}</div>
+    <button type="button" class="btn btn-light btn-sm" style="margin-top:8px" onclick="empRefresh(this)">↻ Try again</button></div>`;
+  return `<div id="sfEmpBox" class="field full"><label>Employee <span class="stat-hint">(from Common Employees sheet)</span></label>
+    <div class="stf-row"><input id="sfQ" placeholder="Search name, Emp ID or department…" autocomplete="off" oninput="empFilter(this)">
+    <button type="button" class="btn btn-light btn-sm" title="Reload list from the sheet" onclick="empRefresh(this)">↻</button></div>
+    <select id="sfEmp" size="7" class="stf-list">${empOptions('')}</select></div>`;
+}
+async function empRefresh(btn){
+  btn.disabled = true; btn.textContent = '…'; EMP.list = null; EMP.err = '';
+  await staffAdminLoad(true, true);
+  const box = $('#sfEmpBox'); if (box) box.outerHTML = empPickHTML();
+  toast(EMP.err ? EMP.err : 'Employee list refreshed', EMP.err ? 'error' : 'success');
+}
+async function staffEditOpen(id){
+  const s = id ? STF.list.find(x => x.id === id) : null;
+  if (!s && !EMP.list) { openModal('Add person', '<div class="stat-hint">Loading employees…</div>'); await staffAdminLoad(true); }
+  openModal(s ? 'Edit ' + s.name : 'Add person', `<div class="form-grid">
+      ${s ? `<div class="field full"><label>Employee</label><div class="stf-fixed"><b>${esc(s.name)}</b><span class="mono">${esc(s.id)}</span></div>
+             <input type="hidden" id="sfEmp" value="${esc(s.id)}"></div>` : empPickHTML()}
+      <div class="field"><label>Team</label><select id="sfRole">${STF_ROLES.map(r => `<option ${s && s.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
+      <div class="field"><label>Status</label><select id="sfAct"><option value="true">Active</option><option value="false" ${s && s.active === false ? 'selected' : ''}>Inactive</option></select></div>
+      <div class="field"><label>${s ? 'New PIN (leave empty to keep)' : 'PIN (4-8 digits)'}</label><input id="sfPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-light" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="sfSave" data-new="${s ? '' : '1'}" onclick="staffEditSave(this)">Save</button></div>`);
+  if (!s && $('#sfQ')) $('#sfQ').focus();
+}
+async function staffEditSave(btn){
+  const d = { action: 'saveStaff', isNew: btn.dataset.new ? 'true' : 'false', empId: ($('#sfEmp') ? $('#sfEmp').value : '').trim().toUpperCase(),
+    role: $('#sfRole').value, active: $('#sfAct').value, pin: $('#sfPin').value.trim() };
+  if (!d.empId) return toast('Pick the employee from the list', 'error');
+  if (d.pin && !/^\d{4,8}$/.test(d.pin)) return toast('PIN must be 4-8 digits', 'error');
+  if (d.isNew === 'true' && !d.pin) return toast('Set a PIN for the new person', 'error');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try { await api(d); toast('Saved', 'success'); closeModal(); await staffAdminLoad(false); const p = $('#staffPanel'); if (p) p.outerHTML = staffPanelHTML(); }
+  catch(e){ toast(e.message, 'error'); btn.disabled = false; btn.textContent = 'Save'; }
+}
