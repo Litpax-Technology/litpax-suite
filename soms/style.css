@@ -790,3 +790,31 @@ body{font-family:'Inter Tight','Inter',system-ui,sans-serif;background:#fff}
   .table-wrap{padding:0 12px 8px}
   .stat-value{font-size:34px}
 }
+
+/* ===== Staff — "Who is working?" + Masters → Staff ===== */
+.stf-ov{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(20,22,50,.45);backdrop-filter:blur(4px)}
+.stf-ov.show{display:flex}
+.stf-box{width:100%;max-width:640px;max-height:92vh;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-lg);padding:24px}
+.stf-head{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.stf-box h2{margin-top:16px;font-size:22px;letter-spacing:-.3px}
+.stf-sub{margin:4px 0 18px;color:var(--muted)}
+.stf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.stf-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;border:1px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;font:inherit;color:var(--text);transition:border-color .15s,box-shadow .15s,transform .15s}
+.stf-card:hover,.stf-card:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);transform:translateY(-1px);outline:none}
+.stf-card.on{border-color:var(--accent);background:var(--accent-soft)}
+.stf-card b{font-size:14px;text-align:center;line-height:1.25}
+.stf-card small{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stf-ini{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dark);font-weight:700;font-size:16px}
+.stf-pin{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.stf-pin label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+.stf-row{display:flex;gap:8px}
+.stf-row input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font:inherit}
+.stf-pin .stf-row input{font-size:20px;letter-spacing:6px;text-align:center}
+.stf-switch{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--accent);cursor:pointer}
+.stf-switch:hover{text-decoration:underline}
+.stf-list{width:100%;margin-top:8px;padding:4px;border:1px solid var(--border);border-radius:var(--radius-sm);font:inherit}
+.stf-list option{padding:6px 8px;border-radius:6px}
+.stf-fixed{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--sidebar-2)}
+.stf-err{padding:10px 12px;border-radius:var(--radius-sm);background:var(--red-bg);color:var(--red);font-size:13px}
+#staffPanel .panel-head .btn{margin-left:auto}
+@media (max-width:560px){.stf-box{padding:18px}.stf-grid{grid-template-columns:repeat(2,1fr)}}
