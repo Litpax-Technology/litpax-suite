@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css?v=gw1">
+<link rel="stylesheet" href="app.css?v=stf1">
 </head>
 <body>
 
@@ -33,6 +33,7 @@
       <div>
         <div class="user-nm" id="userNm">Darpan</div>
         <div class="user-rl" id="userRl">Admin</div>
+        <button type="button" class="erp-switch" id="erpSwitch" style="display:none" onclick="erpStaffSwitch()">Switch person</button>
       </div>
     </div>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -416,6 +417,12 @@
       <table><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Role</th><th>Active</th></tr></thead>
       <tbody id="usersTable"><tr><td colspan="5"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table>
     </div>
+  </div>
+  <div class="card" id="staffCard" style="margin-top:16px">
+    <div class="card-head"><div class="card-title">Team Staff &amp; PINs</div><button class="btn btn-primary" onclick="erpStaffEdit('')">+ Add person</button></div>
+    <p class="erp-stf-sub">People inside each team login (sales, accountant, crm, production, dispatch). They pick their name + PIN; every entry goes to the Work Log with their Emp ID.</p>
+    <div class="table-wrap"><table><thead><tr><th>Emp ID</th><th>Name</th><th>Team</th><th>Sales Name</th><th>PIN</th><th>Status</th><th></th></tr></thead>
+      <tbody id="staffTable"><tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table></div>
   </div>
 </div>
 
@@ -1381,7 +1388,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=3.5"></script>
+<script src="app.js?v=3.6"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
