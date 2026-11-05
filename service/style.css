@@ -1872,3 +1872,57 @@ body, .app-wrap, .main { background: #fff; }
 .drawer-head { border-bottom: 1px solid var(--border); }
 .modal { box-shadow: 0 24px 60px rgba(0,0,0,.14); }
 .toast { border-radius: 999px; background: var(--ink); }
+
+/* ============================================================
+   v13 — user-based work: "Who is working?" picker · assignee tags · Staff card
+   ============================================================ */
+.sp-ov { position: fixed; inset: 0; z-index: 400; display: none; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(15, 23, 41, .45); backdrop-filter: blur(4px); }
+.sp-ov.show { display: flex; }
+.sp-box { width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 18px;
+  border: 1px solid var(--border); box-shadow: var(--shadow-md); padding: 24px; }
+.sp-head { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+.sp-head span { margin-left: auto; }
+.sp-box h2 { margin-top: 18px; font-size: 22px; letter-spacing: -.3px; color: var(--text); }
+.sp-sub { margin: 4px 0 18px; color: var(--text2); font-size: 14px; }
+.sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.sp-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px; border: 1px solid var(--border-strong, var(--border));
+  border-radius: 14px; background: #fff; cursor: pointer; font: inherit; color: var(--text); transition: border-color .15s, box-shadow .15s, transform .15s; }
+.sp-card:hover, .sp-card:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); transform: translateY(-1px); outline: none; }
+.sp-card.on { border-color: var(--primary); background: var(--primary-soft); }
+.sp-card b { font-size: 14px; text-align: center; line-height: 1.25; }
+.sp-card small { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+.sp-ini, .sb-ini { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--primary-soft);
+  color: var(--primary-ink, var(--primary)); font-weight: 700; flex-shrink: 0; }
+.sp-ini { width: 46px; height: 46px; font-size: 16px; }
+.sp-pin { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sp-pin label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+.sp-row { display: flex; gap: 8px; }
+.sp-row input { flex: 1; min-width: 0; font-size: 20px; letter-spacing: 6px; text-align: center; }
+
+.sb-av.is-me { background: var(--primary-soft); }
+.sb-ini { width: 100%; height: 100%; font-size: 12px; background: none; }
+.sb-switch { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--primary); cursor: pointer; }
+.sb-switch:hover { text-decoration: underline; }
+
+.who { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 9px 2px 2px; border-radius: 999px;
+  background: var(--primary-soft); font-size: 12px; white-space: nowrap; vertical-align: middle; }
+.who i { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  font-style: normal; font-size: 9.5px; font-weight: 700; color: var(--primary-ink, var(--primary)); flex-shrink: 0; }
+.who b { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.who-none { padding: 2px 9px; background: #fff4e0; color: #b45309; font-weight: 600; }
+.bc-tech { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+.bc-tech select { flex: 1; min-width: 0; padding: 6px 8px; font-size: 12.5px; }
+.board-pick { flex-wrap: wrap; }
+.board-pick select { flex: 1 1 160px; min-width: 0; }
+.brd-mine { display: flex; width: max-content; margin: 0 0 12px; grid-column: 1 / -1; }
+.brd-mine button:disabled { opacity: .5; cursor: not-allowed; }
+.tr-who { margin: 2px 0 8px; font-size: 12.5px; color: var(--text2); }
+.tr-who b { color: var(--text); }
+.tr-noone { color: #b45309; font-weight: 600; }
+.stf-card { grid-column: 1 / -1; }
+.stf-t td, .stf-t th { white-space: nowrap; }
+@media (max-width: 560px) {
+  .sp-box { padding: 18px; }
+  .sp-grid { grid-template-columns: repeat(2, 1fr); }
+}
