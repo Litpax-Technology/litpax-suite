@@ -3623,14 +3623,17 @@ function empOptions(q) {
 }
 function empFilter(inp) { const sel = $('sf_emp'); if (sel) { sel.innerHTML = empOptions(inp.value); if (sel.options.length === 2) sel.selectedIndex = 1; } }
 async function empRefresh(btn) {
-  btn.disabled = true; btn.textContent = '⏳';
+  btn.disabled = true; btn.textContent = '⏳'; EMP.err = ''; EMP.list = null;
   await empLoad(true);
   btn.disabled = false; btn.textContent = '↻';
   const box = $('sf_empBox'); if (box) box.outerHTML = empPickHtml();
   toast(EMP.err ? '❌ ' + EMP.err : '✅ Employee list refreshed');
 }
 function empPickHtml() {
-  if (EMP.err) return '<div id="sf_empBox" class="fg full"><div class="note note-red">⚠️ ' + esc(EMP.err) + '</div></div>';
+  if (!EMP.err && !EMP.list) EMP.err = 'Employee list did not come from the server. In Apps Script: Deploy → Manage deployments → Edit → Version: New version → Deploy (the deployment whose URL is in config.js), then press ↻';
+  if (EMP.err) return '<div id="sf_empBox" class="fg full"><div class="note note-red">⚠️ ' + esc(EMP.err) + '</div>' +
+    '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="empRefresh(this)">↻ Try again</button></div>';
+  if (false) return '<div id="sf_empBox" class="fg full"><div class="note note-red">⚠️ ' + esc(EMP.err) + '</div></div>';
   return '<div id="sf_empBox" class="fg full"><label for="sf_emp">Employee <span class="opt">(from Common Employees sheet)</span></label>' +
     '<div class="emp-pick"><input id="sf_q" placeholder="Search name, Emp ID or department…" autocomplete="off" oninput="empFilter(this)">' +
     '<button type="button" class="btn btn-ghost btn-sm" title="Reload list from the sheet" onclick="empRefresh(this)">↻</button></div>' +
@@ -3638,7 +3641,7 @@ function empPickHtml() {
 }
 async function staffEditOpen(id) {
   const s = id ? STF.list.find(x => x.id === id) : null;
-  if (!s && !EMP.list) { modalOpen('＋ Add person', '<div class="skeleton" style="height:180px"></div>'); await empLoad(false); }
+  if (!s && !EMP.list) { modalOpen('＋ Add person', '<div class="skeleton" style="height:180px"></div>'); EMP.err = ''; await empLoad(false); }
   modalOpen(s ? '✏️ ' + s.name : '＋ Add person',
     '<div class="form-grid">' +
       (s ? '<div class="fg full"><label>Employee</label><div class="emp-fixed"><b>' + esc(s.name) + '</b><span class="mono">' + esc(s.id) + '</span></div>' +
