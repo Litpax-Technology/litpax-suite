@@ -8,7 +8,7 @@ window.SUITE = {
   IMS_URL:  'https://script.google.com/macros/s/AKfycbwqlO2HyCX-_3eK7jkyBIzKeBtDVrD0psX8r0c4hgOKx3rQlgoNl36-lOxy4ZxtmnjyeQ/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbwsfgKLzVOVJq1EpR9eiQUIwY1XKzamgeA0BVYQ30AM2lSlM9_rKvDG2FS5DkQWeyipDw/exec',
-  SERVICE_URL: 'https://script.google.com/macros/s/AKfycbzCvBIK1fTZjrQ3yPIldw2LEheUzuoSBK46oNoSrZCVUwwNYnOvb1p-JB2wflyHfffl2A/exec',
+  SERVICE_URL: 'https://script.google.com/macros/s/AKfycbzrSV5REShJvCHJz8reLN3L34qojngGhChJYctVDGRk-SCv7HxfglJMJc5wAyCqCtdX/exec',
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwBbK2Ase0S4YSdtgqZQQ3D8AsHNT3nO02ip2YeR4aNoHufSWQkZ96hVdlHdOX6RRLX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
   APP_NAME: 'Litpax Suite',
