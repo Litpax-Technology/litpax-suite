@@ -3510,7 +3510,8 @@ function staffPick() {
     (L.length ? '<div class="sp-grid">' + L.map(s => '<button type="button" class="sp-card" data-id="' + esc(s.id) + '" onclick="staffPin(this.dataset.id)">' +
       '<span class="sp-ini">' + esc(initials(s.name)) + '</span><b>' + esc(s.name) + '</b><small>' + esc(s.id) + '</small></button>').join('') + '</div>'
       : '<div class="empty">No active people in this team. Ask the admin to add them in Masters → Staff.</div>') +
-    '<div id="spPin"></div></div>';
+    '<div id="spPin"></div>' +
+    '<div style="margin-top:16px;text-align:right"><button type="button" class="btn btn-ghost" onclick="logout()">Sign out</button></div></div>';
   ov.classList.add('show');
   const f = ov.querySelector('.sp-card'); if (f) f.focus();
 }
