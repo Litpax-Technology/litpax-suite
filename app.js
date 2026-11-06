@@ -575,8 +575,10 @@
   VIEWS.settings = function () {
     var el = $('#view-settings');
     el.innerHTML = '<div class="wrap"><div class="loading">Loading settings…</div></div>';
-    Promise.all([api('ERP', 'suiteLinks'), api('ERP', 'suiteUsers')]).then(function (res) {
+    Promise.all([api('ERP', 'suiteLinks'), api('ERP', 'suiteUsers'),
+                 api('ERP', 'suiteStaff').catch(function (e) { return { success: false, err: e.message }; })]).then(function (res) {
       var L = res[0], U = res[1];
+      SET.U = U; SET.ST = res[2];
       var modeKeys = L.config.filter(function (c) { return /^MODE_/.test(c.key); });
       var other = L.config.filter(function (c) { return !/^MODE_/.test(c.key); });
       var html = '<div class="wrap">' +
@@ -596,14 +598,20 @@
           var v = (L.urls || {})[a];
           return '<tr><td><b>' + a + '</b></td><td class="mono">' + (v ? esc(v) : '<span class="chip chip-bad">Not registered</span>') + '</td></tr>';
         }).join('') + '</tbody></table></div></div>' +
-        '<div class="card"><div class="card-h"><div><div class="card-t">Users</div><div class="card-s">New users and passwords are created in Sales &amp; Orders (Users). Here, just pick each user&#39;s job and click Save.</div></div></div>' +
+        '<div class="card"><div class="card-h"><div><div class="card-t">Team logins</div><div class="card-s">' +
+          (U.central ? 'One login per team (sales, store, purchase…). People inside a team pick their own name + PIN (Staff below).'
+                     : 'Users still come from the Sales &amp; Orders sheet. Run <b>suiteCentralSetup</b> once in the ERP script to move them here.') +
+          '</div></div>' + (U.central ? '<button class="btn btn-sm btn-primary" id="userAdd">+ Add login</button>' : '') + '</div>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Job</th><th></th></tr></thead><tbody>' +
         U.users.map(function (u) {
           return '<tr><td><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.username) + '</div></td><td>' + (u.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') +
             '</td><td>' + jobsOf(u).map(function (j) { return '<span class="chip">' + esc(JOBS[j].label) + '</span>'; }).join(' ') +
             '</td><td><button class="btn btn-sm" data-edit="' + esc(u.username) + '">Edit</button></td></tr>';
-        }).join('') + '</tbody></table></div><div id="userForm"></div></div></div>';
+        }).join('') + '</tbody></table></div><div id="userForm"></div></div>' +
+        staffCard(SET.ST) + workLogCard() + '</div>';
       el.innerHTML = html;
+      staffWire(); workLogWire();
+      if ($('#userAdd')) $('#userAdd').onclick = function () { userForm(null); };
       $$('#view-settings select[data-key]').forEach(function (x) { x.onchange = function () { saveCfg(x.dataset.key, x.value, x); }; });
       $$('#view-settings [data-save]').forEach(function (b) { b.onclick = function () { var i = $('#view-settings input[data-key="' + b.dataset.save + '"]'); saveCfg(b.dataset.save, i.value, b); }; });
       $$('#view-settings [data-edit]').forEach(function (b) { b.onclick = function () { userForm(U.users.filter(function (u) { return u.username === b.dataset.edit; })[0]); }; });
@@ -659,8 +667,18 @@
     };
   }
   function userForm(u) {
-    var cur = jobsOf(u);
-    $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span></div>' +
+    var isNew = !u, central = SET.U && SET.U.central;
+    u = u || { username: '', name: '', roles: [], active: true, erpRole: '', salesName: '' };
+    var cur = isNew ? ['ErpOnly'] : jobsOf(u);
+    var ERP_ROLES = (SET.U && SET.U.erpRoles) || ['Admin', 'Sales', 'Accounts', 'CRM', 'Production', 'Dispatch', 'Viewer'];
+    var acct = !central ? '' : '<div class="grid g3" style="margin-bottom:12px">' +
+      (isNew ? '<div class="field"><label class="lbl" for="ufUser">Username</label><input id="ufUser" autocomplete="off" placeholder="e.g. crm"></div>' : '') +
+      '<div class="field"><label class="lbl" for="ufName">Name</label><input id="ufName" value="' + esc(u.name) + '" placeholder="e.g. CRM Team"></div>' +
+      '<div class="field"><label class="lbl" for="ufErp">Sales &amp; Orders role</label><select id="ufErp"><option value="">—</option>' +
+        ERP_ROLES.map(function (r) { return '<option' + (r === u.erpRole ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field"><label class="lbl" for="ufSales">Sales Name <span class="hint">(only a personal sales login)</span></label><input id="ufSales" value="' + esc(u.salesName) + '"></div>' +
+      '<div class="field"><label class="lbl" for="ufPw">' + (isNew ? 'Password' : 'New password <span class="hint">(blank = no change)</span>') + '</label><input id="ufPw" type="password" autocomplete="new-password" placeholder="6+ chars, letters + numbers"></div></div>';
+    $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + (isNew ? 'New login' : esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span>') + '</div>' + acct +
       '<div class="field"><span class="lbl">Job (pick one or more)</span><div class="grid g3">' + JOB_ORDER.map(function (k) {
         return '<label class="chip" style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;cursor:pointer"><input type="checkbox" class="ufJob" value="' + k + '"' + (cur.indexOf(k) !== -1 ? ' checked' : '') + ' style="width:auto;margin-top:2px">' +
           '<span><b>' + esc(JOBS[k].label) + '</b><br><span class="hint">' + esc(JOBS[k].hint) + '</span></span></label>';
@@ -680,12 +698,139 @@
       var btn = this, jobs = boxes.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
       if (!jobs.length) { $('#ufErr').textContent = 'Pick at least one job'; return; }
       var a = accessFor(jobs);
+      var d = { username: isNew ? ($('#ufUser').value || '').trim().toLowerCase() : u.username, active: $('#ufActive').value, imsRole: a.imsRole, somsRole: a.somsRole, pltSup: String(a.pltSup), roles: a.roles.join(',') };
+      if (central) {
+        d.isNew = String(isNew); d.name = $('#ufName').value.trim(); d.erpRole = $('#ufErp').value; d.salesName = $('#ufSales').value.trim(); d.password = $('#ufPw').value;
+        if (jobs.indexOf('Admin') !== -1 && !d.erpRole) d.erpRole = 'Admin';
+        if (isNew && !d.username) { $('#ufErr').textContent = 'Enter a username'; return; }
+      }
       busy(btn, true, 'Saving…');
-      api('ERP', 'suiteSaveUser', { username: u.username, active: $('#ufActive').value, imsRole: a.imsRole, somsRole: a.somsRole, pltSup: String(a.pltSup), roles: a.roles.join(',') })
+      api('ERP', 'suiteSaveUser', d)
         .then(function () { toast('Saved. Changes apply at the user\'s next sign-in.', 'ok'); VIEWS.settings(); })
         .catch(function (e) { $('#ufErr').textContent = e.message; busy(btn, false); });
     };
     $('#userForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  /* ---------- Staff: har insaan ek baar (Emp ID), apps me team, ek PIN — Links → Staff ---------- */
+  var SET = { U: null, ST: null };
+  var APP_TXT = { ERP: 'Sales & Orders', IMS: 'Inventory', SOMS: 'Purchase', SERVICE: 'Service Hub' };
+  var APP_ORDER = ['ERP', 'IMS', 'SOMS', 'SERVICE'];
+  function staffCard(ST) {
+    if (!ST || !ST.success) return '<div class="card"><div class="card-h"><div class="card-t">Staff</div></div><div class="card-b"><div class="notice">' +
+      esc((ST && ST.err) || 'Staff list not available') + ' — deploy the latest ERP script and run <b>suiteCentralSetup</b> once.</div></div></div>';
+    var noPin = ST.staff.filter(function (s) { return s.active && !s.hasPin; }).length;
+    return '<div class="card"><div class="card-h"><div><div class="card-t">Staff <span class="muted">(' + ST.staff.length + ')</span></div>' +
+      '<div class="card-s">Each person once, by Emp ID. Pick their team in each app and give one PIN — it works in every app.</div></div>' +
+      '<div class="row"><input id="stQ" placeholder="Search name / Emp ID" style="width:200px"><button class="btn btn-sm btn-primary" id="stAdd">+ Add person</button></div></div>' +
+      '<div class="card-b" style="padding-top:0"><div class="notice' + (ST.on ? '' : ' warn') + '" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">' +
+        '<span style="flex:1;min-width:220px">' + (ST.on
+          ? '<b>Central staff is ON</b> — every app reads names, PINs and writes the Work Log here.'
+          : '<b>Central staff is OFF</b> — apps still use their own Staff tabs. Set everyone&#39;s PIN first, then switch ON.') +
+        (noPin ? ' <span class="chip chip-warn">' + noPin + ' without PIN</span>' : '') + '</span>' +
+        '<button class="btn btn-sm" id="stToggle">' + (ST.on ? 'Switch OFF' : 'Switch ON') + '</button></div></div>' +
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Emp ID</th><th>Name</th>' + APP_ORDER.map(function (a) { return '<th>' + esc(APP_TXT[a]) + '</th>'; }).join('') +
+        '<th>PIN</th><th>Active</th><th></th></tr></thead><tbody id="stRows"></tbody></table></div><div id="staffForm"></div></div>';
+  }
+  function staffRows() {
+    var ST = SET.ST, q = (($('#stQ') || {}).value || '').trim().toLowerCase();
+    var L = ST.staff.filter(function (s) { return !q || (s.id + ' ' + s.name + ' ' + s.salesName).toLowerCase().indexOf(q) !== -1; });
+    $('#stRows').innerHTML = L.length ? L.map(function (s) {
+      return '<tr><td class="mono">' + esc(s.id) + '</td><td><b>' + esc(s.name) + '</b>' + (s.salesName ? '<div class="hint">Sales Name: ' + esc(s.salesName) + '</div>' : '') + '</td>' +
+        APP_ORDER.map(function (a) { return '<td>' + (s.teams[a] ? '<span class="chip">' + esc(s.teams[a]) + '</span>' : '<span class="muted">—</span>') + '</td>'; }).join('') +
+        '<td>' + (s.hasPin ? '<span class="chip chip-ok">Set</span>' : '<span class="chip chip-warn">Not set</span>') + '</td>' +
+        '<td>' + (s.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') + '</td>' +
+        '<td><button class="btn btn-sm" data-st="' + esc(s.id) + '">Edit</button></td></tr>';
+    }).join('') : '<tr><td colspan="9" class="muted">No staff yet — click “Add person”.</td></tr>';
+    $$('#stRows [data-st]').forEach(function (b) { b.onclick = function () { staffForm(ST.staff.filter(function (s) { return s.id === b.dataset.st; })[0]); }; });
+  }
+  function staffWire() {
+    var ST = SET.ST;
+    if (!ST || !ST.success) return;
+    staffRows();
+    $('#stQ').oninput = staffRows;
+    $('#stAdd').onclick = function () { staffForm(null); };
+    $('#stToggle').onclick = function () {
+      var btn = this, on = !ST.on;
+      if (on && !confirm('Switch central staff ON?\n\nAll 4 apps will use these names and PINs from now on. People need their NEW PIN.')) return;
+      if (!on && !confirm('Switch OFF? Apps go back to their own old Staff tabs.')) return;
+      busy(btn, true, 'Saving…');
+      api('ERP', 'suiteCentralToggle', { on: String(on) }).then(done, function (e) {
+        if (on && /no PIN yet/.test(e.message) && confirm(e.message + '\n\nThey cannot pick their name until a PIN is set. Switch ON anyway?'))
+          return api('ERP', 'suiteCentralToggle', { on: 'true', force: 'true' }).then(done);
+        throw e;
+      }).catch(function (e) { toast(e.message, 'bad'); busy(btn, false); });
+      function done() { toast('Central staff ' + (on ? 'ON' : 'OFF') + ' — apps pick it up within about 5 minutes', 'ok'); VIEWS.settings(); }
+    };
+  }
+  function staffForm(s) {
+    var ST = SET.ST, isNew = !s;
+    s = s || { id: '', name: '', teams: {}, salesName: '', active: true };
+    var emp = (ST.employees || []).filter(function (e) { return !ST.staff.some(function (x) { return x.id === e.id; }); });
+    var html = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + (isNew ? 'Add person' : esc(s.name) + ' <span class="muted mono">' + esc(s.id) + '</span>') + '</div>' +
+      (isNew ? '<div class="field" style="max-width:420px"><label class="lbl" for="sfEmp">Employee <span class="hint">(Common Employees sheet)</span></label>' +
+        (ST.empError ? '<div class="err">' + esc(ST.empError) + '</div>' : '') +
+        '<input id="sfEmp" list="sfEmpList" placeholder="Type name or Emp ID" autocomplete="off"><datalist id="sfEmpList">' +
+        emp.map(function (e) { return '<option value="' + esc(e.id + ' — ' + e.name) + '">' + esc([e.dept, e.desig].filter(Boolean).join(' · ')) + '</option>'; }).join('') + '</datalist></div>' : '') +
+      '<div class="grid g2" style="margin-top:8px">' + APP_ORDER.map(function (a) {
+        return '<div class="field"><label class="lbl" for="sfT' + a + '">' + esc(APP_TXT[a]) + ' team</label><select id="sfT' + a + '" class="sfTeam" data-app="' + a + '"><option value="">— not in this app —</option>' +
+          (ST.teams[a] || []).map(function (t) { return '<option' + (s.teams[a] === t ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div>';
+      }).join('') + '</div>' +
+      '<div class="grid g3" style="margin-top:8px">' +
+        '<div class="field" id="sfSalesBox"><label class="lbl" for="sfSales">Sales Name <span class="hint">(name on orders)</span></label><input id="sfSales" list="sfSalesList" value="' + esc(s.salesName) + '">' +
+          '<datalist id="sfSalesList">' + (ST.salesNames || []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' +
+        '<div class="field"><label class="lbl" for="sfPin">' + (isNew || !s.hasPin ? 'PIN (4-8 digits)' : 'New PIN <span class="hint">(blank = no change)</span>') + '</label><input id="sfPin" inputmode="numeric" maxlength="8" autocomplete="off"></div>' +
+        '<div class="field"><label class="lbl" for="sfActive">Active</label><select id="sfActive"><option value="true">Yes</option><option value="false"' + (s.active ? '' : ' selected') + '>No</option></select></div></div>' +
+      '<div class="row" style="margin-top:14px"><button class="btn btn-primary" id="sfSave">Save</button><button class="btn btn-ghost" id="sfCancel">Cancel</button><span class="err" id="sfErr"></span></div></div>';
+    $('#staffForm').innerHTML = html;
+    var salesToggle = function () {
+      var on = $('#sfTERP').value === 'Sales';
+      $('#sfSalesBox').style.display = on ? '' : 'none';
+    };
+    $$('.sfTeam').forEach(function (c) { c.onchange = salesToggle; });
+    salesToggle();
+    $('#sfCancel').onclick = function () { $('#staffForm').innerHTML = ''; };
+    $('#sfSave').onclick = function () {
+      var btn = this, d = { isNew: String(isNew), empId: s.id, active: $('#sfActive').value, pin: $('#sfPin').value.trim(), salesName: $('#sfSales').value.trim() };
+      if (isNew) {
+        var v = ($('#sfEmp').value || '').trim(), m = v.split(' — ')[0].trim().toUpperCase();
+        if (!(ST.employees || []).some(function (e) { return e.id === m; })) { $('#sfErr').textContent = 'Pick an employee from the list'; return; }
+        d.empId = m;
+      }
+      APP_ORDER.forEach(function (a) { d[a] = $('#sfT' + a).value; });
+      busy(btn, true, 'Saving…');
+      api('ERP', 'suiteStaffSave', d).then(function () { toast('Saved' + (d.pin ? ' — tell them the new PIN' : ''), 'ok'); VIEWS.settings(); })
+        .catch(function (e) { $('#sfErr').textContent = e.message; busy(btn, false); });
+    };
+    $('#staffForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  /* ---------- Work Log — charon apps, Emp ID wise ---------- */
+  function workLogCard() {
+    return '<div class="card"><div class="card-h"><div><div class="card-t">Work Log</div><div class="card-s">Every saved entry from all apps, with the Emp ID of who did it.</div></div>' +
+      '<div class="row" style="flex-wrap:wrap;gap:8px"><input type="date" id="wlFrom" style="width:150px"><input type="date" id="wlTo" style="width:150px"><select id="wlApp" style="width:150px"><option value="">All apps</option>' +
+      APP_ORDER.map(function (a) { return '<option value="' + a + '">' + esc(APP_TXT[a]) + '</option>'; }).join('') + '</select>' +
+      '<input id="wlEmp" placeholder="Emp ID" style="width:110px"><button class="btn btn-sm" id="wlGo">Show</button></div></div><div id="wlOut"></div></div>';
+  }
+  function workLogWire() {
+    if (!$('#wlGo')) return;
+    $('#wlFrom').value = today(); $('#wlTo').value = today();
+    $('#wlGo').onclick = function () {
+      var btn = this; busy(btn, true, 'Loading…');
+      api('ERP', 'suiteWorkLog', { from: $('#wlFrom').value, to: $('#wlTo').value, app: $('#wlApp').value, empId: $('#wlEmp').value.trim() }).then(function (r) {
+        busy(btn, false);
+        var rows = r.data || [], by = {};
+        rows.forEach(function (x) { var k = (x['Emp ID'] || '—') + '|' + (x['Name'] || ''); by[k] = (by[k] || 0) + 1; });
+        var sum = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (k) { var p = k.split('|'); return '<span class="chip">' + esc(p[1] || p[0]) + ' <b>' + by[k] + '</b></span>'; }).join(' ');
+        $('#wlOut').innerHTML = !rows.length ? '<div class="card-b muted">No entries.</div>' :
+          '<div class="card-b" style="padding-top:0">' + sum + '</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Emp ID</th><th>Name</th><th>App</th><th>Team</th><th>Action</th><th>Record</th><th>Party</th><th>Qty</th><th>Handled by</th></tr></thead><tbody>' +
+          rows.slice(0, 300).map(function (x) {
+            return '<tr><td class="mono">' + esc(String(x['Time']).slice(5, 16)) + '</td><td class="mono">' + esc(x['Emp ID']) + '</td><td>' + esc(x['Name']) + '</td><td>' + esc(APP_TXT[x['App']] || x['App']) +
+              '</td><td>' + esc(x['Team']) + '</td><td>' + esc(x['Action']) + '</td><td class="mono">' + esc(x['Record ID']) + '</td><td>' + esc(x['Party']) +
+              '</td><td>' + esc(x['Qty']) + (x['Unit'] ? ' ' + esc(x['Unit']) : '') + '</td><td>' + esc(x['Handled By']) + '</td></tr>';
+          }).join('') + '</tbody></table></div>' + (rows.length > 300 ? '<div class="card-b hint">Showing 300 of ' + rows.length + '</div>' : '');
+      }).catch(function (e) { busy(btn, false); toast(e.message, 'bad'); });
+    };
   }
 
   /* =============================================================
