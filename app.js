@@ -606,7 +606,8 @@
         U.users.map(function (u) {
           return '<tr><td><b>' + esc(u.name) + '</b><div class="hint mono">' + esc(u.username) + '</div></td><td>' + (u.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') +
             '</td><td>' + jobsOf(u).map(function (j) { return '<span class="chip">' + esc(JOBS[j].label) + '</span>'; }).join(' ') +
-            '</td><td><button class="btn btn-sm" data-edit="' + esc(u.username) + '">Edit</button></td></tr>';
+            '</td><td style="white-space:nowrap"><button class="btn btn-sm" data-edit="' + esc(u.username) + '">Edit</button>' +
+            (U.central && u.username !== S.user.username ? ' <button class="btn btn-sm" data-udel="' + esc(u.username) + '">Delete</button>' : '') + '</td></tr>';
         }).join('') + '</tbody></table></div><div id="userForm"></div></div>' +
         staffCard(SET.ST) + workLogCard() + '</div>';
       el.innerHTML = html;
@@ -615,6 +616,7 @@
       $$('#view-settings select[data-key]').forEach(function (x) { x.onchange = function () { saveCfg(x.dataset.key, x.value, x); }; });
       $$('#view-settings [data-save]').forEach(function (b) { b.onclick = function () { var i = $('#view-settings input[data-key="' + b.dataset.save + '"]'); saveCfg(b.dataset.save, i.value, b); }; });
       $$('#view-settings [data-edit]').forEach(function (b) { b.onclick = function () { userForm(U.users.filter(function (u) { return u.username === b.dataset.edit; })[0]); }; });
+            $$('#view-settings [data-udel]').forEach(function (b) { b.onclick = function () { delRow(b, { kind: 'user', username: b.dataset.udel }, 'login "' + b.dataset.udel + '"'); }; });
     }).catch(function (e) { el.innerHTML = '<div class="wrap"><div class="notice bad">' + esc(e.message) + '</div></div>'; });
   };
   function saveCfg(key, value, el) {
@@ -740,9 +742,16 @@
         APP_ORDER.map(function (a) { return '<td>' + (s.teams[a] ? '<span class="chip">' + esc(s.teams[a]) + '</span>' : '<span class="muted">—</span>') + '</td>'; }).join('') +
         '<td>' + (s.hasPin ? '<span class="chip chip-ok">Set</span>' : '<span class="chip chip-warn">Not set</span>') + '</td>' +
         '<td>' + (s.active ? '<span class="chip chip-ok">Yes</span>' : '<span class="chip chip-off">No</span>') + '</td>' +
-        '<td><button class="btn btn-sm" data-st="' + esc(s.id) + '">Edit</button></td></tr>';
+        '<td style="white-space:nowrap"><button class="btn btn-sm" data-st="' + esc(s.id) + '">Edit</button> <button class="btn btn-sm" data-sdel="' + esc(s.id) + '">Delete</button></td></tr>';
     }).join('') : '<tr><td colspan="9" class="muted">No staff yet — click “Add person”.</td></tr>';
     $$('#stRows [data-st]').forEach(function (b) { b.onclick = function () { staffForm(ST.staff.filter(function (s) { return s.id === b.dataset.st; })[0]); }; });
+        $$('#stRows [data-sdel]').forEach(function (b) { b.onclick = function () { delRow(b, { kind: 'staff', empId: b.dataset.sdel }, b.closest('tr').querySelector('b').textContent + ' (' + b.dataset.sdel + ')'); }; });
+  }
+    function delRow(btn, d, what) {
+    if (!confirm('Delete ' + what + '?\n\nThis cannot be undone. Old Work Log entries stay.')) return;
+    busy(btn, true, '…');
+    api('ERP', 'suiteDelete', d).then(function () { toast('Deleted ' + what, 'ok'); VIEWS.settings(); })
+      .catch(function (e) { toast(e.message, 'bad'); busy(btn, false); });
   }
   function staffWire() {
     var ST = SET.ST;
