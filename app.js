@@ -677,7 +677,7 @@
       '<div class="field"><label class="lbl" for="ufErp">Sales &amp; Orders role</label><select id="ufErp"><option value="">—</option>' +
         ERP_ROLES.map(function (r) { return '<option' + (r === u.erpRole ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>' +
       '<div class="field"><label class="lbl" for="ufSales">Sales Name <span class="hint">(only a personal sales login)</span></label><input id="ufSales" value="' + esc(u.salesName) + '"></div>' +
-      '<div class="field"><label class="lbl" for="ufPw">' + (isNew ? 'Password' : 'New password <span class="hint">(blank = no change)</span>') + '</label><input id="ufPw" type="password" autocomplete="new-password" placeholder="6+ chars, letters + numbers"></div></div>';
+      '<div class="field"><label class="lbl" for="ufPw">' + (isNew ? 'Password' : 'New password <span class="hint">(blank = no change)</span>') + '</label><input id="ufPw" type="password" autocomplete="new-password"></div></div>';
     $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + (isNew ? 'New login' : esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span>') + '</div>' + acct +
       '<div class="field"><span class="lbl">Job (pick one or more)</span><div class="grid g3">' + JOB_ORDER.map(function (k) {
         return '<label class="chip" style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;cursor:pointer"><input type="checkbox" class="ufJob" value="' + k + '"' + (cur.indexOf(k) !== -1 ? ' checked' : '') + ' style="width:auto;margin-top:2px">' +
@@ -779,7 +779,7 @@
       '<div class="grid g3" style="margin-top:8px">' +
         '<div class="field" id="sfSalesBox"><label class="lbl" for="sfSales">Sales Name <span class="hint">(name on orders)</span></label><input id="sfSales" list="sfSalesList" value="' + esc(s.salesName) + '">' +
           '<datalist id="sfSalesList">' + (ST.salesNames || []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' +
-        '<div class="field"><label class="lbl" for="sfPin">' + (isNew || !s.hasPin ? 'PIN (4-8 digits)' : 'New PIN <span class="hint">(blank = no change)</span>') + '</label><input id="sfPin" inputmode="numeric" maxlength="8" autocomplete="off"></div>' +
+        '<div class="field"><label class="lbl" for="sfPin">' + (isNew || !s.hasPin ? 'PIN' : 'New PIN <span class="hint">(blank = no change)</span>') + '</label><input id="sfPin" maxlength="16" autocomplete="off"></div>' +
         '<div class="field"><label class="lbl" for="sfActive">Active</label><select id="sfActive"><option value="true">Yes</option><option value="false"' + (s.active ? '' : ' selected') + '>No</option></select></div></div>' +
       '<div class="row" style="margin-top:14px"><button class="btn btn-primary" id="sfSave">Save</button><button class="btn btn-ghost" id="sfCancel">Cancel</button><span class="err" id="sfErr"></span></div></div>';
     $('#staffForm').innerHTML = html;
