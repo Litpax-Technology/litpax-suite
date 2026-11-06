@@ -1873,7 +1873,8 @@ function staffPick(){
     ${L.length ? `<div class="stf-grid">${L.map(s => `<button type="button" class="stf-card" data-id="${esc(s.id)}" onclick="staffPin(this.dataset.id)">
       <span class="stf-ini">${esc(ini(s.name))}</span><b>${esc(s.name)}</b><small>${esc(s.id)}</small></button>`).join('')}</div>`
       : emptyState('No active people in this team', 'Ask the admin to add them in Masters → Staff')}
-    <div id="stfPin"></div></div>`;
+    <div id="stfPin"></div>
+    <div style="margin-top:16px;text-align:right"><button type="button" class="btn btn-ghost" onclick="$('#logoutBtn').click()">Sign out</button></div></div>`;
   ov.classList.add('show');
   const f = ov.querySelector('.stf-card'); if (f) f.focus();
 }
