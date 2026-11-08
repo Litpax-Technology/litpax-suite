@@ -3869,7 +3869,6 @@ async function staffSso() {
     stfSet({ id: r.me.id, name: r.me.name, team: r.me.team, token: r.staffToken }); stfFoot(); return true;
   } catch (e) { return false; }
 }
-}
 function stfFoot() {
   const el = document.getElementById('stf-me'); if (!el) return;
   const m = stfMe();
