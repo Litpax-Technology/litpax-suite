@@ -992,21 +992,6 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 
 /* ---- team login: team → naam → PIN ---- */
 .tl { display: flex; flex-direction: column; gap: 14px; }
-.tl select { height: 44px; border-radius: 10px; background: #fbfbfd; }
-.tl-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; max-height: 260px; overflow: auto; }
-.tl-people:empty { display: none; }
-.tl-p { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border: 1px solid #ececf3; border-radius: 12px; background: #fff; cursor: pointer; font: inherit; color: var(--ink, #1a1d2e); transition: border-color .15s, background .15s; }
-.tl-p:hover { border-color: #c9cbd8; }
-.tl-p.on { border-color: var(--brand-red); background: #fff6f6; }
-.tl-p i { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 12.5px; background: #f1f1f6; color: var(--brand-red); }
-.tl-p b { font-size: 12.5px; font-weight: 600; text-align: center; line-height: 1.25; }
-.tl-p small { font-size: 11px; color: var(--muted); }
-.tl-back { border: 0; background: none; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; padding: 4px 0; align-self: center; }
-.tl-back:hover { color: var(--brand-red); }
-.card-logo.tl-admin, .hero-logo.tl-admin { cursor: pointer; }
-
-/* ---- team login: team → naam → PIN ---- */
-.tl { display: flex; flex-direction: column; gap: 14px; }
 /* team dropdown */
 .tl-sel select { appearance: none; -webkit-appearance: none; width: 100%; height: 48px; padding: 0 40px 0 40px; border: 1px solid #e3e4ee; border-radius: 12px; background: #fbfbfd; font: inherit; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s, box-shadow .15s, background .15s; }
 .tl-sel select:hover { border-color: #cfd1df; }
