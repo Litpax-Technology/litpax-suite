@@ -74,7 +74,7 @@
     $('#loginHello').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
     var saved = ''; try { saved = localStorage.getItem('suite_user') || ''; } catch (e) {}
     if (saved) { $('#userInput').value = saved; $('#rememberUser').checked = true; }
-    pwMode(false);
+    loginMode('pw');
     TL.teams = null; $('#adminBtn').classList.add('hidden');
     api('ERP', 'suiteLoginTeams').then(function (r) {   // CENTRAL_STAFF = ON → team / naam / PIN
       if (!r.on || !r.teams) return;
@@ -83,34 +83,72 @@
       var last = ''; try { last = localStorage.getItem('suite_team') || ''; } catch (e) {}
       $('#teamSel').innerHTML = '<option value="">Pick your team</option>' + r.teams.map(function (t) {
         return '<option value="' + esc(t.key) + '"' + (t.key === last ? ' selected' : '') + '>' + esc(t.label) + '</option>'; }).join('');
-      if ($('#loginScreen').classList.contains('hidden') || TL.admin) return;
-      teamMode(); teamPeople();
+      if ($('#loginScreen').classList.contains('hidden') || TL.mode === 'admin') return;
+      loginMode('team'); teamPeople();
     }).catch(function () {});
     setTimeout(function () { (saved ? $('#pinInput') : $('#userInput')).focus(); }, 50);
   }
 
-  /* ---------- Team login: team → naam → PIN. Admin = logo pe click → username / password ---------- */
-  var TL = { teams: null, emp: '', admin: false };
-  function teamMode() {
-    TL.admin = false;
-    $('#teamLogin').classList.remove('hidden'); $('#pwLogin').classList.add('hidden');
-    $('#loginTitle').textContent = 'Sign in to your workspace';
-    $('#teamSel').focus();
+  /* ---------- Team login: team → naam → 4 digit PIN (taala). 👑 Admin = 4 digit PIN ---------- */
+  var TL = { teams: null, emp: '', mode: 'pw' };
+  function loginMode(m) {                                  // team | admin | pw (CENTRAL_STAFF OFF → purana)
+    TL.mode = m;
+    $('#teamLogin').classList.toggle('hidden', m !== 'team');
+    $('#adminLogin').classList.toggle('hidden', m !== 'admin');
+    $('#pwLogin').classList.toggle('hidden', m !== 'pw');
+    $('#adminBtn').classList.toggle('on', m === 'admin');
+    $('#pwBack').classList.toggle('hidden', !(m === 'pw' && TL.teams));
+    $('#loginTitle').textContent = m === 'admin' ? 'Admin sign in' : 'Sign in to your workspace';
+    if (m === 'admin') { $('#adminErr').textContent = ''; LK.admin.clear(); setTimeout(LK.admin.focus, 60); }
   }
-  function pwMode(admin) {                                   // admin = sirf password (username "admin" fixed)
-    TL.admin = !!admin;
-    $('#teamLogin').classList.add('hidden'); $('#pwLogin').classList.remove('hidden');
-    $('#teamBack').classList.toggle('hidden', !admin);
-    $('#userField').classList.toggle('hidden', !!admin); $('#rememberBox').classList.toggle('hidden', !!admin);
-    $('#adminBtn').classList.toggle('on', !!admin);
-    $('#loginTitle').textContent = admin ? 'Admin sign in' : 'Sign in to your workspace';
-    if (admin) { $('#pinInput').value = ''; $('#loginError').textContent = ''; setTimeout(function () { $('#pinInput').focus(); }, 30); }
+  /* 4 digit taala: upar shackle, neeche 4 khaane. 4th digit pe onFull(pin) */
+  function makeLock(root, onFull) {
+    root.innerHTML = '<svg class="lk-shackle" viewBox="0 0 120 72" aria-hidden="true"><path d="M30 72V42a30 30 0 0 1 60 0v30"/></svg>' +
+      '<div class="lk-body"><input class="lk-in" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" aria-label="4 digit PIN">' +
+      '<span class="lk-c"><b></b></span><span class="lk-c"><b></b></span><span class="lk-c"><b></b></span><span class="lk-c"><b></b></span></div>';
+    var inp = root.querySelector('.lk-in'), cells = root.querySelectorAll('.lk-c'), shown = -1, tm;
+    function state(x) { root.setAttribute('data-state', x || ''); }
+    function paint() {
+      var v = inp.value, foc = document.activeElement === inp;
+      for (var i = 0; i < 4; i++) {
+        var c = cells[i], b = c.firstChild;
+        c.classList.toggle('fill', i < v.length);
+        c.classList.toggle('cur', foc && i === v.length && root.getAttribute('data-state') !== 'busy');
+        b.textContent = i < v.length ? (i === shown ? v[i] : '•') : '';
+      }
+    }
+    inp.addEventListener('input', function () {
+      var old = Number(root.dataset.len || 0);
+      inp.value = inp.value.replace(/\D/g, '').slice(0, 4);
+      root.dataset.len = inp.value.length;
+      state('');
+      if (inp.value.length > old) {                          // naya digit: ghoom ke aaye, phir • ban jaye
+        shown = inp.value.length - 1;
+        var c = cells[shown]; c.classList.remove('roll'); void c.offsetWidth; c.classList.add('roll');
+        clearTimeout(tm); tm = setTimeout(function () { shown = -1; paint(); }, 650);
+      }
+      paint();
+      if (inp.value.length === 4) onFull(inp.value);
+    });
+    inp.addEventListener('focus', paint); inp.addEventListener('blur', paint);
+    root.addEventListener('click', function () { if (!inp.disabled) inp.focus(); });
+    return {
+      focus: function () { inp.focus(); },
+      clear: function () { inp.disabled = false; inp.value = ''; root.dataset.len = 0; shown = -1; state(''); paint(); },
+      busy: function () { inp.disabled = true; state('busy'); paint(); },
+      ok: function () { state('ok'); paint(); },
+      error: function () {
+        inp.disabled = false; state(''); void root.offsetWidth; state('error');
+        setTimeout(function () { inp.value = ''; root.dataset.len = 0; shown = -1; paint(); inp.focus(); }, 520);
+      }
+    };
   }
+  var LK = {};
   function teamCur() { var k = $('#teamSel').value; return (TL.teams || []).filter(function (t) { return t.key === k; })[0] || null; }
   function teamPeople() {
     var t = teamCur(), box = $('#teamPeople');
     TL.emp = ''; $('#teamErr').textContent = ''; $('#teamPin').value = ''; $('#teamPin').type = 'password'; $('#teamEye').classList.remove('on');
-    $('#teamPinBox').classList.add('hidden'); $('#teamBtn').classList.add('hidden');
+    $('#teamPinBox').classList.add('hidden'); $('#teamLockBox').classList.add('hidden'); $('#teamBtn').classList.add('hidden');
     if (!t) { box.innerHTML = ''; return; }
     try { localStorage.setItem('suite_team', t.key); } catch (e) {}
     if (!t.staff.length) {                                   // is team me abhi koi staff nahi → team ka password
@@ -128,29 +166,38 @@
       b.onclick = function () {
         TL.emp = b.dataset.id;
         $$('#teamPeople .tl-p').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
-        $('#teamPinLbl').innerHTML = 'PIN for <b>' + esc(b.querySelector('b').textContent) + '</b>';
-        $('#teamPinBox').classList.remove('hidden'); $('#teamBtn').classList.remove('hidden');
-        $('#teamPin').value = ''; $('#teamErr').textContent = ''; $('#teamPin').focus();
+        $('#teamLockLbl').innerHTML = 'PIN for <b>' + esc(b.querySelector('b').textContent) + '</b>';
+        $('#teamLockBox').classList.remove('hidden'); $('#teamErr').textContent = '';
+        LK.team.clear(); LK.team.focus();
       };
     });
     if (t.staff.length === 1) box.querySelector('.tl-p').click();
   }
   function avIdx(n) { var h = 0; String(n).split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 997; }); return h % 6; }
   function ini(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase(); }
-  function teamLogin() {
-    var t = teamCur(), pin = $('#teamPin').value, btn = $('#teamBtn');
+  /* taala khula → thoda ruk ke andar */
+  function unlockThen(L, d) { L.ok(); return new Promise(function (res) { setTimeout(res, 750); }).then(function () { return loggedIn(d); }); }
+  function teamPinLogin(pin) {
+    var t = teamCur();
+    if (!t || !TL.emp) return;
+    $('#teamErr').textContent = ''; LK.team.busy();
+    api('ERP', 'suiteTeamLogin', { key: t.key, empId: TL.emp, pin: pin }).then(function (d) { return unlockThen(LK.team, d); })
+      .catch(function (e) { $('#teamErr').textContent = e.message; LK.team.error(); });
+  }
+  function teamPwLogin() {                                   // staff nahi wali team: team password
+    var t = teamCur(), pw = $('#teamPin').value, btn = $('#teamBtn');
     $('#teamErr').textContent = '';
     if (!t) { $('#teamErr').textContent = 'Pick your team'; return; }
-    if (t.staff.length && !TL.emp) { $('#teamErr').textContent = 'Pick your name'; return; }
-    if (!pin) { $('#teamErr').textContent = t.staff.length ? 'Enter your PIN' : 'Enter the team password'; return; }
+    if (!pw) { $('#teamErr').textContent = 'Enter the team password'; return; }
     busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
-    var d = t.staff.length ? { key: t.key, empId: TL.emp, pin: pin } : { key: t.key, password: pin };
-    api('ERP', 'suiteTeamLogin', d).then(loggedIn)
-      .catch(function (e) {
-        $('#teamErr').textContent = e.message; $('#teamPin').value = ''; $('#teamPin').focus();
-        var f = $('.tl-pinf'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
-      })
+    api('ERP', 'suiteTeamLogin', { key: t.key, password: pw }).then(loggedIn)
+      .catch(function (e) { $('#teamErr').textContent = e.message; $('#teamPin').value = ''; $('#teamPin').focus(); })
       .then(function () { busy(btn, false); });
+  }
+  function adminPinLogin(pin) {
+    $('#adminErr').textContent = ''; LK.admin.busy();
+    api('ERP', 'suiteLogin', { username: 'admin', password: pin }).then(function (d) { return unlockThen(LK.admin, d); })
+      .catch(function (e) { $('#adminErr').textContent = /password|wrong|invalid/i.test(e.message) ? 'Wrong PIN' : e.message; LK.admin.error(); });
   }
   var STAFF_KEYS = ['suite_staff', 'erp_staff', 'ims_staff'];   // pichle insaan ka naam agle ko na mile
   function loggedIn(d) {
@@ -165,10 +212,10 @@
   }
   
   function doLogin() {
-    var un = TL.admin ? 'admin' : $('#userInput').value.trim(), pw = $('#pinInput').value, btn = $('#loginBtn');
+    var un = $('#userInput').value.trim(), pw = $('#pinInput').value, btn = $('#loginBtn');
     $('#loginError').textContent = '';
-    if (!un || !pw) { $('#loginError').textContent = TL.admin ? 'Enter the admin password' : 'Enter username and password'; return; }
-    if (!TL.admin) try { if ($('#rememberUser').checked) localStorage.setItem('suite_user', un); else localStorage.removeItem('suite_user'); } catch (e) {}
+    if (!un || !pw) { $('#loginError').textContent = 'Enter username and password'; return; }
+    try { if ($('#rememberUser').checked) localStorage.setItem('suite_user', un); else localStorage.removeItem('suite_user'); } catch (e) {}
     busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
     api('ERP', 'suiteLogin', { username: un, password: pw }).then(loggedIn).catch(function (e) { $('#loginError').textContent = e.message; })
       .then(function () { busy(btn, false); $('#pinInput').value = ''; });
@@ -228,7 +275,10 @@
     applySessions(S.sessions);
     $('#loginScreen').classList.add('hidden');
     $('#appShell').classList.remove('hidden');
-    $('#userName').textContent = S.user.name;
+    var me = null; try { me = JSON.parse(sessionStorage.getItem('suite_staff') || 'null'); } catch (e) {}   // PIN se aaya insaan
+    var who = me ? me.name : S.user.name;
+    $('#userName').innerHTML = '<i class="tu-av av' + avIdx(who) + '">' + esc(ini(who)) + '</i><span class="tu-t"><b>' + esc(who) + '</b>' +
+      '<small>' + esc(me ? (me.team === 'System Incharge' ? 'Store' : me.team) + ' · ' + me.id : (S.user.roles || []).slice(0, 2).join(' · ') || S.user.username) + '</small></span>';
     buildNav();
     var want = location.hash.replace('#', '');
     go(navItems().some(function (n) { return n.id === want; }) ? want : (navItems()[0] || {}).id);
@@ -762,7 +812,7 @@
       '<div class="field"><label class="lbl" for="ufErp">Sales &amp; Orders role</label><select id="ufErp"><option value="">—</option>' +
         ERP_ROLES.map(function (r) { return '<option' + (r === u.erpRole ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>' +
       '<div class="field"><label class="lbl" for="ufSales">Sales Name <span class="hint">(only a personal sales login)</span></label><input id="ufSales" value="' + esc(u.salesName) + '"></div>' +
-      '<div class="field"><label class="lbl" for="ufPw">' + (isNew ? 'Password' : 'New password <span class="hint">(blank = no change)</span>') + '</label><input id="ufPw" type="password" autocomplete="new-password"></div></div>';
+      '<div class="field"><label class="lbl" for="ufPw">' + (u.username === 'admin' ? 'New admin PIN <span class="hint">(4 digits · blank = no change)</span>' : isNew ? 'Password' : 'New password <span class="hint">(blank = no change)</span>') + '</label><input id="ufPw" type="password" autocomplete="new-password"' + (u.username === 'admin' ? ' inputmode="numeric" maxlength="4"' : '') + '></div></div>';
     $('#userForm').innerHTML = '<div class="card-b" style="border-top:1px solid var(--line)"><div class="card-t" style="margin-bottom:12px">' + (isNew ? 'New login' : esc(u.name) + ' <span class="muted mono">' + esc(u.username) + '</span>') + '</div>' + acct +
       '<div class="field"><span class="lbl">Job (pick one or more)</span><div class="grid g3">' + JOB_ORDER.map(function (k) {
         return '<label class="chip" style="display:flex;gap:8px;align-items:flex-start;padding:10px 12px;cursor:pointer"><input type="checkbox" class="ufJob" value="' + k + '"' + (cur.indexOf(k) !== -1 ? ' checked' : '') + ' style="width:auto;margin-top:2px">' +
@@ -871,7 +921,7 @@
       '<div class="grid g3" style="margin-top:8px">' +
         '<div class="field" id="sfSalesBox"><label class="lbl" for="sfSales">Sales Name <span class="hint">(name on orders)</span></label><input id="sfSales" list="sfSalesList" value="' + esc(s.salesName) + '">' +
           '<datalist id="sfSalesList">' + (ST.salesNames || []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' +
-        '<div class="field"><label class="lbl" for="sfPin">' + (isNew || !s.hasPin ? 'PIN' : 'New PIN <span class="hint">(blank = no change)</span>') + '</label><input id="sfPin" maxlength="16" autocomplete="off"></div>' +
+        '<div class="field"><label class="lbl" for="sfPin">' + (isNew || !s.hasPin ? 'PIN (4 digits)' : 'New PIN <span class="hint">(4 digits · blank = no change)</span>') + '</label><input id="sfPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>' +
         '<div class="field"><label class="lbl" for="sfActive">Active</label><select id="sfActive"><option value="true">Yes</option><option value="false"' + (s.active ? '' : ' selected') + '>No</option></select></div></div>' +
       '<div class="row" style="margin-top:14px"><button class="btn btn-primary" id="sfSave">Save</button><button class="btn btn-ghost" id="sfCancel">Cancel</button><span class="err" id="sfErr"></span></div></div>';
     $('#staffForm').innerHTML = html;
@@ -931,12 +981,16 @@
   function boot() {
     $('#loginBtn').onclick = doLogin;
     $('#teamSel').onchange = teamPeople;
-    $('#teamBtn').onclick = teamLogin;
-    $('#teamPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') teamLogin(); });
-    $('#teamBack').onclick = function () { teamMode(); teamPeople(); };
-    $('#adminBtn').onclick = function () {                       // 👑 Admin: sirf password
-      if (TL.admin) { teamMode(); teamPeople(); } else pwMode(true);
+    $('#teamBtn').onclick = teamPwLogin;
+    $('#teamPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') teamPwLogin(); });
+    LK.team = makeLock($('#teamLock'), teamPinLogin);
+    LK.admin = makeLock($('#adminLock'), adminPinLogin);
+    $('#adminBtn').onclick = function () {                       // 👑 Admin: 4 digit PIN
+      if (TL.mode === 'admin') { loginMode('team'); teamPeople(); } else loginMode('admin');
     };
+    $('#adminBack').onclick = function () { loginMode('team'); teamPeople(); };
+    $('#pwBack').onclick = $('#adminBack').onclick;
+    $('#adminPw').onclick = function () { loginMode('pw'); $('#userInput').focus(); };   // admin PIN 4 digit nahi hai to bhi andar aa sake
     $('#teamEye').onclick = function () {
       var i = $('#teamPin'), show = i.type === 'password';
       i.type = show ? 'text' : 'password'; this.classList.toggle('on', show); i.focus();
