@@ -3859,7 +3859,16 @@ async function staffBoot() {
   try { r = await stfLoad(true); } catch (e) { stfFoot(); return; }     // purana server → pehle jaisa
   if (!r.me) stfSet(null);
   stfFoot();
-  if (r.need && !r.me) staffPick();
+  if (r.need && !r.me && !(await staffSso())) staffPick();
+}
+const suiteSso = app => { try { const s = JSON.parse(sessionStorage.getItem('suite_staff') || 'null'); return s && s.app === app ? s : null; } catch (e) { return null; } };   // Suite login pe chuna hua naam
+async function staffSso() {
+  const s = suiteSso('IMS'); if (!s) return false;
+  try {
+    const r = await api('staffLogin', { empId: s.id, sso: s.token });
+    stfSet({ id: r.me.id, name: r.me.name, team: r.me.team, token: r.staffToken }); stfFoot(); return true;
+  } catch (e) { return false; }
+}
 }
 function stfFoot() {
   const el = document.getElementById('stf-me'); if (!el) return;
@@ -3903,14 +3912,14 @@ function staffPin(id) {
   const s = STF.list.find(x => x.id === id); if (!s) return;
   document.querySelectorAll('.stf-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
   document.getElementById('stfPin').innerHTML = `<div class="stf-pin"><label for="stfPinIn">PIN for <b>${stfEsc(s.name)}</b></label>
-    <div class="stf-row"><input id="stfPinIn" class="inp" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••"
+    <div class="stf-row"><input id="stfPinIn" class="inp" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="••••"
       onkeydown="if(event.key==='Enter')staffEnter('${stfEsc(id)}')">
     <button type="button" id="stfGo" class="btn bgn" onclick="staffEnter('${stfEsc(id)}')">Enter</button></div></div>`;
   document.getElementById('stfPinIn').focus();
 }
 async function staffEnter(id) {
   const inp = document.getElementById('stfPinIn'), pin = inp.value.trim();
-  if (!/^\d{4,8}$/.test(pin)) { toast('Enter your 4-8 digit PIN', 'err'); return; }
+  if (!pin) { toast('Enter your PIN', 'err'); return; }
   const btn = document.getElementById('stfGo'); btn.disabled = true; btn.textContent = '…';
   try {
     const r = await api('staffLogin', { empId: id, pin });
