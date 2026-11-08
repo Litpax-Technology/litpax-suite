@@ -4,11 +4,11 @@
  * Har app ka GAS deploy karke uska /exec URL neeche paste karo. Bas.
  * ============================================================= */
 window.SUITE = {
-  ERP_URL:  'https://script.google.com/macros/s/AKfycbzK5s1Haz2eSJpqpV_Dp55L8Z1IXayW8aPM680-Jk_NcnYwOcBXdLuAkHPKia-ai8l-/exec',
-  IMS_URL:  'https://script.google.com/macros/s/AKfycbwavYYQNSMLJIBMXtRpdfLIUr9PBdw0jK6kCkKTY0epLazY3YUlZVL2J-BbiYYyhJ2dQA/exec',
+  ERP_URL:  'https://script.google.com/macros/s/AKfycbxKtvrkIm4tOyOrpQySZ5IWMz8y8PbBK0-3TWxiPX91apfIUtvjHjPOCBj077otEjA4/exec',
+  IMS_URL:  'https://script.google.com/macros/s/AKfycbyOmXLe8tb2gljr8nBsB4lIp34sZ8wsvIKyve_iN9o9O027HFF3unCienBaNyLdK5U9FQ/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
-  SOMS_URL: 'https://script.google.com/macros/s/AKfycbyn8Q9KQkfYniXTbgAUVIWxmU3TcKlo8kTtVx-mTEzhJPnB5z0s9cL0e4P0A-S3JkCQ6w/exec',
-  SERVICE_URL: 'https://script.google.com/macros/s/AKfycbzXTV3Cs5cJW-Utv4bokNFFuGnB6Q6jtwLONH6Y2a1hX1U9dWh6_nAnHyDgybLcmBAQQw/exec',
+  SOMS_URL: 'https://script.google.com/macros/s/AKfycbynDJjWTG-elFW863nKFNgUtd4R8NFS8xMXTL8m3hu2UOGxfmHTDoV8am904Eg4eqFgBg/exec',
+  SERVICE_URL: 'https://script.google.com/macros/s/AKfycbze9GyqzpDPjQJo-TSwB5vQ60xR5HdrHqWEAyhxX13picf4PWQAp8UQ6SUNa2WvQRFaNw/exec',
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwBbK2Ase0S4YSdtgqZQQ3D8AsHNT3nO02ip2YeR4aNoHufSWQkZ96hVdlHdOX6RRLX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
   APP_NAME: 'Litpax Suite',
