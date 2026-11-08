@@ -328,25 +328,30 @@
   <section class="login-side">
     <div class="login-card">
       <img class="card-logo" src="assets/logo.png" alt="Litpax" width="124" height="36">
+      <button type="button" id="adminBtn" class="tl-crown hidden" title="Admin sign in" aria-label="Admin sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 7.5 11 12 4l4.5 7L21 7.5 19.2 17H4.8L3 7.5Z"/><path d="M5 19.5h14"/></svg></button>
       <div class="login-hello" id="loginHello">Welcome back</div>
       <div class="login-title" id="loginTitle">Sign in to your workspace</div>
       <!-- Team → naam → PIN (Links → CENTRAL_STAFF = ON) -->
       <div id="teamLogin" class="tl hidden">
-        <div class="field"><label class="lbl" for="teamSel">Your team</label><select id="teamSel"><option value="">Pick your team</option></select></div>
-        <div id="teamPeople" class="tl-people" role="group" aria-label="Pick your name"></div>
-        <div class="field hidden" id="teamPinBox"><label class="lbl" for="teamPin" id="teamPinLbl">PIN</label>
-          <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 9h-1V7a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm2 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg><input id="teamPin" type="password" autocomplete="off" maxlength="16" placeholder="••••"></div></div>
+        <div class="field"><label class="lbl" for="teamSel">Your team</label>
+          <div class="ifield tl-sel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5 0a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM9 13c-4 0-7 2-7 4.5V20h14v-2.5C16 15 13 13 9 13Zm7.6.1c1.5.9 2.4 2.3 2.4 4.4V20h3v-2c0-2.4-2.3-4.3-5.4-4.9Z"/></svg>
+            <select id="teamSel"><option value="">Pick your team</option></select>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></div></div>
+        <div id="teamPeople" class="tl-people" role="radiogroup" aria-label="Pick your name"></div>
+        <div class="tl-pin hidden" id="teamPinBox"><label class="lbl" for="teamPin" id="teamPinLbl">PIN</label>
+          <div class="ifield tl-pinf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 9h-1V7a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm2 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg><input id="teamPin" type="password" autocomplete="off" maxlength="16" placeholder="Enter PIN">
+            <button type="button" class="eye" id="teamEye" title="Show PIN" aria-label="Show PIN"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></button></div></div>
         <div id="teamErr" class="err"></div>
         <button id="teamBtn" class="btn btn-brand btn-block hidden"><span>Sign in</span><svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7M20 12H4"/></svg></button>
       </div>
       <div id="pwLogin" class="tl">
-      <div class="field"><label class="lbl" for="userInput">Username</label>
+     <div class="field" id="userField"><label class="lbl" for="userInput">Username</label>
         <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v1.5h16V19c0-2.8-3.6-5-8-5Z"/></svg><input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="e.g. store"></div></div>
       <div class="field"><label class="lbl" for="pinInput">Password</label>
         <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 9h-1V7a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm2 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg><input id="pinInput" type="password" autocomplete="current-password" placeholder="••••••••">
         <button type="button" class="eye" id="pwToggle" title="Show password" aria-label="Show password"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></button></div>
         <div class="caps hidden" id="capsWarn">Caps Lock is on</div></div>
-      <label class="remember"><input type="checkbox" id="rememberUser"> Remember my username</label>
+      <label class="remember" id="rememberBox"><input type="checkbox" id="rememberUser"> Remember my username</label>
       <div id="loginError" class="err"></div>
       <button id="loginBtn" class="btn btn-brand btn-block"><span>Sign in</span><svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7M20 12H4"/></svg></button>
       <button type="button" id="teamBack" class="tl-back hidden">← Back to team sign-in</button>
