@@ -5172,14 +5172,14 @@ function erpStaffPin(id) {
   const s = ESTF.list.find(x => x.id === id); if (!s) return;
   document.querySelectorAll('.erp-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
   document.getElementById('erpPin').innerHTML = `<div class="erp-pin"><label for="erpPinIn">PIN for <b>${eEsc(s.name)}</b></label>
-    <div class="erp-row"><input id="erpPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••"
+    <div class="erp-row"><input id="erpPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="••••"
       onkeydown="if(event.key==='Enter')erpStaffEnter('${eEsc(id)}')">
     <button type="button" id="erpGo" class="btn btn-primary" onclick="erpStaffEnter('${eEsc(id)}')">Enter</button></div></div>`;
   document.getElementById('erpPinIn').focus();
 }
 async function erpStaffEnter(id) {
   const inp = document.getElementById('erpPinIn'), pin = inp.value.trim();
-  if (!/^\d{4,8}$/.test(pin)) { toast('Enter your 4-8 digit PIN', 'e'); return; }
+  if (!pin) { toast('Enter your PIN', 'e'); return; }
   const btn = document.getElementById('erpGo'); btn.disabled = true; btn.textContent = '…';
   const r = await eApi({ action: 'staffLogin', empId: id, pin, staffToken: '' });
   if (!r || r.success === false) { toast((r && r.message) || 'Could not sign in', 'e'); btn.disabled = false; btn.textContent = 'Enter'; inp.value = ''; inp.focus(); return; }
