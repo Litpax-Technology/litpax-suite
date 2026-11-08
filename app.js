@@ -74,7 +74,85 @@
     $('#loginHello').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
     var saved = ''; try { saved = localStorage.getItem('suite_user') || ''; } catch (e) {}
     if (saved) { $('#userInput').value = saved; $('#rememberUser').checked = true; }
+    pwMode(false);
+    TL.teams = null;
+    api('ERP', 'suiteLoginTeams').then(function (r) {   // CENTRAL_STAFF = ON → team / naam / PIN
+      if (!r.on || !r.teams) return;
+      TL.teams = r.teams;
+      var last = ''; try { last = localStorage.getItem('suite_team') || ''; } catch (e) {}
+      $('#teamSel').innerHTML = '<option value="">Pick your team</option>' + r.teams.map(function (t) {
+        return '<option value="' + esc(t.key) + '"' + (t.key === last ? ' selected' : '') + '>' + esc(t.label) + '</option>'; }).join('');
+      if ($('#loginScreen').classList.contains('hidden') || TL.admin) return;
+      teamMode(); teamPeople();
+    }).catch(function () {});
     setTimeout(function () { (saved ? $('#pinInput') : $('#userInput')).focus(); }, 50);
+  }
+
+  /* ---------- Team login: team → naam → PIN. Admin = logo pe click → username / password ---------- */
+  var TL = { teams: null, emp: '', admin: false };
+  function teamMode() {
+    TL.admin = false;
+    $('#teamLogin').classList.remove('hidden'); $('#pwLogin').classList.add('hidden');
+    $('#loginTitle').textContent = 'Sign in to your workspace';
+    $('#teamSel').focus();
+  }
+  function pwMode(admin) {
+    TL.admin = !!admin;
+    $('#teamLogin').classList.add('hidden'); $('#pwLogin').classList.remove('hidden');
+    $('#teamBack').classList.toggle('hidden', !(admin && TL.teams));
+    $('#loginTitle').textContent = admin ? 'Admin sign in' : 'Sign in to your workspace';
+    if (admin) setTimeout(function () { $('#userInput').focus(); }, 30);
+  }
+  function teamCur() { var k = $('#teamSel').value; return (TL.teams || []).filter(function (t) { return t.key === k; })[0] || null; }
+  function teamPeople() {
+    var t = teamCur(), box = $('#teamPeople');
+    TL.emp = ''; $('#teamErr').textContent = ''; $('#teamPin').value = '';
+    $('#teamPinBox').classList.add('hidden'); $('#teamBtn').classList.add('hidden');
+    if (!t) { box.innerHTML = ''; return; }
+    try { localStorage.setItem('suite_team', t.key); } catch (e) {}
+    if (!t.staff.length) {                                   // is team me abhi koi staff nahi → team ka password
+      box.innerHTML = '';
+      $('#teamPinLbl').textContent = t.label + ' team password';
+      $('#teamPinBox').classList.remove('hidden'); $('#teamBtn').classList.remove('hidden');
+      $('#teamPin').focus(); return;
+    }
+    box.innerHTML = t.staff.map(function (p) {
+      return '<button type="button" class="tl-p" data-id="' + esc(p.id) + '"><i>' + esc(ini(p.name)) + '</i><b>' + esc(p.name) + '</b><small>' + esc(p.id) + '</small></button>';
+    }).join('');
+    $$('#teamPeople .tl-p').forEach(function (b) {
+      b.onclick = function () {
+        TL.emp = b.dataset.id;
+        $$('#teamPeople .tl-p').forEach(function (x) { x.classList.toggle('on', x === b); });
+        $('#teamPinLbl').innerHTML = 'PIN for <b>' + esc(b.querySelector('b').textContent) + '</b>';
+        $('#teamPinBox').classList.remove('hidden'); $('#teamBtn').classList.remove('hidden');
+        $('#teamPin').value = ''; $('#teamErr').textContent = ''; $('#teamPin').focus();
+      };
+    });
+    if (t.staff.length === 1) box.querySelector('.tl-p').click();
+  }
+  function ini(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase(); }
+  function teamLogin() {
+    var t = teamCur(), pin = $('#teamPin').value, btn = $('#teamBtn');
+    $('#teamErr').textContent = '';
+    if (!t) { $('#teamErr').textContent = 'Pick your team'; return; }
+    if (t.staff.length && !TL.emp) { $('#teamErr').textContent = 'Pick your name'; return; }
+    if (!pin) { $('#teamErr').textContent = t.staff.length ? 'Enter your PIN' : 'Enter the team password'; return; }
+    busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
+    var d = t.staff.length ? { key: t.key, empId: TL.emp, pin: pin } : { key: t.key, password: pin };
+    api('ERP', 'suiteTeamLogin', d).then(loggedIn)
+      .catch(function (e) { $('#teamErr').textContent = e.message; $('#teamPin').value = ''; $('#teamPin').focus(); })
+      .then(function () { busy(btn, false); });
+  }
+  var STAFF_KEYS = ['suite_staff', 'erp_staff', 'ims_staff'];   // pichle insaan ka naam agle ko na mile
+  function loggedIn(d) {
+    S.token = d.token;
+    try {
+      sessionStorage.setItem('suite_token', d.token);
+      STAFF_KEYS.forEach(function (k) { sessionStorage.removeItem(k); });
+      if (d.staff) sessionStorage.setItem('suite_staff', JSON.stringify(d.staff));
+      if (d.sessions && d.sessions.erp_staff) sessionStorage.setItem('erp_staff', JSON.stringify(d.sessions.erp_staff));
+    } catch (e) {}
+    return svcSso().then(function () { start(d); });   // Service Hub bhi isi login se
   }
   
   function doLogin() {
@@ -83,11 +161,7 @@
     if (!un || !pw) { $('#loginError').textContent = 'Enter username and password'; return; }
     try { if ($('#rememberUser').checked) localStorage.setItem('suite_user', un); else localStorage.removeItem('suite_user'); } catch (e) {}
     busy(btn, true, '<span class="spin"></span><span>Signing in…</span>');
-    api('ERP', 'suiteLogin', { username: un, password: pw }).then(function (d) {
-      S.token = d.token;
-      try { sessionStorage.setItem('suite_token', d.token); } catch (e) {}
-      return svcSso().then(function () { start(d); });   // Service Hub bhi isi login se
-    }).catch(function (e) { $('#loginError').textContent = e.message; })
+    api('ERP', 'suiteLogin', { username: un, password: pw }).then(loggedIn).catch(function (e) { $('#loginError').textContent = e.message; })
       .then(function () { busy(btn, false); $('#pinInput').value = ''; });
   }
 
@@ -112,7 +186,7 @@
   function signOut() {
     var htk = ''; try { htk = localStorage.getItem('hub_token') || ''; } catch (e) {}
     if (htk) api('SERVICE', 'logout', { token: htk }).catch(function () {});
-    try { SESSION_KEYS.concat(['suite_token']).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
+    try { SESSION_KEYS.concat(['suite_token'], STAFF_KEYS).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
     svcClear();
     S.token = ''; S.user = null;
     Object.keys(S.frames).forEach(function (k) { S.frames[k].remove(); });
@@ -847,6 +921,14 @@
    * ============================================================= */
   function boot() {
     $('#loginBtn').onclick = doLogin;
+    $('#teamSel').onchange = teamPeople;
+    $('#teamBtn').onclick = teamLogin;
+    $('#teamPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') teamLogin(); });
+    $('#teamBack').onclick = function () { teamMode(); teamPeople(); };
+    $$('.card-logo, .hero-logo').forEach(function (l) {          // Admin: logo pe click → username / password
+      l.classList.add('tl-admin'); l.title = 'Admin sign in';
+      l.onclick = function () { if (TL.teams) { if (TL.admin) { teamMode(); teamPeople(); } else pwMode(true); } };
+    });
     $('#pwToggle').onclick = function () {
       var i = $('#pinInput'), show = i.type === 'password';
       i.type = show ? 'text' : 'password'; this.classList.toggle('on', show);
