@@ -329,7 +329,17 @@
     <div class="login-card">
       <img class="card-logo" src="assets/logo.png" alt="Litpax" width="124" height="36">
       <div class="login-hello" id="loginHello">Welcome back</div>
-      <div class="login-title">Sign in to your workspace</div>
+      <div class="login-title" id="loginTitle">Sign in to your workspace</div>
+      <!-- Team → naam → PIN (Links → CENTRAL_STAFF = ON) -->
+      <div id="teamLogin" class="tl hidden">
+        <div class="field"><label class="lbl" for="teamSel">Your team</label><select id="teamSel"><option value="">Pick your team</option></select></div>
+        <div id="teamPeople" class="tl-people" role="group" aria-label="Pick your name"></div>
+        <div class="field hidden" id="teamPinBox"><label class="lbl" for="teamPin" id="teamPinLbl">PIN</label>
+          <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 9h-1V7a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm2 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg><input id="teamPin" type="password" autocomplete="off" maxlength="16" placeholder="••••"></div></div>
+        <div id="teamErr" class="err"></div>
+        <button id="teamBtn" class="btn btn-brand btn-block hidden"><span>Sign in</span><svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7M20 12H4"/></svg></button>
+      </div>
+      <div id="pwLogin" class="tl">
       <div class="field"><label class="lbl" for="userInput">Username</label>
         <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.4 0-8 2.2-8 5v1.5h16V19c0-2.8-3.6-5-8-5Z"/></svg><input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="e.g. store"></div></div>
       <div class="field"><label class="lbl" for="pinInput">Password</label>
