@@ -3482,8 +3482,16 @@ async function staffLoad() {
 async function staffBoot(first) {
   const r = await staffLoad();
   sbRoleRender();
-  if (r && r.need && !r.me) return staffPick();
+  if (r && r.need && !r.me && !(await staffSso())) return staffPick();
+  sbRoleRender();
   go(first);
+}
+const suiteSso = app => { try { const s = JSON.parse(sessionStorage.getItem('suite_staff') || 'null'); return s && s.app === app ? s : null; } catch (e) { return null; } };   // Suite login pe chuna hua naam
+async function staffSso() {
+  const s = suiteSso('SERVICE'); if (!s) return false;
+  const r = await api({ action: 'staffLogin', empId: s.id, sso: s.token, dev: devName() }).catch(() => null);
+  if (!r || !r.ok) return false;
+  setMe(r.me); wipeMem(); return true;
 }
 let SB_AV = '';
 function sbRoleRender() {
@@ -3519,14 +3527,14 @@ function staffPin(id) {
   const s = STF.list.find(x => x.id === id); if (!s) return;
   document.querySelectorAll('.sp-card').forEach(c => c.classList.toggle('on', c.dataset.id === id));
   $('spPin').innerHTML = '<div class="sp-pin"><label for="spPinIn">PIN for <b>' + esc(s.name) + '</b></label>' +
-    '<div class="sp-row"><input id="spPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" ' +
+    '<div class="sp-row"><input id="spPinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="••••" ' +
     'onkeydown="if(event.key===\'Enter\')staffEnter(\'' + esc(id) + '\')">' +
     '<button type="button" id="spGo" class="btn btn-primary" onclick="staffEnter(\'' + esc(id) + '\')">Enter</button></div></div>';
   $('spPinIn').focus();
 }
 async function staffEnter(id) {
   const pin = $('spPinIn').value.trim();
-  if (!/^\d{4,8}$/.test(pin)) return toast('⚠️ Enter your 4-8 digit PIN');
+  if (!pin) return toast('⚠️ Enter your PIN');
   const r = await run({ action: 'staffLogin', empId: id, pin, dev: devName() }, $('spGo'));
   if (!r) { $('spPinIn').value = ''; $('spPinIn').focus(); return; }
   setMe(r.me);
