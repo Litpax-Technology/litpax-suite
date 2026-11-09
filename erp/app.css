@@ -1107,3 +1107,19 @@ html.in-suite .btn-logout { display: none; }
   .user-av { width: 32px; height: 32px; }
   .main { padding: 12px 12px 24px; }
 }
+
+/* ---------- Apps menu (6 dots) — Sales: PI Maker, Rate List, Specification ---------- */
+.apps-menu { position: relative; margin-right: 10px; }
+.apps-btn { width: 40px; height: 40px; display: grid; grid-template-columns: repeat(2, 5px); grid-auto-rows: 5px; gap: 4px; place-content: center;
+  background: #fff; border: 1px solid var(--n2-line-2); border-radius: 999px; cursor: pointer; transition: background .15s, border-color .15s; }
+.apps-btn span { width: 5px; height: 5px; border-radius: 50%; background: var(--n2-mute); }
+.apps-menu:hover .apps-btn, .apps-menu.open .apps-btn { background: #fff5f5; border-color: rgba(236, 79, 85, .45); }
+.apps-menu:hover .apps-btn span, .apps-menu.open .apps-btn span { background: var(--n2-red); }
+.apps-drop { display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 999; width: 300px; padding: 10px; gap: 6px; grid-template-columns: repeat(3, 1fr);
+  background: #fff; border: 1px solid var(--n2-line); border-radius: 18px; box-shadow: 0 30px 60px -24px rgba(16, 24, 40, .25), 0 1px 2px rgba(16, 24, 40, .05); }
+.apps-drop::before { content: ''; position: absolute; top: -10px; left: 0; right: 0; height: 10px; }
+.apps-menu:hover .apps-drop, .apps-menu.open .apps-drop { display: grid; }
+.apps-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 12px; text-decoration: none; cursor: pointer; transition: background .15s; }
+.apps-tile:hover { background: rgba(236, 79, 85, .08); }
+.apps-ico { font-size: 22px; line-height: 1; }
+.apps-lbl { font-size: 11.5px; font-weight: 600; color: var(--n2-ink); text-align: center; line-height: 1.25; }
