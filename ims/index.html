@@ -218,7 +218,7 @@
       </div>
       <div class="card">
         <div class="tw"><table>
-            <thead><tr><th>Date</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Purpose</th><th>Department</th><th>Issued To</th><th>By</th><th>Remarks</th></tr></thead>
+            <thead><tr><th>Date</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Purpose</th><th>Department</th><th>Issued To</th><th>By</th><th>Remarks</th><th>Photo</th></tr></thead>
             <tbody id="out-tb"><tr class="lrow"><td colspan="8"><span class="loader"></span></td></tr></tbody>
         </table></div>
         <div id="out-empty" class="empty" style="display:none"><div class="ei">📤</div><div class="et">No outward records</div></div>
@@ -563,7 +563,6 @@
         <div class="pt"><h1>Settings</h1><p>Category, brand aur default unit — yahan se add/edit karo</p></div>
         <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <span id="set-dirty" style="font-size:12px;font-weight:600;color:var(--orange);"></span>
-          <input class="inp" id="set-pin" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="off" style="width:120px;">
           <button class="btn bp" id="set-save-btn" onclick="saveSettings()">💾 Save Changes</button>
         </div>
       </div>
