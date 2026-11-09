@@ -791,7 +791,7 @@ async function loadOutward() {
   const deptF    = document.getElementById('out-dept-f').value;
   const itemF    = document.getElementById('out-item-f')?.value || '';
   const purposeF = document.getElementById('out-purpose-f')?.value || '';
-  document.getElementById('out-tb').innerHTML = `<tr class="lrow"><td colspan="9"><span class="loader"></span></td></tr>`;
+  document.getElementById('out-tb').innerHTML = `<tr class="lrow"><td colspan="10"><span class="loader"></span></td></tr>`;
   try {
     const body = {};
     if (dateF) body.date = dateF;
@@ -828,6 +828,7 @@ function renderOutward(rows) {
     <td style="font-size:12px;">${r.issuedTo || '—'}</td>
     <td style="font-size:12px;color:var(--muted);">${r.by || '—'}</td>
     <td style="font-size:12px;color:var(--muted);">${r.remarks || '—'}</td>
+    <td>${photoBtn(r)}</td>
   </tr>`;}).join('');
 }
 function clearOutFilters() {
@@ -1136,17 +1137,13 @@ function setDelCat(i) {
   setMark();
 }
 async function saveSettings() {
-  const pinEl = document.getElementById('set-pin');
-  const pin = pinEl.value.trim();
-  if (!pin) { toast('Save ke liye Admin PIN daalo', 'err'); pinEl.focus(); return; }
+  // Suite ka Admin login hi kaafi hai — alag PIN nahi
   const btn = document.getElementById('set-save-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
   try {
     const r = await api('saveConfig', {
-      pin,
       categories: _setCats.map(c => ({ name: c.name, brands: c.brands, unit: c.unit, noBrand: c.noBrand })),
     });
-    pinEl.value = '';
     toast(`Settings saved ✓ — ${r.count} categories`, 'ok');
     await loadSettings();               // loadConfig → saare dropdown bhi refresh
   } catch (e) { toast(e.message, 'err'); }
