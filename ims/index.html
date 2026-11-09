@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Litpax IMS</title>
-<link rel="stylesheet" href="style.css?v=cl1">
+<link rel="stylesheet" href="style.css?v=imp1">
 
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -85,6 +85,10 @@
         <div class="ni" onclick="showPage('reorder')" data-page="reorder"><span class="ic">⚠️</span><span>Reorder</span><span class="nbadge" id="nb" style="display:none">0</span></div>
         <div class="ni" onclick="showPage('closing')" data-page="closing"><span class="ic">🗓️</span><span>Daily Closing</span></div>
         <div class="ni" onclick="showPage('adc')" data-page="adc"><span class="ic">📉</span><span>ADC Calculate</span></div>
+      </div>
+      <div class="ng">
+        <div class="ng-label">Admin</div>
+        <div class="ni" onclick="showPage('settings')" data-page="settings"><span class="ic">⚙️</span><span>Settings</span></div>
       </div>
 
 
@@ -553,6 +557,31 @@
       </div>
     </div>
 
+    <!-- SETTINGS (Admin) -->
+    <div class="page" id="page-settings">
+      <div class="tb">
+        <div class="pt"><h1>Settings</h1><p>Category, brand aur default unit — yahan se add/edit karo</p></div>
+        <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span id="set-dirty" style="font-size:12px;font-weight:600;color:var(--orange);"></span>
+          <input class="inp" id="set-pin" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="off" style="width:120px;">
+          <button class="btn bp" id="set-save-btn" onclick="saveSettings()">💾 Save Changes</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="ch"><h2>+ Nayi Category</h2></div>
+        <div style="padding:14px 18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input class="inp" id="set-new-name" placeholder="Category naam (jaise Cells LFP)" style="width:240px;" onkeydown="if(event.key==='Enter')setAddCat()">
+          <select class="inp" id="set-new-unit" style="width:100px;"></select>
+          <label style="font-size:12px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="set-new-nobrand"> No brand</label>
+          <button class="btn bg" onclick="setAddCat()">Add</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><h2>Categories</h2><span style="font-size:11px;color:var(--muted);">▲▼ se order — yahi order dropdowns aur PO print me aata hai</span></div>
+        <div id="set-list"></div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /shell -->
 
@@ -560,7 +589,7 @@
 
 <!-- INWARD MODAL -->
 <div class="ov" id="inward-modal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="mh"><h2>📥 New Inward Entry</h2><button class="mclose" onclick="closeM('inward-modal')">✕</button></div>
     <div class="mb">
       <div class="fg">
@@ -568,6 +597,14 @@
           <label class="inp-label">SOMS Order (material received by Purchase) *</label>
           <select class="inp" id="in-po" onchange="selInwardPO()"><option value="">Loading…</option></select>
           <div id="in-po-hint" style="font-size:11.5px;color:var(--muted);margin-top:4px;"></div>
+        </div>
+        <div class="fi full" id="in-rows-wrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <label class="inp-label" style="margin:0;">Category / Item / Qty *</label>
+            <span id="in-row-count" style="font-size:11px;color:var(--muted);font-weight:600;"></span>
+          </div>
+          <div id="in-rows"></div>
+          <button type="button" class="btn bg bsm" onclick="addInRow()">+ Add More Item</button>
         </div>
         <div class="fi full" id="in-cat-wrap">
           <label class="inp-label">Category *</label>
@@ -585,7 +622,7 @@
           </select>
         </div>
         <div class="fi full" id="in-stock-info" style="display:none"><div class="stock-info">Stock: <strong id="in-cs">—</strong> &nbsp;|&nbsp; ROP: <strong id="in-rp">—</strong> &nbsp;|&nbsp; In Transit: <strong id="in-mit">—</strong></div><div id="in-item-pic"></div></div>
-        <div class="fi"><label class="inp-label">Quantity *</label><input class="inp" id="in-qty" type="number" min="1" placeholder="0"></div>
+        <div class="fi" id="in-qty-wrap"><label class="inp-label">Quantity *</label><input class="inp" id="in-qty" type="number" min="1" placeholder="0"></div>
         <div class="fi"><label class="inp-label">Date 🔒</label><input class="inp" id="in-date" type="date" readonly style="background:var(--s2);color:var(--muted);cursor:not-allowed;"></div>
         <div class="fi full">
           <label class="inp-label">Purpose *</label>
@@ -603,8 +640,13 @@
         <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="in-by" placeholder="Name"></div>
         <div class="fi"><label class="inp-label">Material Handled By <span style="font-size:10px;color:var(--muted);">(store incharge)</span></label><select class="inp" id="in-handled"></select></div>
         <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="in-remarks" placeholder="Optional"></div>
+        <div class="fi full" id="in-bill-hint" style="display:none;">
+          <div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#92400e;font-weight:600;">
+            📄 Bill ki photo zaroor upload karo — ye entry approval ke liye jayegi. Approve hone ke baad hi stock me aayegi.
+          </div>
+        </div>
         <div class="fi full">
-          <label class="inp-label">Stock Photo <span style="font-size:10px;color:var(--muted);">(optional — max 3)</span></label>
+          <label class="inp-label">Bill / Stock Photo <span style="font-size:10px;color:var(--muted);">(max 3)</span></label>
           <div class="in-photo-row">
             <div id="in-photo-list" class="in-photo-list"></div>
             <label class="in-photo-add" id="in-photo-add">📷<br>Add Photo
@@ -620,26 +662,10 @@
 
 <!-- OUTWARD MODAL -->
 <div class="ov" id="outward-modal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="mh"><h2>📤 New Outward Entry</h2><button class="mclose" onclick="closeM('outward-modal')">✕</button></div>
     <div class="mb">
       <div class="fg">
-        <div class="fi full">
-          <label class="inp-label">Category *</label>
-          <select class="inp cat-select" id="out-cat" onchange="filterOutwardItems()">
-            <option value="">-- Select Category --</option>
-            <option>Cells</option><option>BMS</option><option>Charger</option>
-            <option>Nickel/Busbar</option><option>Box</option><option>Wire</option>
-            <option>Consumables</option><option>Tools</option><option>Packaging</option>
-          </select>
-        </div>
-        <div class="fi full">
-          <label class="inp-label">Item *</label>
-          <select class="inp" id="out-item" onchange="updOutwardInfo()">
-            <option value="">-- Select Category first --</option>
-          </select>
-        </div>
-        <div class="fi full" id="out-stock-info" style="display:none"><div class="stock-info">Available: <strong id="out-cs">—</strong> &nbsp;|&nbsp; ROP: <strong id="out-rp">—</strong></div><div id="out-item-pic"></div></div>
         <div class="fi full">
           <label class="inp-label">Purpose *</label>
           <div style="display:flex;gap:10px;">
@@ -651,7 +677,6 @@
             </label>
           </div>
         </div>
-        <div class="fi"><label class="inp-label">Quantity *</label><input class="inp" id="out-qty" type="number" min="1" placeholder="0"></div>
         <div class="fi"><label class="inp-label">Date 🔒</label><input class="inp" id="out-date" type="date" readonly style="background:var(--s2);color:var(--muted);cursor:not-allowed;"></div>
         <div class="fi"><label class="inp-label">Department *</label>
           <select class="inp" id="out-dept">
@@ -664,7 +689,24 @@
         <div class="fi"><label class="inp-label">Issued To</label><input class="inp" id="out-issuedto" placeholder="Person name"></div>
         <div class="fi"><label class="inp-label">Recorded By</label><input class="inp" id="out-by" placeholder="Name"></div>
         <div class="fi"><label class="inp-label">Material Handled By <span style="font-size:10px;color:var(--muted);">(store incharge)</span></label><select class="inp" id="out-handled"></select></div>
-        <div class="fi"><label class="inp-label">Remarks</label><input class="inp" id="out-remarks" placeholder="Optional"></div>
+        <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="out-remarks" placeholder="Optional"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px;">
+        <label class="inp-label" style="margin:0;">Items *</label>
+        <span id="out-row-count" style="font-size:11px;color:var(--muted);font-weight:600;"></span>
+      </div>
+      <div id="out-rows"></div>
+      <button type="button" class="btn bg bsm" onclick="addOutRow()">+ Add Item</button>
+
+      <div style="margin-top:16px;">
+        <label class="inp-label">Photo <span style="font-size:10px;color:var(--muted);">(optional, max 3)</span></label>
+        <div class="in-photo-row">
+          <div id="out-photo-list" class="in-photo-list"></div>
+          <label class="in-photo-add" id="out-photo-add">📷<br>Add Photo
+            <input type="file" accept="image/*" multiple style="display:none;" onchange="addOutwardPhotos(this)">
+          </label>
+        </div>
       </div>
     </div>
     <div class="mf"><button class="btn bg" onclick="closeM('outward-modal')">Cancel</button><button class="btn brd" id="out-btn" onclick="saveOutward()">Save Outward</button></div>
@@ -880,6 +922,20 @@
         <div class="fi full"><label class="inp-label">Invoice No.</label><input class="inp" id="recv-invoice" placeholder="INV-001"></div>
         <div class="fi full"><label class="inp-label">Supplier / Party</label><input class="inp" id="recv-supplier" placeholder="Supplier name"></div>
         <div class="fi full"><label class="inp-label">Recorded By</label><input class="inp" id="recv-by" placeholder="Name"></div>
+        <div class="fi full" id="recv-bill-hint" style="display:none;">
+          <div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#92400e;font-weight:600;">
+            📄 Bill ki photo zaroor upload karo — ye receive Accountant approval ke liye jayega. Approve hone ke baad hi stock me aayega.
+          </div>
+        </div>
+        <div class="fi full">
+          <label class="inp-label">Bill / Stock Photo <span style="font-size:10px;color:var(--muted);">(max 3)</span></label>
+          <div class="in-photo-row">
+            <div id="recv-photo-list" class="in-photo-list"></div>
+            <label class="in-photo-add" id="recv-photo-add">📷<br>Add Photo
+              <input type="file" id="recv-photo" accept="image/*" multiple style="display:none;" onchange="addRecvPhotos(this)">
+            </label>
+          </div>
+        </div>
       </div>
     </div>
     <div class="mf"><button class="btn bg" onclick="closeM('receive-modal')">Cancel</button><button class="btn bgn" id="recv-btn" onclick="confirmReceive()">Receive & Add to Stock</button></div>
@@ -1020,7 +1076,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=imp1"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
