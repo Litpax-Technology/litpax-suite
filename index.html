@@ -18,7 +18,7 @@
     }
   } catch (e) {}
 </script>
-<link rel="stylesheet" href="style.css?v=lk1">
+<link rel="stylesheet" href="style.css?v=sn1">
 </head>
 <body>
 
@@ -372,17 +372,30 @@
 
 <!-- ============ APP SHELL ============ -->
 <div id="appShell" class="shell hidden">
-  <main class="main">
-    <!-- patli top bar: sirf app tabs. Har app apne sidebar se chalta hai, logout bhi wahi se -->
-    <header class="topbar" id="topbar">
-      <img class="top-logo" src="assets/logo.png" alt="Litpax" width="83" height="24">
-      <nav id="nav" class="tabs"></nav>
-      <div class="topbar-right">
-        <span id="sessionWarn" class="chip chip-warn hidden"></span>
-        <button class="icon-btn top-ic" id="reloadBtn" title="Reload this page">↻</button>
+  <!-- common sidebar: saare apps + unke pages (pages app khud bhejta hai, suite-bridge.js se) -->
+  <aside class="sn" id="sideNav">
+    <div class="sn-head">
+      <img class="sn-logo" src="assets/logo.png" alt="Litpax" width="83" height="24">
+      <img class="sn-mark" src="assets/favicon.png" alt="Litpax" width="30" height="30">
+      <button type="button" class="sn-btn" id="snMini" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+    </div>
+    <label class="sn-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="snSearch" type="text" placeholder="Search" autocomplete="off" spellcheck="false"><kbd>/</kbd></label>
+    <nav id="nav" class="sn-nav"></nav>
+    <div class="sn-foot">
+      <span id="sessionWarn" class="chip chip-warn hidden"></span>
+      <div class="sn-me">
         <span class="top-user" id="userName"></span>
-        <button class="icon-btn top-ic" id="logoutBtn" title="Sign out">⏻</button>
+        <button type="button" class="sn-btn" id="reloadBtn" title="Reload this page" aria-label="Reload"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+        <button type="button" class="sn-btn sn-out" id="logoutBtn" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg></button>
       </div>
+    </div>
+  </aside>
+  <div class="sn-scrim" id="snScrim"></div>
+  <main class="main">
+    <!-- sirf mobile: menu button + logo -->
+    <header class="topbar" id="topbar">
+      <button type="button" class="sn-btn" id="snMenu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <img class="top-logo" src="assets/logo.png" alt="Litpax" width="83" height="24">
     </header>
 
     <!-- native views -->
@@ -481,6 +494,6 @@
 <div id="toast" class="toast"></div>
 
 <script src="config.js?v=tl2"></script>
-<script src="app.js?v=lk1"></script>
+<script src="app.js?v=sn1"></script>
 </body>
 </html>
