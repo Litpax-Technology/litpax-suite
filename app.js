@@ -9,7 +9,7 @@
   var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
-  var S = { token: '', user: null, sessions: {}, hidePages: [], view: '', frames: {}, pending: 0 };
+  var S = { token: '', user: null, sessions: {}, hidePages: [], view: '', frames: {}, pending: 0, appNav: {}, open: {}, apr: 0 };
   var SESSION_KEYS = ['erp_user', 'lpx_role', 'lpx_name', 'sms_session', 'plt_sup', 'suite_bridge'];
   var HUB_KEYS = ['hub_token', 'hub_role', 'hub_user', 'hub_last_act', 'suite_svc_only'];   // suite_svc_only: purana, sirf saaf karne ke liye
 
@@ -246,7 +246,8 @@
     svcClear();
     S.token = ''; S.user = null;
     Object.keys(S.frames).forEach(function (k) { S.frames[k].remove(); });
-    S.frames = {};
+    S.frames = {}; S.appNav = {}; S.open = {}; S.apr = 0;
+    if ($('#snSearch')) $('#snSearch').value = '';
     $$('.view').forEach(function (v) { v.classList.add('hidden'); });
     showLogin();
   }
@@ -305,21 +306,110 @@
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
     return items;
   }
+  /* ---------------- SIDEBAR (N2) ----------------
+     App ke pages app khud bhejta hai (suite-bridge.js → 'nav' message); click → 'nav-go' wapas app ko */
+  var ICO = {
+    dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+    doc: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+    battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4"/><path d="M8 10l-1.5 2.5H9L7.5 15"/>',
+    truck: '<path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
+    box: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/>',
+    bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    factory: '<path d="M3 21V8l6 4V8l6 4V4h6v17z"/>',
+    rupee: '<path d="M7 4h11M7 9h11M7 4c6 0 6 10 0 10h-1l8 6"/>',
+    shield: '<path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+    inbox: '<path d="M4 13h4l2 3h4l2-3h4"/><path d="M5 5h14l1 8v6H4v-6z"/>',
+    'in': '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+    out: '<path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 21h16"/>',
+    layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+    flag: '<path d="M5 21V4h11l-2 4 2 4H5"/>',
+    wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',
+    trend: '<path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/>',
+    book: '<path d="M4 4h11a3 3 0 0 1 3 3v14H7a3 3 0 0 1-3-3z"/><path d="M4 18a3 3 0 0 1 3-3h11"/>',
+    alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17.5v.5"/>',
+    cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    down: '<path d="M3 7l5 5 4-4 9 9"/><path d="M21 12v5h-5"/>',
+    store: '<path d="M4 9h16l-1-5H5z"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/>',
+    route: '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"/>',
+    plus: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+    folder: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+    ticket: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/>',
+    spark: '<path d="M12 3c.6 4.5 2.5 6.4 7 7-4.5.6-6.4 2.5-7 7-.6-4.5-2.5-6.4-7-7 4.5-.6 6.4-2.5 7-7z"/>',
+    tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>'
+  };
+  var APPICO = { overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
+                 'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'spark', settings: 'gear' };
+  var PAGEICO = [[/switch|staff/i, 'users'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
+    [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
+    [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],
+    [/item/i, 'box'], [/opening/i, 'flag'], [/summary/i, 'trend'], [/ledger/i, 'book'], [/reorder/i, 'alert'],
+    [/closing/i, 'cal'], [/adc/i, 'down'], [/master|setting/i, 'sliders'], [/track/i, 'route'], [/new /i, 'plus'], [/ticket/i, 'ticket'], [/record/i, 'folder']];
+  function ico(k) { return '<svg class="sn-ic" viewBox="0 0 24 24" aria-hidden="true">' + (ICO[k] || ICO.list) + '</svg>'; }
+  function pageIco(l) { for (var i = 0; i < PAGEICO.length; i++) if (PAGEICO[i][0].test(l)) return PAGEICO[i][1]; return 'list'; }
+
   function buildNav() {
-    var html = '', sec = '';
-    navItems().forEach(function (n) {
-      html += '<div class="nav-item" data-id="' + n.id + '"><span class="nav-ic">' + n.ic + '</span><span>' + esc(n.label) + '</span>' +
-        (n.badge ? '<span class="badge hidden" id="aprBadge">0</span>' : '') + '</div>';
-    });
-    if (!html) {
-      html = '<div class="nav-empty">No access assigned. Please contact the Admin. (roles: ' + esc((S.user.roles || []).join(', ') || 'none') + ')</div>';
-      $$('.view').forEach(function (v) { v.classList.add('hidden'); });   // pichhle user ka page band
-    }
-    $('#nav').innerHTML = html;
-    $$('.nav-item').forEach(function (el) { el.addEventListener('click', function () { go(el.dataset.id); }); });
-    // sirf ek app (jaise Purchase → Store Orders) → top bar bhi nahi; logout us app ke apne sidebar se
     var items = navItems();
+    if (!items.length) {
+      $('#nav').innerHTML = '<div class="nav-empty">No access assigned. Please contact the Admin. (roles: ' + esc((S.user.roles || []).join(', ') || 'none') + ')</div>';
+      $$('.view').forEach(function (v) { v.classList.add('hidden'); });   // pichhle user ka page band
+      return;
+    }
+    var q = ($('#snSearch') ? $('#snSearch').value : '').trim().toLowerCase(), html = '', sec = '';
+    items.forEach(function (n) {
+      var sub = n.mod ? (S.appNav[n.mod] || []) : [], appHit = !q || n.label.toLowerCase().indexOf(q) !== -1;
+      var subs = sub.filter(function (p) { return appHit || (p.label + ' ' + p.sec).toLowerCase().indexOf(q) !== -1; });
+      if (!appHit && !subs.length) return;
+      var cur = S.view === n.id, open = sub.length && (q ? true : !!S.open[n.mod]);
+      if (!q && n.sec !== sec) { sec = n.sec; html += '<div class="sn-grp">' + esc(sec) + '</div>'; }
+      html += '<div class="nav-item' + (cur ? ' cur' : '') + (cur && !sub.length ? ' active' : '') + (open ? ' open' : '') + '" data-id="' + n.id + '" title="' + esc(n.label) + '">' +
+        ico(APPICO[n.id]) + '<span class="sn-lbl">' + esc(n.label) + '</span>' +
+        (n.badge ? '<span class="badge' + (S.apr ? '' : ' hidden') + '" id="aprBadge">' + S.apr + '</span>' : '') + (sub.length ? '<i class="sn-chev"></i>' : '') + '</div>';
+      if (!sub.length) return;
+      html += '<div class="sn-sub' + (open ? ' open' : '') + '">';
+      var ps = '';
+      subs.forEach(function (p) {
+        if (p.sec && p.sec !== ps) { ps = p.sec; html += '<div class="sn-sec">' + esc(ps) + '</div>'; }
+        html += '<div class="sn-page' + (cur && p.active ? ' active' : '') + '" data-id="' + n.id + '" data-mod="' + n.mod + '" data-k="' + esc(p.k) + '" title="' + esc(p.label) + '">' +
+          ico(pageIco(p.label)) + '<span class="sn-lbl">' + esc(p.label) + '</span>' + (p.badge ? '<b class="sn-badge">' + esc(p.badge) + '</b>' : '') + '</div>';
+      });
+      html += '</div>';
+    });
+    $('#nav').innerHTML = html || '<div class="nav-empty">No match</div>';
+    $$('#nav .nav-item').forEach(function (el) { el.addEventListener('click', function () { navClick(el.dataset.id); }); });
+    $$('#nav .sn-page').forEach(function (el) { el.addEventListener('click', function () { pageClick(el.dataset.id, el.dataset.mod, el.dataset.k); }); });
+    // sirf ek app (jaise Purchase → Store Orders)
     $('#appShell').classList.toggle('solo', items.length === 1 && !!items[0].mod);
+  }
+  function navClick(id) {
+    var n = navItems().filter(function (x) { return x.id === id; })[0];
+    if (!n) return;
+    if (n.mod && S.view === id && (S.appNav[n.mod] || []).length && !$('#appShell').classList.contains('sn-mini')) {
+      S.open[n.mod] = !S.open[n.mod]; return buildNav();   // khule app pe click → pages band / khol
+    }
+    if (n.mod) S.open[n.mod] = true;
+    go(id); snClose();
+  }
+  function pageClick(id, mod, k) {
+    if (S.view !== id) go(id);
+    var f = S.frames[mod];
+    if (f) try { f.contentWindow.postMessage({ source: 'litpax-suite', type: 'nav-go', k: k }, location.origin); } catch (e) {}
+    snClose();
+  }
+  function snClose() { $('#appShell').classList.remove('sn-open'); }
+  function onAppNav(e) {
+    var mod = Object.keys(S.frames).filter(function (k) { return S.frames[k].contentWindow === e.source; })[0];
+    if (!mod) return;
+    if (!S.appNav[mod] && S.view === 'm-' + mod) S.open[mod] = true;
+    S.appNav[mod] = e.data.items || [];
+    buildNav();
   }
   function openAgent() {
     if (navItems().some(function (x) { return x.id === 'm-agent'; })) go('m-agent');
@@ -330,7 +420,8 @@
     if (!n) return;
     S.view = id;
     history.replaceState(null, '', '#' + id);
-    $$('.nav-item').forEach(function (el) { el.classList.toggle('active', el.dataset.id === id); });
+    if (n.mod) { S.open = {}; S.open[n.mod] = true; }   // ek waqt me ek hi app khula
+    buildNav();
     document.title = n.label + ' · Litpax';
     $$('.view').forEach(function (v) { v.classList.add('hidden'); });
     Object.keys(S.frames).forEach(function (k) { S.frames[k].classList.add('hidden'); });
@@ -362,6 +453,7 @@
     if (!has('Approver')) return;
     api('IMS', 'suiteListApprovals', { status: 'Pending' }).then(function (r) {
       var list = r.list;
+      S.apr = list.length;
       var b = $('#aprBadge'); if (!b) return;
       b.textContent = list.length; b.classList.toggle('hidden', !list.length);
     }).catch(function () {});
@@ -1007,11 +1099,28 @@
     $('#userInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#pinInput').focus(); });
     $('#logoutBtn').onclick = function () { if (confirm('Sign out of all apps?')) signOut(); };
     $('#reloadBtn').onclick = reloadCurrent;
+    // ---- sidebar: search, chhota/bada, mobile drawer ----
+    $('#snSearch').addEventListener('input', buildNav);
+    $('#snSearch').addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { this.value = ''; buildNav(); this.blur(); }
+      if (e.key === 'Enter') { var f = $('#nav .sn-page, #nav .nav-item'); if (f) { f.click(); this.value = ''; buildNav(); this.blur(); } }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === '/' && S.user && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); $('#snSearch').focus(); }
+    });
+    try { if (localStorage.getItem('sn_mini') === '1') $('#appShell').classList.add('sn-mini'); } catch (e) {}
+    $('#snMini').onclick = function () {
+      var on = $('#appShell').classList.toggle('sn-mini');
+      try { localStorage.setItem('sn_mini', on ? '1' : '0'); } catch (e) {}
+    };
+    $('#snMenu').onclick = function () { $('#appShell').classList.toggle('sn-open'); };
+    $('#snScrim').onclick = snClose;
     // module iframes se logout message
     window.addEventListener('message', function (e) {
       if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
       if (e.data.type === 'logout') signOut();
       if (e.data.type === 'agent') openAgent();   // kisi app me Ctrl+K
+      if (e.data.type === 'nav') onAppNav(e);     // app ke pages → common sidebar
       // Service Hub ka session (idle) khatam → Suite ke token se chupchaap naya, warna poora sign out
       if (e.data.type === 'svc-relogin') {
         svcSso().then(function () {
