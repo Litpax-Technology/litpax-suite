@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-   <link rel="stylesheet" href="app.css?v=cl1">
+   <link rel="stylesheet" href="app.css?v=pl1">
 </head>
 <body>
 
@@ -28,6 +28,19 @@
   <div class="topbar-right">
     <button id="btnCreateLead" class="btn btn-primary" onclick="goToLeadTracker()" style="display:none;margin-right:10px;">+ Create Lead</button>
     <button id="btnDealerCheck" class="btn" onclick="goToDealerCheck()" style="display:none;margin-right:10px;">🔍 Dealer Check</button>
+    <div class="apps-menu" id="appsMenu" style="display:none;">
+      <button class="apps-btn" onclick="toggleAppsMenu(event)" title="Apps">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </button>
+      <div class="apps-drop">
+        <a class="apps-tile" onclick="goToLeadTracker()"><div class="apps-ico">🎯</div><div class="apps-lbl">Sales Lead</div></a>
+        <a class="apps-tile" onclick="goToDealerCheck()"><div class="apps-ico">🔍</div><div class="apps-lbl">Dealer Check</div></a>
+        <!-- 👇 3 naye links — URL / icon / naam yahan badal dena -->
+        <a class="apps-tile" href="https://litpax-pi.onhercules.app/invoices/jn7dh7x1q6kqf6kmc70cpvdpqn8g5zwk" target="_blank"><div class="apps-ico">🔗</div><div class="apps-lbl">PI Maker</div></a>
+        <a class="apps-tile" href="https://ratelist.onhercules.app/admin" target="_blank"><div class="apps-ico">🔗</div><div class="apps-lbl">Rate List Maker</div></a>
+        <a class="apps-tile" href="https://smart-spec-builder-001148.onhercules.app/" target="_blank"><div class="apps-ico">🔗</div><div class="apps-lbl">Specification Builder</div></a>
+      </div>
+    </div>
     <div class="user-pill">
       <div class="user-av" id="userAv">D</div>
       <div>
@@ -1293,7 +1306,7 @@
 
   <!-- ===== PLANNED PRODUCTION SLIP MODAL ===== -->
 <div class="modal-overlay" id="plannedSlipModal">
-  <div class="modal" style="max-width:840px;">
+  <div class="modal" style="max-width:1150px;">
     <div class="modal-head">
       <div class="modal-title">🖨️ Planned Production Slip</div>
       <button class="modal-close" onclick="closeModal('plannedSlipModal')">✕</button>
@@ -1313,16 +1326,18 @@
       <div class="table-wrap" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;">
         <table>
           <thead><tr>
-            <th style="width:36px;"></th><th>Order ID</th><th>Item ID</th><th>Customer</th>
-            <th>Product Model</th><th>Battery Type</th><th>Charger Model</th><th>Charger Qty</th><th>Total</th><th>Produced</th><th>Pending</th><th style="width:110px;">Planned Qty</th>
+            <th style="width:36px;"></th><th>Order ID</th><th>Item ID</th><th>Customer</th><th>Product Model</th><th>Battery Type</th><th>Remarks</th><th>Charger Model</th><th>Charger Qty</th><th>Total</th><th>Produced</th><th>Pending</th>
+            <th style="width:70px;">⏰ 9-12</th><th style="width:70px;">⏰ 12-3</th><th style="width:70px;">⏰ 3-6</th><th style="width:70px;">⏰ OT</th><th>Planned</th>
           </tr></thead>
-          <tbody id="ps-picker-body"><tr><td colspan="10"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+          <tbody id="ps-picker-body"><tr><td colspan="17"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
         </table>
       </div>
       <div style="margin-top:10px;padding:10px 14px;background:var(--accent-dim);border:1px solid #C7D2FE;border-radius:10px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Selected</span><span style="font-size:16px;font-weight:700;color:var(--text);" id="ps-sel-count">0</span></div>
         <div style="width:1px;height:24px;background:#C7D2FE;"></div>
         <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;">Total Planned Qty</span><span style="font-size:16px;font-weight:700;color:var(--accent);" id="ps-sel-qty">0</span></div>
+        <div style="width:1px;height:24px;background:#C7D2FE;"></div>
+        <div id="ps-slot-sum" style="font-size:12px;color:var(--text2);"></div>
       </div>
       <div id="ps-material-check" style="display:none;margin-top:12px;"></div>
     </div>
@@ -1388,7 +1403,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=3.6"></script>
+<script src="app.js?v=pl1"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
