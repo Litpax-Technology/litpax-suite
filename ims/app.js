@@ -13,13 +13,12 @@ const DEPTS = ['Volt Wing','Ampere Wing','Volt x Ampere Wing','Mega Grid','Catho
 // ── ROLES & PINS ──
 // PINs ab yahan NAHI hain — backend verify karta hai (source me kuch nahi dikhta)
 const ROLES = {
-admin:   { name: 'Admin',   homePage: 'dashboard', pages: ['dashboard','inward','outward','dispatch','wip','items','opening','bom','indent','stock','reorder','closing','adc','ledger'] },
+admin:   { name: 'Admin',   homePage: 'dashboard', pages: ['dashboard','inward','outward','dispatch','wip','items','opening','bom','indent','stock','reorder','closing','adc','ledger','settings'] },
   ajay:    { name: 'Store',    homePage: 'inward',    pages: ['inward','outward','items','opening','bom','indent','stock','reorder'] },
   sandeep: { name: 'Production', homePage: 'dispatch',  pages: ['dispatch','received','wip','stock','items','bom'] },
   purchase:  { name: 'Purchase',  redirect: '../soms/index.html' },
 
 };
-
 
 // ── LITPAX SUITE (common login) ──
 // Suite ke andar khula ho to suite_token hota hai → Inward approval ke through jaata hai
@@ -335,7 +334,6 @@ async function api(action, body) {
   return promise.finally(() => { delete _pendingCalls[key]; });
 }
 
-
 // ── INIT ──
 window.onload = async function() {
   const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
@@ -392,6 +390,7 @@ function showPage(id) {
   if (id === 'adc')          initADC();
   if (id === 'ledger')       initLedger();
   if (id === 'received')     { const d = document.getElementById('recv-date'); if(d) d.value = today(); loadReceived(); }
+  if (id === 'settings')     loadSettings();
 }
 
 // ── BADGES ──
@@ -506,6 +505,8 @@ function openInwardModal() {
   const rm = document.querySelector('input[name="in-purpose"][value="Raw Material"]');
   if (rm) rm.checked = true;
   updInwardPurpose();
+  _inRows = [{ cat: '', item: '', qty: '' }];
+  renderInRows();
   if (suiteTok()) loadInwardPO();
   document.getElementById('inward-modal').classList.add('open');
 }
@@ -604,12 +605,24 @@ async function saveInward() {
   const qty      = Number(document.getElementById('in-qty').value);
   const date     = document.getElementById('in-date').value;
   const suiteRM  = suiteTok() && (document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material') === 'Raw Material';
-  if (suiteRM) {
+  let rows = [];
+  if (suiteRM) {   // SOMS order wala inward: ek order line = ek item
     if (!_inLine) { toast('Select a SOMS order', 'err'); return; }
     if (qty > _inLine.pendingQty) { toast(`Only ${_inLine.pendingQty} ${_inLine.unit || ''} received by Purchase is available to inward`, 'err'); return; }
+    if (!itemName) { toast('Please select an item', 'err'); return; }
+    if (!qty || qty <= 0) { toast('Enter a valid quantity', 'err'); return; }
+  } else {         // baaki: kai items ek saath (purane IMS jaisa)
+    rows = _inRows.filter(r => r.item || String(r.qty).trim() !== '');
+    if (!rows.length) { toast('Kam se kam ek item daalo', 'err'); return; }
+    const seen = new Set();
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i], q = Number(r.qty) || 0;
+      if (!r.item)          { toast(`Row ${i + 1}: item select karo`, 'err'); return; }
+      if (q <= 0)           { toast(`${r.item}: valid qty daalo`, 'err'); return; }
+      if (seen.has(r.item)) { toast(`${r.item} do baar daala hai`, 'err'); return; }
+      seen.add(r.item);
+    }
   }
-  if (!itemName) { toast('Please select an item', 'err'); return; }
-  if (!qty || qty <= 0) { toast('Enter a valid quantity', 'err'); return; }
   const inPurposeChk = document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material';
   const invoiceVal   = document.getElementById('in-invoice').value.trim();
   if (inPurposeChk === 'Raw Material' && !invoiceVal) {
@@ -617,6 +630,8 @@ async function saveInward() {
     document.getElementById('in-invoice').focus();
     return;
   }
+  if (needsApprovalUI('', inPurposeChk) && !_inPhotos.length &&
+      !confirm('📄 Bill ki photo upload nahi ki — approve karne wale ko verify karne me dikkat hogi.\n\nFir bhi bina photo ke bhejein?')) return;
 
   const btn = document.getElementById('in-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
@@ -642,18 +657,30 @@ async function saveInward() {
       loadInward();
       return;
     }
-    await api('addInward', {
-      reqId: _reqIds.inward,
-      itemName, qty, date,
-      purpose:  inPurpose,
-      supplier: inPurpose === 'Raw Material' ? document.getElementById('in-supplier').value : '',
-      invoice:  invoiceVal,
-      by:       document.getElementById('in-by').value || byName('Store'),
-      remarks:  document.getElementById('in-remarks').value,
-      photos:   photoIds.join(','),
-      handledBy: document.getElementById('in-handled').value,
-    });
-    toast('Inward saved ✓', 'ok');
+    // Har item purane addInward se alag jaata hai (same bill/photo) — backend me koi change nahi
+    let pending = 0, saved = 0;
+    for (let i = 0; i < rows.length; i++) {
+      btn.textContent = `Saving ${i + 1}/${rows.length}...`;
+      try {
+        const res = await api('addInward', {
+          reqId: _reqIds.inward + '-' + i,   // har item ka alag reqId (double-save guard)
+          itemName: rows[i].item, qty: Number(rows[i].qty), date,
+          purpose:  inPurpose,
+          supplier: inPurpose === 'Raw Material' ? document.getElementById('in-supplier').value : '',
+          invoice:  invoiceVal,
+          by:       document.getElementById('in-by').value || byName('Store'),
+          remarks:  document.getElementById('in-remarks').value,
+          photos:   photoIds.join(','),
+          handledBy: document.getElementById('in-handled').value,
+        });
+        if (res && res.pending) pending++; else saved++;
+      } catch (e) {
+        // Jo pehle chale gaye wo ho gaye; baaki ke liye bata do
+        throw new Error(`${rows[i].item}: ${e.message} — ${i} item pehle hi chale gaye, baaki dobara daalo`);
+      }
+    }
+    if (pending) toast(`⏳ ${pending} item approval ke liye bhej diye — approve hote hi stock me aa jayenge`, 'warn');
+    else toast(`Inward saved ✓ — ${saved} item`, 'ok');
     closeM('inward-modal');
     _stocks = [];
     loadInward();
@@ -669,7 +696,12 @@ function updInwardPurpose() {
   const suiteRM = !!suiteTok() && purpose !== 'From Production';
   const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
   show('in-po-wrap', suiteRM);
-  show('in-cat-wrap', !suiteRM);
+  show('in-cat-wrap', false);            // category/item ab rows me (neeche)
+  show('in-item-wrap', suiteRM);         // SOMS order: ek item + qty
+  show('in-qty-wrap', suiteRM);
+  show('in-rows-wrap', !suiteRM);        // baaki: kai items ek saath
+  if (!suiteRM) show('in-stock-info', false);
+  updInwardBillHint();
   const sup = document.getElementById('in-supplier'); if (sup) sup.readOnly = suiteRM;
   const btn = document.getElementById('in-btn'); if (btn) btn.textContent = suiteRM ? 'Send for Approval' : 'Save Inward';
   if (!suiteRM) {   // From Production → purana tareeka (category → item)
@@ -808,86 +840,389 @@ function clearOutFilters() {
   loadOutward();
 }
 
-function openOutwardModal() {
-  _reqIds.outward = newReqId();
-  if (!_stocks.length) {
-    api('getStockSummary').then(d => { _stocks = d; _items = d; }).catch(() => {});
-  }
-  document.getElementById('out-cat').value = '';
-  document.getElementById('out-item').innerHTML = '<option value="">-- Select Category first --</option>';
-  document.getElementById('out-qty').value = '';
-  document.getElementById('out-date').value = today();
-  document.getElementById('out-dept').value = '';
-  document.getElementById('out-issuedto').value = '';
-  document.getElementById('out-by').value = byName('Store');
-  handledFill('out-handled');
-  document.getElementById('out-remarks').value = '';
-  document.getElementById('out-stock-info').style.display = 'none';
-  document.getElementById('outward-modal').classList.add('open');
+// ── Inward: kai items ek saath (purane IMS jaisa) ──
+let _inRows = [];
+function renderInRows() {
+  const wrap = document.getElementById('in-rows');
+  if (!wrap) return;
+  const single = _inRows.length === 1;
+  wrap.innerHTML = _inRows.map((r, i) => `
+    <div class="out-row">
+      <select class="inp" onchange="setInCat(${i}, this.value)">${outCatOpts(r.cat)}</select>
+      <select class="inp" onchange="setInItem(${i}, this.value)">${outItemOpts(r.cat, r.item)}</select>
+      <input class="inp" type="number" min="0" step="any" placeholder="Qty" value="${htmlEnc(r.qty)}"
+        oninput="setInQty(${i}, this.value)" style="font-family:var(--mono);font-weight:600;">
+      <button type="button" class="btn brd bsm" onclick="removeInRow(${i})" ${single ? 'disabled style="opacity:.35;"' : ''}>✕</button>
+      <div class="out-row-info" id="in-info-${i}"></div>
+    </div>`).join('');
+  updAllInInfo();
 }
-
-function filterOutwardItems() {
-  const cat = document.getElementById('out-cat').value;
-  const sel = document.getElementById('out-item');
-  sel.innerHTML = '<option value="">-- Select Item --</option>';
-  document.getElementById('out-stock-info').style.display = 'none';
-  if (!cat) return;
-  const src = _stocks.length ? _stocks : _items;
-  src.filter(s => s.cat === cat).forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.name;
-    opt.textContent = s.name;
-    sel.appendChild(opt);
+function updAllInInfo() {
+  _inRows.forEach((r, i) => {
+    const el = document.getElementById('in-info-' + i);
+    if (!el) return;
+    const s = r.item ? _stocks.find(x => x.name === r.item) : null;
+    if (!s) { el.innerHTML = ''; return; }
+    const u = htmlEnc(s.unit || '');
+    let h = `Stock: <b style="font-family:var(--mono);">${s.currentStock} ${u}</b> · ROP: <b style="font-family:var(--mono);">${s.reorderPoint} ${u}</b> · In Transit: <b style="font-family:var(--mono);">${s.mit || 0} ${u}</b>`;
+    if (_inRows.some((x, j) => j !== i && x.item === r.item)) h += ` · <b style="color:var(--red);">⚠ Ye item doosri row me bhi hai</b>`;
+    el.innerHTML = h;
   });
+  const n = _inRows.filter(r => r.item && Number(r.qty) > 0).length;
+  setEl('in-row-count', n ? `${n} item ready` : '');
+}
+function setInCat(i, v)  { _inRows[i].cat = v; _inRows[i].item = ''; renderInRows(); }
+function setInItem(i, v) { _inRows[i].item = v; updAllInInfo(); }
+function setInQty(i, v)  { _inRows[i].qty = v; updAllInInfo(); }
+function addInRow() {
+  const last = _inRows[_inRows.length - 1];
+  _inRows.push({ cat: last ? last.cat : '', item: '', qty: '' });   // pichhli row ki category carry
+  renderInRows();
+}
+function removeInRow(i) {
+  if (_inRows.length <= 1) return;
+  _inRows.splice(i, 1);
+  renderInRows();
+}
+function needsApprovalUI(cat, purpose) { return (purpose || 'Raw Material') === 'Raw Material'; }
+function updInwardBillHint() {
+  const cat = document.getElementById('in-cat')?.value || '';
+  const purpose = document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material';
+  const el = document.getElementById('in-bill-hint');
+  if (el) el.style.display = needsApprovalUI(cat, purpose) ? '' : 'none';
 }
 
-async function updOutwardInfo() {
-  const name = document.getElementById('out-item').value;
-  const inf  = document.getElementById('out-stock-info');
-  if (!name) { inf.style.display = 'none'; return; }
-  let s = _stocks.find(x => x.name === name);
-  if (!s) {
-    try {
-      const d = await api('getDashboard');
-      _stocks = d.stocks || [];
-      s = _stocks.find(x => x.name === name);
-    } catch(e) {}
+// ── Receive: bill / stock photo ──
+let _recvPhotos = [];
+function addRecvPhotos(input) {
+  const files = [...(input.files || [])];
+  input.value = '';
+  for (const f of files) {
+    if (_recvPhotos.length >= IN_PHOTO_MAX) { toast(`Max ${IN_PHOTO_MAX} photos`, 'warn'); break; }
+    if (f.type && !f.type.startsWith('image/')) continue;
+    _recvPhotos.push({ file: f, url: URL.createObjectURL(f) });
   }
-  if (s) {
-    document.getElementById('out-cs').textContent = `${s.currentStock} ${s.unit || ''}`;
-    document.getElementById('out-rp').textContent = `${s.reorderPoint} ${s.unit || ''}`;
-    renderItemPic('out-item-pic', s);
-    inf.style.display = 'block';
+  renderRecvPhotos();
+}
+function removeRecvPhoto(i) {
+  const p = _recvPhotos[i];
+  if (p) URL.revokeObjectURL(p.url);
+  _recvPhotos.splice(i, 1);
+  renderRecvPhotos();
+}
+function renderRecvPhotos() {
+  const list = document.getElementById('recv-photo-list');
+  if (!list) return;
+  list.innerHTML = _recvPhotos.map((p, i) =>
+    `<div class="in-photo-th"><img src="${p.url}" alt=""><button type="button" onclick="removeRecvPhoto(${i})">✕</button></div>`
+  ).join('');
+  document.getElementById('recv-photo-add').style.display = _recvPhotos.length >= IN_PHOTO_MAX ? 'none' : '';
+}
+function resetRecvPhotos() {
+  _recvPhotos.forEach(p => URL.revokeObjectURL(p.url));
+  _recvPhotos = [];
+  renderRecvPhotos();
+}
+function updRecvBillHint(itemName) {
+  const el = document.getElementById('recv-bill-hint');
+  const show = cat => {
+    if (_currentPOReceive && _currentPOReceive.itemName === itemName) _currentPOReceive.cat = cat || '';
+    if (el) el.style.display = needsApprovalUI(cat, 'Raw Material') ? '' : 'none';
+  };
+  const it = _stocks.find(s => s.name === itemName) || _items.find(s => s.name === itemName);
+  if (it) { show(it.cat); return; }
+  if (el) el.style.display = 'none';
+  api('getStockSummary').then(d => { _stocks = d; _items = d; const x = d.find(s => s.name === itemName); show(x ? x.cat : ''); }).catch(() => {});
+}
+
+// ── Outward: kai items + photo ──
+let _outRows   = [];
+let _outPhotos = [];
+function outCatOpts(sel) {
+  const cats = (_config.catOrder && _config.catOrder.length)
+    ? _config.catOrder : [...new Set(_stocks.map(s => s.cat).filter(Boolean))];
+  return '<option value="">-- Category --</option>' +
+    cats.map(c => `<option value="${htmlEnc(c)}" ${c === sel ? 'selected' : ''}>${htmlEnc(c)}</option>`).join('');
+}
+function outItemOpts(cat, sel) {
+  if (!cat) return '<option value="">-- Pehle Category --</option>';
+  return '<option value="">-- Select Item --</option>' +
+    _stocks.filter(s => s.cat === cat)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(s => `<option value="${htmlEnc(s.name)}" ${s.name === sel ? 'selected' : ''}>${htmlEnc(s.name)}</option>`).join('');
+}
+function renderOutRows() {
+  const wrap = document.getElementById('out-rows');
+  if (!wrap) return;
+  const single = _outRows.length === 1;
+  wrap.innerHTML = _outRows.map((r, i) => `
+    <div class="out-row">
+      <select class="inp" onchange="setOutCat(${i}, this.value)">${outCatOpts(r.cat)}</select>
+      <select class="inp" onchange="setOutItem(${i}, this.value)">${outItemOpts(r.cat, r.item)}</select>
+      <input class="inp" type="number" min="0" step="any" placeholder="Qty" value="${htmlEnc(r.qty)}"
+        oninput="setOutQty(${i}, this.value)" style="font-family:var(--mono);font-weight:600;">
+      <button type="button" class="btn brd bsm" onclick="removeOutRow(${i})" ${single ? 'disabled style="opacity:.35;"' : ''}>✕</button>
+      <div class="out-row-info" id="out-info-${i}"></div>
+    </div>`).join('');
+  updAllOutInfo();
+}
+function updOutRowInfo(i) {
+  const el = document.getElementById('out-info-' + i);
+  const r  = _outRows[i];
+  if (!el || !r) return;
+  if (!r.item) { el.innerHTML = ''; return; }
+  const s = _stocks.find(x => x.name === r.item);
+  if (!s) { el.innerHTML = '<span style="color:var(--red);">Item stock me nahi mila</span>'; return; }
+  const q   = Number(r.qty) || 0;
+  const dup = _outRows.some((x, j) => j !== i && x.item === r.item);
+  let h = `Available: <b style="color:var(--navy);font-family:var(--mono);">${s.currentStock} ${htmlEnc(s.unit || '')}</b>`;
+  if (s.imgId) h += ` · <span style="color:var(--accent);cursor:pointer;" data-n="${htmlEnc(s.name)}" onclick="viewItem(this.dataset.n)">📷 Photo</span>`;
+  if (dup) h += ` · <b style="color:var(--red);">⚠ Ye item doosri row me bhi hai</b>`;
+  else if (q > s.currentStock) h += ` · <b style="color:var(--red);">⛔ Stock se zyada</b>`;
+  el.innerHTML = h;
+}
+function updAllOutInfo() {
+  _outRows.forEach((_, i) => updOutRowInfo(i));
+  const n = _outRows.filter(r => r.item && Number(r.qty) > 0).length;
+  setEl('out-row-count', n ? `${n} item ready` : '');
+}
+function setOutCat(i, v)  { _outRows[i].cat = v; _outRows[i].item = ''; renderOutRows(); }
+function setOutItem(i, v) { _outRows[i].item = v; updAllOutInfo(); }
+function setOutQty(i, v)  { _outRows[i].qty = v; updAllOutInfo(); }
+function addOutRow() {
+  const last = _outRows[_outRows.length - 1];
+  _outRows.push({ cat: last ? last.cat : '', item: '', qty: '' });   // pichhli row ki category carry
+  renderOutRows();
+}
+function removeOutRow(i) {
+  if (_outRows.length <= 1) return;
+  _outRows.splice(i, 1);
+  renderOutRows();
+}
+function addOutwardPhotos(input) {
+  const files = [...(input.files || [])];
+  input.value = '';
+  for (const f of files) {
+    if (_outPhotos.length >= IN_PHOTO_MAX) { toast(`Max ${IN_PHOTO_MAX} photos`, 'warn'); break; }
+    if (f.type && !f.type.startsWith('image/')) continue;
+    _outPhotos.push({ file: f, url: URL.createObjectURL(f) });
   }
+  renderOutPhotos();
+}
+function removeOutwardPhoto(i) {
+  const p = _outPhotos[i];
+  if (p) URL.revokeObjectURL(p.url);
+  _outPhotos.splice(i, 1);
+  renderOutPhotos();
+}
+function renderOutPhotos() {
+  const list = document.getElementById('out-photo-list');
+  if (!list) return;
+  list.innerHTML = _outPhotos.map((p, i) =>
+    `<div class="in-photo-th"><img src="${p.url}" alt=""><button type="button" onclick="removeOutwardPhoto(${i})">✕</button></div>`
+  ).join('');
+  document.getElementById('out-photo-add').style.display = _outPhotos.length >= IN_PHOTO_MAX ? 'none' : '';
+}
+function resetOutPhotos() {
+  _outPhotos.forEach(p => URL.revokeObjectURL(p.url));
+  _outPhotos = [];
+  renderOutPhotos();
+}
+
+// ── Settings (Admin): category, brand, unit ──
+let _setCats  = [];
+let _setDirty = false;
+async function loadSettings() {
+  document.getElementById('set-list').innerHTML = `<div class="empty"><div class="ei">⏳</div><div class="et">Loading...</div></div>`;
+  await loadConfig();
+  if (!_stocks.length) { try { _stocks = await api('getStockSummary'); } catch (e) { toast(e.message, 'err'); } }
+  _setCats = (_config.catOrder || []).map(c => ({
+    name: c,
+    brands: [...(_config.brands[c] || ['Other'])],
+    unit: _config.catUnits[c] || 'Pcs',
+    noBrand: (_config.noBrandCats || []).includes(c),
+    isNew: false,
+  }));
+  _setDirty = false;
+  document.getElementById('set-new-unit').innerHTML = _config.units.map(u => `<option>${htmlEnc(u)}</option>`).join('');
+  renderSettings();
+}
+function renderSettings() {
+  const wrap = document.getElementById('set-list');
+  setEl('set-dirty', _setDirty ? '● Unsaved changes' : '');
+  if (!_setCats.length) { wrap.innerHTML = `<div class="empty"><div class="et">Koi category nahi</div></div>`; return; }
+  const unitOpts = sel => [...new Set([..._config.units, sel])]
+    .map(u => `<option ${u === sel ? 'selected' : ''}>${htmlEnc(u)}</option>`).join('');
+
+  wrap.innerHTML = _setCats.map((c, i) => {
+    const used = setCatUse(c.name);
+    const chips = c.noBrand
+      ? `<span style="font-size:11px;color:var(--muted);">No-brand — item naam seedha model se banega</span>`
+      : c.brands.map((b, j) => {
+          const bu = setBrandUse(c.name, b);
+          return `<span class="set-chip">${htmlEnc(b)}${bu ? ` <b>${bu}</b>` : ''}<button type="button" onclick="setDelBrand(${i},${j})" ${bu ? 'disabled title="Is brand ke items hain"' : ''}>✕</button></span>`;
+        }).join('') +
+        `<span class="set-add"><input class="inp" id="set-b-${i}" placeholder="+ Brand" onkeydown="if(event.key==='Enter')setAddBrand(${i})"><button type="button" class="btn bg bsm" onclick="setAddBrand(${i})">Add</button></span>`;
+    return `<div class="set-row">
+      <div class="set-move">
+        <button type="button" onclick="setMove(${i},-1)" ${i === 0 ? 'disabled' : ''}>▲</button>
+        <button type="button" onclick="setMove(${i},1)" ${i === _setCats.length - 1 ? 'disabled' : ''}>▼</button>
+      </div>
+      <div class="set-main">
+        <div class="set-head">
+          <span class="set-name">${getCatIcon(c.name)} ${htmlEnc(c.name)}</span>
+          ${c.isNew ? '<span class="badge b-dep">New</span>' : ''}
+          <span style="font-size:11px;color:var(--muted);">${used} items</span>
+          <select class="inp" style="width:95px;font-size:12px;padding:4px 8px;" onchange="setUnit(${i},this.value)">${unitOpts(c.unit)}</select>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" ${c.noBrand ? 'checked' : ''} onchange="setNoBrand(${i},this.checked)"> No brand</label>
+          <button type="button" class="btn brd bsm" style="margin-left:auto;" onclick="setDelCat(${i})" ${used ? 'disabled title="Is category ke items hain"' : ''}>Delete</button>
+        </div>
+        <div class="set-chips">${chips}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setMark() { _setDirty = true; renderSettings(); }
+function setMove(i, d) {
+  const j = i + d;
+  if (j < 0 || j >= _setCats.length) return;
+  [_setCats[i], _setCats[j]] = [_setCats[j], _setCats[i]];
+  setMark();
+}
+function setUnit(i, v)    { _setCats[i].unit = v; setMark(); }
+function setNoBrand(i, v) { _setCats[i].noBrand = v; if (!_setCats[i].brands.length) _setCats[i].brands = ['Other']; setMark(); }
+function setAddBrand(i) {
+  const v = (document.getElementById('set-b-' + i).value || '').trim();
+  if (!v) return;
+  if (v.includes(',')) { toast('Brand naam me comma nahi chalega', 'err'); return; }
+  const c = _setCats[i];
+  if (c.brands.some(b => b.toLowerCase() === v.toLowerCase())) { toast(`${v} pehle se hai`, 'warn'); return; }
+  const oi = c.brands.indexOf('Other');              // 'Other' hamesha aakhir me rahe
+  if (oi === -1) c.brands.push(v); else c.brands.splice(oi, 0, v);
+  setMark();
+  setTimeout(() => { const n = document.getElementById('set-b-' + i); if (n) n.focus(); }, 0);
+}
+function setDelBrand(i, j) {
+  const c = _setCats[i];
+  if (setBrandUse(c.name, c.brands[j])) { toast('Is brand ke items hain — hat nahi sakta', 'err'); return; }
+  c.brands.splice(j, 1);
+  setMark();
+}
+function setBrandUse(cat, brand) {
+  const pre = (cat + ' ' + brand + ' ').toLowerCase();
+  return _stocks.filter(s => s.cat === cat && s.name.toLowerCase().startsWith(pre)).length;
+}
+function setCatUse(cat) { return _stocks.filter(s => s.cat === cat).length; }
+function setAddCat() {
+  const name = document.getElementById('set-new-name').value.trim();
+  if (!name) { toast('Category naam daalo', 'err'); return; }
+  if (name.includes(',')) { toast('Naam me comma nahi chalega', 'err'); return; }
+  if (_setCats.some(c => c.name.toLowerCase() === name.toLowerCase())) { toast(`${name} pehle se hai`, 'warn'); return; }
+  _setCats.push({
+    name, brands: ['Other'],
+    unit: document.getElementById('set-new-unit').value || 'Pcs',
+    noBrand: document.getElementById('set-new-nobrand').checked,
+    isNew: true,
+  });
+  document.getElementById('set-new-name').value = '';
+  document.getElementById('set-new-nobrand').checked = false;
+  setMark();
+}
+function setDelCat(i) {
+  const c = _setCats[i];
+  if (setCatUse(c.name)) { toast('Is category ke items hain — delete nahi ho sakti', 'err'); return; }
+  if (!confirm(`"${c.name}" category hatani hai?`)) return;
+  _setCats.splice(i, 1);
+  setMark();
+}
+async function saveSettings() {
+  const pinEl = document.getElementById('set-pin');
+  const pin = pinEl.value.trim();
+  if (!pin) { toast('Save ke liye Admin PIN daalo', 'err'); pinEl.focus(); return; }
+  const btn = document.getElementById('set-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const r = await api('saveConfig', {
+      pin,
+      categories: _setCats.map(c => ({ name: c.name, brands: c.brands, unit: c.unit, noBrand: c.noBrand })),
+    });
+    pinEl.value = '';
+    toast(`Settings saved ✓ — ${r.count} categories`, 'ok');
+    await loadSettings();               // loadConfig → saare dropdown bhi refresh
+  } catch (e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = '💾 Save Changes'; }
+}
+
+async function openOutwardModal(pre) {
+  pre = pre || {};
+  _reqIds.outward = newReqId();
+  document.getElementById('out-date').value     = today();
+  document.getElementById('out-dept').value     = pre.department || '';
+  document.getElementById('out-issuedto').value = pre.issuedTo || '';
+  document.getElementById('out-by').value       = byName('Store');
+  handledFill('out-handled');
+  document.getElementById('out-remarks').value  = pre.remarks || '';
+  const prod = document.querySelector('input[name="out-purpose"][value="Production"]');
+  if (prod) prod.checked = true;
+  resetOutPhotos();
+  document.getElementById('out-rows').innerHTML =
+    '<div style="padding:12px 4px;font-size:12px;color:var(--muted);"><span class="loader"></span> Stock load ho raha hai...</div>';
+  document.getElementById('outward-modal').classList.add('open');
+  if (!_stocks.length) {
+    try { _stocks = await api('getStockSummary'); _items = _stocks; }
+    catch (e) { toast(e.message, 'err'); }
+  }
+  const s = pre.itemName ? _stocks.find(x => x.name === pre.itemName) : null;
+  _outRows = [{ cat: s ? s.cat : '', item: s ? s.name : '', qty: pre.qty || '' }];
+  renderOutRows();
 }
 
 async function saveOutward() {
-  const itemName   = document.getElementById('out-item').value;
-  const qty        = Number(document.getElementById('out-qty').value);
-  const date       = document.getElementById('out-date').value;
   const department = document.getElementById('out-dept').value;
-  if (!itemName)   { toast('Please select an item', 'err'); return; }
-  if (!qty || qty <= 0) { toast('Enter a valid quantity', 'err'); return; }
-  if (!department) { toast('Please select a department', 'err'); return; }
+  if (!department) { toast('Department select karo', 'err'); return; }
+  const rows = _outRows.filter(r => r.item || String(r.qty).trim() !== '');
+  if (!rows.length) { toast('Kam se kam ek item daalo', 'err'); return; }
+
+  const seen = new Set();
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i], q = Number(r.qty) || 0;
+    if (!r.item)          { toast(`Row ${i + 1}: item select karo`, 'err'); return; }
+    if (q <= 0)           { toast(`${r.item}: valid qty daalo`, 'err'); return; }
+    if (seen.has(r.item)) { toast(`${r.item} do baar daala hai`, 'err'); return; }
+    seen.add(r.item);
+    const s = _stocks.find(x => x.name === r.item);
+    if (s && q > s.currentStock) { toast(`${r.item}: available sirf ${s.currentStock} ${s.unit || ''}`, 'err'); return; }
+  }
+
   const btn = document.getElementById('out-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    const outPurpose = document.querySelector('input[name="out-purpose"]:checked')?.value || 'Production';
-    await api('addOutward', {
-      reqId: _reqIds.outward,
-      itemName, qty, date, department,
-      purpose:  outPurpose,
+    const photoIds = [];
+    for (let i = 0; i < _outPhotos.length; i++) {
+      btn.textContent = `Photo ${i + 1}/${_outPhotos.length} upload...`;
+      const data = await compressImage(_outPhotos[i].file, 1200, 0.75);
+      const up = await api('uploadOutwardPhoto', { data, mime: 'image/jpeg' });
+      photoIds.push(up.id);
+    }
+    btn.textContent = 'Saving...';
+    const res = await api('addOutwardBulk', {
+      reqId:    _reqIds.outward,
+      department,
+      purpose:  document.querySelector('input[name="out-purpose"]:checked')?.value || 'Production',
       issuedTo: document.getElementById('out-issuedto').value,
       by:       document.getElementById('out-by').value || byName('Store'),
-      remarks:  document.getElementById('out-remarks').value,
       handledBy: document.getElementById('out-handled').value,
+      remarks:  document.getElementById('out-remarks').value,
+      photos:   photoIds.join(','),
+      items:    rows.map(r => ({ itemName: r.item, qty: Number(r.qty) })),
     });
-    toast('Outward saved ✓', 'ok');
+    toast(`Outward saved ✓ — ${res.count} items`, 'ok');
     closeM('outward-modal');
+    resetOutPhotos();
     _stocks = [];
     loadOutward();
     loadDash();
-  } catch(e) { toast(e.message, 'err'); }
+  } catch (e) { toast(e.message, 'err'); }
   finally { btn.disabled = false; btn.textContent = 'Save Outward'; }
 }
 
@@ -2277,18 +2612,6 @@ async function genHeatmap() {
   }
 }
 
-function populateItemSelect(id) {
-  const sel = document.getElementById(id);
-  if (_items.length) {
-    sel.innerHTML = _items.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
-  } else {
-    api('getStockSummary').then(d => {
-      _stocks = d; _items = d;
-      sel.innerHTML = d.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
-    }).catch(() => {});
-  }
-}
-
 async function populateBomSelect(id) {
   const sel = document.getElementById(id);
   try {
@@ -2574,6 +2897,8 @@ function openReceivePOItemModal(poId, itemName, orderedQty, supplier) {
   document.getElementById('recv-invoice').value  = '';
   document.getElementById('recv-supplier').value = supplier || '';
   document.getElementById('recv-by').value       = byName('Production');
+  resetRecvPhotos();
+  updRecvBillHint(itemName);
   document.getElementById('receive-modal').classList.add('open');
 }
 
@@ -2585,16 +2910,28 @@ async function confirmReceive() {
   const supplier = document.getElementById('recv-supplier').value;
   const by       = document.getElementById('recv-by').value || byName('Production');
   if (!qty || qty <= 0) { toast('Valid qty daalo', 'err'); return; }
+  if (needsApprovalUI(_currentPOReceive.cat, 'Raw Material') && !_recvPhotos.length &&
+      !confirm('📄 Bill ki photo upload nahi ki — Accountant ko verify karne me dikkat hogi.\n\nFir bhi bina photo ke bhejein?')) return;
   const btn = document.getElementById('recv-btn');
   btn.disabled = true; btn.textContent = 'Processing...';
   try {
-    await api('receivePOItem', {
+    const photoIds = [];
+    for (let i = 0; i < _recvPhotos.length; i++) {
+      btn.textContent = `Photo ${i + 1}/${_recvPhotos.length} upload...`;
+      const data = await compressImage(_recvPhotos[i].file, 1200, 0.75);
+      const up = await api('uploadInwardPhoto', { data, mime: 'image/jpeg' });
+      photoIds.push(up.id);
+    }
+    btn.textContent = 'Processing...';
+    const res = await api('receivePOItem', {
       reqId: _reqIds.recv,
       poId:     _currentPOReceive.poId,
       itemName: _currentPOReceive.itemName,
       qty, date, invoice, supplier, by,
+      photos:   photoIds.join(','),
     });
-    toast(`✓ ${_currentPOReceive.itemName} received — stock updated`, 'ok');
+    if (res && res.pending) toast(`⏳ ${_currentPOReceive.itemName} — Accountant approval ke liye bhej diya`, 'warn');
+    else toast(`✓ ${_currentPOReceive.itemName} received — stock updated`, 'ok');
     closeM('receive-modal');
     _currentPOReceive = null;
     _stocks = [];
@@ -3411,33 +3748,8 @@ function renderRequests() {
 
 function fulfillRequest(reqId, itemName, qty, department, requestedBy) {
   window._pendingReqId = reqId;
-  _reqIds.outward = newReqId();
-  document.getElementById('outward-modal').classList.add('open');
   showPage('outward');
-
-  const item = (_stocks && _stocks.find(s => s.name === itemName))
-             || (_items  && _items.find(i => i.name === itemName));
-  const cat = item ? item.cat : '';
-
-  const catSel  = document.getElementById('out-cat');
-  const itemSel = document.getElementById('out-item');
-
-  if (catSel && cat) catSel.value = cat;
-
-  filterOutwardItems();
-  setTimeout(() => {
-    populateItemSelect('out-item');
-    setTimeout(() => {
-      if (itemSel) itemSel.value = itemName;
-      document.getElementById('out-qty').value   = qty;
-      document.getElementById('out-date').value  = today();
-      document.getElementById('out-dept').value  = department || '';
-      document.getElementById('out-by').value       = byName('Store');
-      document.getElementById('out-issuedto').value  = requestedBy || '';
-      document.getElementById('out-remarks').value   = 'Req: ' + reqId;
-      updOutwardInfo();
-    }, 150);
-  }, 100);
+  openOutwardModal({ itemName, qty, department, issuedTo: requestedBy, remarks: 'Req: ' + reqId });
 }
 
 async function cancelRequest(id) {
