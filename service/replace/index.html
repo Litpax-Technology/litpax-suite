@@ -6,10 +6,11 @@
 <title>Advance Replacement · Litpax</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=ar1">
+<link rel="stylesheet" href="style.css?v=ar2">
 <script>
   // Advance Replacement sirf Suite ke andar khulta hai (login Suite ka hi hai)
-  (function () { var ok = false; try { ok = window.top !== window.self && window.top.location.origin === location.origin; } catch (e) {} if (!ok && !/[?&]solo=1/.test(location.search)) { document.documentElement.style.display = 'none'; var u = new URL('../../#m-replace', location.href).href; try { window.top.location = u; } catch (e) { location.replace(u); } } })();
+  if (window.parent !== window.top) document.documentElement.classList.add('in-hub');   // Service Hub ke andar (apna header nahi)
+  (function () { var ok = false; try { ok = window.top !== window.self && window.top.location.origin === location.origin; } catch (e) {} if (!ok && !/[?&]solo=1/.test(location.search)) { document.documentElement.style.display = 'none'; var u = new URL('../../#m-service', location.href).href; try { window.top.location = u; } catch (e) { location.replace(u); } } })();
 </script>
 </head>
 <body>
@@ -44,8 +45,7 @@
 </div>
 <div id="rpToast" class="rp-toast" role="status" aria-live="polite"></div>
 
-<script src="../../config.js?v=ar1"></script>
-<script src="app.js?v=ar1"></script>
-<script src="../../suite-bridge.js"></script>
+<script src="../../config.js?v=ar2"></script>
+<script src="app.js?v=ar2"></script>
 </body>
 </html>
