@@ -9,7 +9,7 @@ window.SUITE = {
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbzTBAQDtrUOlWvpFj_XCJQvHgm8w-N3INeWqLPYxWKrkIaNzBWl1DmWUjvtIvvGReS9xw/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbze9GyqzpDPjQJo-TSwB5vQ60xR5HdrHqWEAyhxX13picf4PWQAp8UQ6SUNa2WvQRFaNw/exec',
-  REPLACE_URL: 'https://script.google.com/macros/s/AKfycbyBdWRcoVUikw6ZD9Xnqmeb-htz34d29DEldH6PJ27CKSI8wEe64dRySUNQdXalkEHpjQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
+  REPLACE_URL: 'https://script.google.com/macros/s/AKfycbxsa9Rzifq7xVw0-26KBhIUds6DaOVyiIRHuzX8vCNqJigA_V6AruC17m7TGZp0EnKLsQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwBbK2Ase0S4YSdtgqZQQ3D8AsHNT3nO02ip2YeR4aNoHufSWQkZ96hVdlHdOX6RRLX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
   APP_NAME: 'Litpax Suite',
