@@ -50,7 +50,8 @@ window.SUITE = {
       attendant: { label: 'Call Attendant', icon: '📞', nav: ['newTicket', 'tracker'] },
       service:   { label: 'Service Team',   icon: '🎧', nav: ['tickets', 'tracker', 'newTicket'] },
       repair:    { label: 'Repair Team',    icon: '🔧', nav: ['board', 'dispatch', 'tickets'] },
-      admin:     { label: 'Admin',          icon: '👑', nav: ['tickets', 'tracker', 'newTicket', 'board', 'dispatch', 'masters'] }
+      admin:     { label: 'Admin',          icon: '👑', nav: ['tickets', 'tracker', 'newTicket', 'board', 'dispatch', 'masters'] },
+      replace:   { label: 'Advance Replacement', icon: '🔁', nav: ['replace'] }   // Service Hub ka role nahi, sirf Replacement (Sales / Production)
     },
 
     // ⚠️ Keep in sync with ROLE_PERMS in Code.gs
@@ -58,7 +59,8 @@ window.SUITE = {
       attendant: ['create'],
       service:   ['create', 'service'],
       repair:    ['repair'],
-      admin:     ['create', 'service', 'repair', 'admin']
+      admin:     ['create', 'service', 'repair', 'admin'],
+      replace:   []
     },
 
     // ⚠️ Must EXACTLY match PURCHASE_AGE in Code.gs
