@@ -10,7 +10,8 @@
   /* ---- akela khola (seedha link) → Suite pe bhejo, wahi app khulega.
          PLT Line Scan (line tablet) akela hi chalta hai. Debug ke liye URL me ?solo=1 ---- */
   var GO = { 'erp/app.html': 'm-erp', 'erp/index.html': 'm-erp', 'erp/': 'm-erp', 'ims/index.html': 'm-ims', 'ims/': 'm-ims', 'soms/index.html': 'm-soms', 'soms/': 'm-soms',
-             'service/index.html': 'm-service', 'service/': 'm-service', 'plt/admin.html': 'm-pltAdmin', 'agent/index.html': 'm-agent', 'agent/': 'm-agent' };
+             'service/index.html': 'm-service', 'service/': 'm-service', 'plt/admin.html': 'm-pltAdmin', 'agent/index.html': 'm-agent', 'agent/': 'm-agent',
+             'service/replace/index.html': 'm-replace', 'service/replace/': 'm-replace' };
   if (window.parent === window) {
     if (/[?&]solo=1/.test(location.search)) return;
     var m = location.pathname.match(/(erp|ims|soms|service|plt|agent)\/([\w.-]*)$/), to = m && GO[m[1] + '/' + m[2]];
