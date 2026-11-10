@@ -109,6 +109,12 @@ const pageMeta = {
 };
 
 function nav(id, el) {
+    // Advance Replacement ab Service Hub me (apni GAS). Suite ke andar wahi tab khulta hai
+  if (id === 'batteryexchange' && window.parent !== window) {
+    try { window.parent.postMessage({ source: 'litpax-suite', type: 'open-replace' }, location.origin); } catch (e) {}
+    return;
+  }
+  if (id === 'batteryexchange') { const f = document.querySelector('#page-batteryexchange iframe'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
