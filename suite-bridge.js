@@ -14,7 +14,7 @@
              'service/replace/index.html': 'm-replace', 'service/replace/': 'm-replace' };
   if (window.parent === window) {
     if (/[?&]solo=1/.test(location.search)) return;
-    var m = location.pathname.match(/(erp|ims|soms|service|plt|agent)\/([\w.-]*)$/), to = m && GO[m[1] + '/' + m[2]];
+    var m = location.pathname.match(/(service\/replace|erp|ims|soms|service|plt|agent)\/([\w.-]*)$/), to = m && GO[m[1] + '/' + m[2]];
     if (to) location.replace(location.pathname.slice(0, m.index) + '#' + to);
     return;
   }
