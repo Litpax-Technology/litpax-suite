@@ -41,8 +41,8 @@ function segPick(b) { b.parentElement.querySelectorAll('button').forEach(x => x.
 const segVal = id => { const b = document.querySelector('#' + id + ' button.on'); return b ? b.dataset.v : ''; };
 const sec = (title, inner) => '<section class="dsec"><h3>' + title + '</h3>' + inner + '</section>';
 const kvh = rows => rows.filter(r => r[1] !== '' && r[1] != null).map(r => '<div class="kv"><span>' + esc(r[0]) + '</span><span>' + r[1] + '</span></div>').join('') || '<div class="empty sm">—</div>';
-// Suite ka Sign out (suite-bridge isko Suite logout se jodta hai)
-function logout() { try { window.parent.postMessage({ source: 'litpax-suite', type: 'logout' }, location.origin); } catch (e) {} }
+// Suite ka Sign out (Service Hub ke andar hai, isliye seedha Suite ko)
+function logout() { try { window.top.postMessage({ source: 'litpax-suite', type: 'logout' }, location.origin); } catch (e) {} }
 
 /* ---------- state ---------- */
 const AR = { me: null, access: false, set: null, rows: [], tab: '', cur: null, roles: null, perms: [] };
