@@ -148,6 +148,11 @@ label.chk input { width: 16px; height: 16px; margin: 0; }
 .rp-toast.show { opacity: 1; transform: none; }
 .rp-toast.bad { background: var(--red); } .rp-toast.warn { background: #92400e; } .rp-toast.ok { background: #0a0a0a; }
 
+/* Service Hub ke andar: apna header nahi (Service Hub ka title upar hai) */
+.in-hub .rp-head { display: none; }
+.in-hub .rp-app { max-width: none; padding: 2px 2px 32px; }
+.in-hub body, html.in-hub { background: transparent; }
+
 @media (max-width: 760px) {
   .rp-app { padding: 16px 14px 40px; }
   .rp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
