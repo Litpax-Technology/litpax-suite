@@ -321,6 +321,7 @@
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
     if (isAdmin) items.push({ id: 'm-tasks', sec: 'Apps', label: SUITE.MODULES.tasks.label, ic: '☑', mod: 'tasks' });
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
+    if (S.rep) items.push({ id: 'm-replace', sec: 'Apps', label: SUITE.MODULES.replace.label, ic: '🔁', mod: 'replace' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
     return items;
@@ -1139,6 +1140,7 @@
       if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
       if (e.data.type === 'logout') signOut();
       if (e.data.type === 'agent') openAgent();   // kisi app me Ctrl+K
+      if (e.data.type === 'open-replace') openReplace(e.data.prefill);   // ERP / Service ticket → Advance Replacement
       if (e.data.type === 'nav') onAppNav(e);     // app ke pages → common sidebar
       // Service Hub ka session (idle) khatam → Suite ke token se chupchaap naya, warna poora sign out
       if (e.data.type === 'svc-relogin') {
