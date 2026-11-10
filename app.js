@@ -208,7 +208,7 @@
       if (d.staff) sessionStorage.setItem('suite_staff', JSON.stringify(d.staff));
       if (d.sessions && d.sessions.erp_staff) sessionStorage.setItem('erp_staff', JSON.stringify(d.sessions.erp_staff));
     } catch (e) {}
-    return Promise.all([svcSso(), repCheck()]).then(function () { start(d); });   // Service Hub + Advance Replacement bhi isi login se
+    return Promise.all([svcSso(), repCheck()]).then(repOnly).then(function () { start(d); });   // Service Hub + Advance Replacement bhi isi login se
   }
   
   function doLogin() {
@@ -239,13 +239,18 @@
       if (r && r.ok && r.access) { S.rep = r.me; try { sessionStorage.setItem('rep_ok', r.me.perms.Create ? 'create' : 'view'); } catch (e) {} }
     }).catch(function () {});   // Replacement GAS band ho to bhi baaki Suite chale
   }
-  /** ERP "Advance Battery Replacement" / Service ticket → Advance Replacement app (ticket se aaya to form bhara hua) */
-  function openReplace(pre) {
-    if (!navItems().some(function (x) { return x.id === 'm-replace'; })) return toast('No access to Advance Replacement — ask the Admin', 'bad');
-    try { if (pre) sessionStorage.setItem('rep_prefill', JSON.stringify(pre)); } catch (e) {}
-    var had = !!S.frames.replace;
-    go('m-replace');
-    if (had && pre) try { S.frames.replace.contentWindow.postMessage({ source: 'litpax-suite', type: 'rep-new' }, location.origin); } catch (e) {}
+  /** Service Hub ka role nahi par Replacement ka role hai (Sales / Production) → Service Hub me sirf Advance Replacement tab */
+  function repOnly() {
+    if (svcRole() === 'replace' && !S.rep) svcClear();
+    if (!svcRole() && S.rep) svcSave({ role: 'replace', token: 'replace-only' }, S.rep.name || '');
+  }
+  /** ERP "Advance Battery Replacement" → Service Hub → Advance Replacement tab */
+  function openReplace() {
+    if (!S.rep || !svcRole()) return toast('No access to Advance Replacement — ask the Admin', 'bad');
+    var had = !!S.frames.service;
+    go('m-service');
+    if (!had) { S.frames.service.src = SUITE.MODULES.service.path + '#replace'; return; }
+    try { S.frames.service.contentWindow.postMessage({ source: 'litpax-suite', type: 'nav-go', k: 'replace' }, location.origin); } catch (e) {}
   }
   function svcSave(r, un) {
     try {
@@ -259,7 +264,7 @@
   }
   function signOut() {
     var htk = ''; try { htk = localStorage.getItem('hub_token') || ''; } catch (e) {}
-    if (htk) api('SERVICE', 'logout', { token: htk }).catch(function () {});
+    if (htk && svcRole() !== 'replace') api('SERVICE', 'logout', { token: htk }).catch(function () {});
     try { SESSION_KEYS.concat(['suite_token'], STAFF_KEYS).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
     svcClear();
     try { sessionStorage.removeItem('rep_ok'); sessionStorage.removeItem('rep_prefill'); } catch (e) {}
@@ -321,7 +326,6 @@
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
     if (isAdmin) items.push({ id: 'm-tasks', sec: 'Apps', label: SUITE.MODULES.tasks.label, ic: '☑', mod: 'tasks' });
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
-    if (S.rep) items.push({ id: 'm-replace', sec: 'Apps', label: SUITE.MODULES.replace.label, ic: '🔁', mod: 'replace' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
     return items;
@@ -366,8 +370,8 @@
     tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>'
   };
   var APPICO = { overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
-                 'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-replace': 'battery', 'm-agent': 'spark', settings: 'gear' };
-  var PAGEICO = [[/switch|staff/i, 'users'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
+                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'spark', settings: 'gear' };
+  var PAGEICO = [[/switch|staff/i, 'users'], [/replacement/i, 'battery'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
     [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],
     [/item/i, 'box'], [/opening/i, 'flag'], [/summary/i, 'trend'], [/ledger/i, 'book'], [/reorder/i, 'alert'],
@@ -1140,11 +1144,11 @@
       if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
       if (e.data.type === 'logout') signOut();
       if (e.data.type === 'agent') openAgent();   // kisi app me Ctrl+K
-      if (e.data.type === 'open-replace') openReplace(e.data.prefill);   // ERP / Service ticket → Advance Replacement
+      if (e.data.type === 'open-replace') openReplace();   // ERP → Service Hub → Advance Replacement
       if (e.data.type === 'nav') onAppNav(e);     // app ke pages → common sidebar
       // Service Hub ka session (idle) khatam → Suite ke token se chupchaap naya, warna poora sign out
       if (e.data.type === 'svc-relogin') {
-        svcSso().then(function () {
+                Promise.all([svcSso(), repCheck()]).then(repOnly).then(function () {
           if (svcRole() && S.frames.service) S.frames.service.src = SUITE.MODULES.service.path;
           else signOut();
         });
@@ -1163,7 +1167,7 @@
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
     if (!tok) { svcClear(); return showLogin(); }
     S.token = tok;
-    api('ERP', 'suiteMe').then(function (d) { return Promise.all([svcRole() ? Promise.resolve() : svcSso(), repCheck()]).then(function () { start(d); }); })
+    api('ERP', 'suiteMe').then(function (d) { return Promise.all([svcRole() && svcRole() !== 'replace' ? Promise.resolve() : svcSso(), repCheck()]).then(repOnly).then(function () { start(d); }); })
       .catch(function () { signOut(); });
   }
   document.addEventListener('DOMContentLoaded', boot);
