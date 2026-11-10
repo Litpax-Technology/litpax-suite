@@ -2672,7 +2672,7 @@ function renderTicket() {
     else if (early || s === 'In Transit') b.push('<button class="btn btn-violet" onclick="pickupOpen()">🚚 ' + (s === 'In Transit' ? 'Edit Pickup' : 'Arrange Pickup') + '</button>');
     else if (inRepair) b.push('<button class="btn btn-ghost" onclick="pickupOpen()">➕ Another Pickup</button>');
     if (opk || s === 'In Transit' || (sent && early)) b.push('<button class="btn btn-teal" onclick="receiveOpen()">📥 Mark Received' + (opk ? ' — ' + esc(opk['Pickup ID']) : '') + '</button>');
-    if (open) b.push('<button class="btn btn-ghost" onclick="replOpen()">🔁 Advance Replacement</button>');
+    if (open) b.push('<button class="btn btn-ghost" onclick="arFromTicket()">🔁 Advance Replacement</button>');
     if (open) b.push('<button class="btn btn-ghost" onclick="editOpen()">✏️ Edit details</button>');
     if (early || (s === 'In Transit' && !items.length)) b.push('<button class="btn btn-ghost btn-danger" onclick="cancelOpen()">🚫 Cancel ticket</button>');
     h += '<div class="dsec actions">' +
@@ -3329,6 +3329,15 @@ async function stockSave(btn) {
 }
 
 // ---------- REPLACEMENTS ----------
+// naya Advance Replacement app (alag GAS) — Suite me access ho to wahan form khulta hai (ticket ki details bhari), warna purana tareeka
+function arFromTicket() {
+  let ok = false; try { ok = window.parent !== window && sessionStorage.getItem('rep_ok') === 'create'; } catch (e) {}
+  if (!ok) return replOpen();
+  const t = CUR.ticket || {};
+  drawerClose();
+  window.parent.postMessage({ source: 'litpax-suite', type: 'open-replace', prefill: { ticketId: t['Ticket ID'], name: t['Company Name'] || t['Contact Person'],
+    phone: t['Phone'], city: t['City'], state: t['State'], dealer: t['Dealer'], complaint: t['Complaint'], model: t['Battery Model'] } }, location.origin);
+}
 function replOpen() {   // advance replacement from the ticket (before the old battery arrives)
   const t = CUR.ticket;
   ensureModels();
