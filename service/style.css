@@ -1450,6 +1450,9 @@ body, .app-wrap, .main { color: var(--text); }
 .modal { border-radius: var(--radius); }
 .x-btn { border-radius: 999px; }
 
+/* ── Advance Replacement tab (service/replace/ iframe me) ── */
+.ar-frame { display: block; width: 100%; height: calc(100vh - 150px); min-height: 520px; border: 0; background: transparent; }
+
 /* ══════════════════════════════════════════════════════════════
    GALLERY WHITE — premium white theme (Bento ke upar override)
    Ye block style.css ke SABSE END me rahe. Font: Inter Tight.
