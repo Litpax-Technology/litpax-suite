@@ -844,9 +844,10 @@ const SCREENS = {
   tracker:   { id: 'scrTracker',  icon: '🛰️', label: 'Ticket Tracker', title: 'Ticket Tracker', sub: 'Where every ticket and battery is right now — with SLA', open: openTracker },
   settings:  { id: 'scrSettings', icon: '🛠️', label: 'Settings',     title: 'Settings',     sub: 'SLA targets, lists, WhatsApp messages and screens per role', open: openSettings },
   reports:   { id: 'scrReports',  icon: '📊', label: 'Reports',      title: 'Reports',      sub: 'Filter any data and download exactly what you see as CSV', open: openReports },
+  replace:   { id: 'scrReplace',  icon: '🔁', label: 'Advance Replacement', title: 'Advance Replacement', sub: 'New battery goes first, the old one comes back later', open: openReplace },
   records:   { id: 'scrRecords',  icon: '🗂️', label: 'Records',      title: 'Records',      sub: 'Every customer, call, pickup, repair job, item and dispatch — click any row to open it', open: () => openRecords() }
 };
-const NAV_ICO = { reports: 'chart', newTicket: 'plus', tickets: 'ticket', board: 'wrench', dispatch: 'truck', masters: 'list', tracker: 'activity', settings: 'sliders', records: 'folder' };
+const NAV_ICO = { reports: 'chart', newTicket: 'plus', tickets: 'ticket', board: 'wrench', dispatch: 'truck', masters: 'list', tracker: 'activity', settings: 'sliders', records: 'folder', replace: 'refresh' };
 const NAV_ADMIN = { reports: 1, masters: 1, settings: 1 };
 function navRender(nav) {
   const item = k => '<button class="sb-item' + (k === CURRENT ? ' active' : '') + '" data-nav="' + k + '" onclick="go(this.dataset.nav)">' + ico(NAV_ICO[k] || 'list') + '<span>' + SCREENS[k].label + '</span></button>';
@@ -855,8 +856,11 @@ function navRender(nav) {
 }
 // every role can browse records (read-only lists — actions still follow the role)
 function navList(nav) {
-  const n = nav.filter(k => k !== 'records' && k !== 'reports'), i = n.indexOf('settings');
-  if (i === -1) n.push('records'); else n.splice(i, 0, 'records');
+  if (role() === 'replace') return ['replace'];   // Service Hub ka role nahi (Sales / Production) — sirf Advance Replacement
+  const n = nav.filter(k => k !== 'records' && k !== 'reports' && k !== 'replace'), i = n.indexOf('settings');
+  if (repOk()) n.splice(i === -1 ? n.length : i, 0, 'replace');   // Advance Replacement (alag GAS) — Roles tab me role ho to
+  const j = n.indexOf('settings');
+  if (j === -1) n.push('records'); else n.splice(j, 0, 'records');
   if (can('admin')) { const m = n.indexOf('masters') !== -1 ? n.indexOf('masters') : n.indexOf('settings'); if (m === -1) n.push('reports'); else n.splice(m, 0, 'reports'); }
   return n;
 }
@@ -933,18 +937,26 @@ function enterApp(r) {
   const R = CONFIG.ROLES[r];
   $('loginScreen').style.display = 'none'; $('appWrap').style.display = 'flex';
   $('sbRole').innerHTML = '<b>' + esc(R.label) + '</b><span>' + esc(localStorage.getItem('hub_user') || '') + '</span>';
+  const wantRep = location.hash === '#replace';
+  if (wantRep) try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  if (r === 'replace') {   // sirf Advance Replacement — Service GAS ko koi call nahi
+    R.nav = ['replace']; navRender(R.nav);
+    const gs = document.querySelector('.gsearch'); if (gs) gs.style.display = 'none';
+    if ($('hdrDate')) $('hdrDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    return go('replace');
+  }
   R.nav = navList(R.nav);
   navRender(R.nav);
   if ($('hdrDate')) $('hdrDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   ensureMasters();           // preload dropdown lists in the background
   ensureSettings().then(applySettings);   // SLA, lists, WhatsApp text, screens — from the Settings tab
   tkFilter = defaultTkFilter(); BRD_MINE = r === 'repair';
-  staffBoot(R.nav[0]);   // v13 — team ke log hain to pehle naam + PIN
+  staffBoot(wantRep && repOk() ? 'replace' : R.nav[0]);   // v13 — team ke log hain to pehle naam + PIN
   idleStart(); weakPinBanner();
 }
 
 function logout() {
-  if (localStorage.getItem('hub_token')) jsonp({ action: 'logout' }, () => {}, () => {});
+  if (localStorage.getItem('hub_token') && role() !== 'replace') jsonp({ action: 'logout' }, () => {}, () => {});
   clearSession(); toggleSidebar(false); showLogin();
 }
 
@@ -2315,7 +2327,7 @@ function applySettings(S) {
   }
 }
 // other users pick up changes every 5 minutes (or on refresh)
-setInterval(() => { if (localStorage.getItem('hub_token') && CURRENT !== 'settings') ensureSettings(true).then(applySettings); }, 300000);
+setInterval(() => { if (localStorage.getItem('hub_token') && role() !== 'replace' && CURRENT !== 'settings') ensureSettings(true).then(applySettings); }, 300000);
 
 /* ---- Settings screen (admin) ---- */
 function openSettings() {
@@ -2922,6 +2934,7 @@ function renderCustomer() {
 
 /* ---------- GLOBAL SEARCH (topbar) ---------- */
 async function gSearch() {
+  if (role() === 'replace') return;   // sirf Advance Replacement wale — Service Hub ka data nahi
   const q = $('gSearch').value.trim();
   if (!q) return;
   let r;
@@ -3331,12 +3344,20 @@ async function stockSave(btn) {
 // ---------- REPLACEMENTS ----------
 // naya Advance Replacement app (alag GAS) — Suite me access ho to wahan form khulta hai (ticket ki details bhari), warna purana tareeka
 function arFromTicket() {
-  let ok = false; try { ok = window.parent !== window && sessionStorage.getItem('rep_ok') === 'create'; } catch (e) {}
-  if (!ok) return replOpen();
+  if (repOk() !== 'create') return replOpen();
   const t = CUR.ticket || {};
+  try { sessionStorage.setItem('rep_prefill', JSON.stringify({ ticketId: t['Ticket ID'], name: t['Company Name'] || t['Contact Person'],
+    phone: t['Phone'], city: t['City'], state: t['State'], dealer: t['Dealer'], complaint: t['Complaint'], model: t['Battery Model'] })); } catch (e) {}
   drawerClose();
-  window.parent.postMessage({ source: 'litpax-suite', type: 'open-replace', prefill: { ticketId: t['Ticket ID'], name: t['Company Name'] || t['Contact Person'],
-    phone: t['Phone'], city: t['City'], state: t['State'], dealer: t['Dealer'], complaint: t['Complaint'], model: t['Battery Model'] } }, location.origin);
+  go('replace');
+}
+// Advance Replacement tab — apni files service/replace/ me, yahan iframe me khulta hai.
+// Access Suite login pe root repCheck() deta hai (sessionStorage rep_ok = 'create' / 'view')
+function repOk() { try { return sessionStorage.getItem('rep_ok') || ''; } catch (e) { return ''; } }
+function openReplace() {
+  const f = $('arFrame');
+  if (!f.getAttribute('src')) { f.src = 'replace/index.html?v=ar2'; return; }   // pehli baar — load hote hi prefill khud uthata hai
+  try { f.contentWindow.postMessage({ source: 'litpax-suite', type: 'rep-new' }, location.origin); } catch (e) {}   // ticket se aaya to form
 }
 function replOpen() {   // advance replacement from the ticket (before the old battery arrives)
   const t = CUR.ticket;
