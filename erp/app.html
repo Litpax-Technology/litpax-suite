@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-   <link rel="stylesheet" href="app.css?v=ap2">
+   <link rel="stylesheet" href="app.css?v=ld1">
 </head>
 <body>
 
@@ -26,14 +26,14 @@
     <div class="page-sub" id="pageSub">Sales order management</div>
   </div>
   <div class="topbar-right">
-    <button id="btnCreateLead" class="btn btn-primary" onclick="goToLeadTracker()" style="display:none;margin-right:10px;">+ Create Lead</button>
+    <button id="btnCreateLead" class="btn btn-primary" onclick="openLeadModal()" style="display:none;margin-right:10px;">+ Create Lead</button>
     <button id="btnDealerCheck" class="btn" onclick="goToDealerCheck()" style="display:none;margin-right:10px;">🔍 Dealer Check</button>
     <div class="apps-menu" id="appsMenu" style="display:none;">
       <button class="apps-btn" onclick="toggleAppsMenu(event)" title="Apps">
         <span></span><span></span><span></span><span></span><span></span><span></span>
       </button>
       <div class="apps-drop">
-        <a class="apps-tile" onclick="goToLeadTracker()"><div class="apps-ico ai-lead"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></div><div class="apps-lbl">Sales Lead</div></a>
+        <a class="apps-tile" onclick="nav('leads', document.getElementById('nav-leads'))"><div class="apps-ico ai-lead"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></div><div class="apps-lbl">Sales Lead</div></a>
         <a class="apps-tile" onclick="goToDealerCheck()"><div class="apps-ico ai-dealer"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div><div class="apps-lbl">Dealer Check</div></a>
         <a class="apps-tile" href="https://litpax-pi.onhercules.app/invoices/jn7dh7x1q6kqf6kmc70cpvdpqn8g5zwk" target="_blank"><div class="apps-ico ai-pi"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 14h6M11.5 11c2.2 0 2.2 3.5 0 3.5H9l4 3.5"/></svg></div><div class="apps-lbl">PI Maker</div></a>
         <a class="apps-tile" href="https://ratelist.onhercules.app/admin" target="_blank"><div class="apps-ico ai-rate"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg></div><div class="apps-lbl">Rate List Maker</div></a>
@@ -62,6 +62,9 @@
   <div class="nav-item" onclick="navOrdersFiltered('pending',this)" id="nav-pendingorders"><span class="nav-icon">⏳</span>Pending Orders</div>
   <div class="nav-item" onclick="navOrdersFiltered('completed',this)" id="nav-completedorders"><span class="nav-icon">✅</span>Completed Orders</div>
   <div class="nav-item" onclick="nav('mydashboard',this)" id="nav-mydashboard"><span class="nav-icon">📊</span>My Dashboard</div>
+  <div class="nav-sec" id="sec-leads">Leads</div>
+  <div class="nav-item" onclick="nav('leads',this)" id="nav-leads"><span class="nav-icon">🎯</span>Lead Pipeline</div>
+  <div class="nav-item" onclick="nav('leaddash',this)" id="nav-leaddash"><span class="nav-icon">📈</span>Lead Dashboard</div>
   <div class="nav-sec" id="sec-tracking">Tracking</div>
   <div class="nav-item" onclick="nav('crm',this)" id="nav-crm"><span class="nav-icon">🎯</span>CRM Tracker</div>
   <div class="nav-item" onclick="nav('production',this)" id="nav-production"><span class="nav-icon">⚙️</span>Production</div>
@@ -396,6 +399,42 @@
         <tbody id="custTable"><tr><td colspan="8"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- ===== LEADS: PIPELINE ===== -->
+<div class="page" id="page-leads">
+  <div class="stats-row ld-kpis" id="ldKpis"></div>
+  <div class="card">
+    <div class="card-head ld-head">
+      <div class="ld-stages" id="ldStageTabs"></div>
+      <div class="ld-tools">
+        <input class="form-control search-input" id="ldSearch" placeholder="Naam, company, phone, city…" oninput="renderLeads()">
+        <select class="form-control" id="ldOwner" onchange="renderLeads()" style="display:none;"></select>
+        <button class="btn" id="ldDueBtn" onclick="ldToggleDue()">📅 Aaj / Overdue</button>
+        <button class="btn btn-primary" onclick="openLeadModal()">+ New Lead</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Lead</th><th>Customer</th><th>Phone</th><th>Requirement</th><th>Stage</th><th>Next Follow-up</th><th class="ld-adm">Assigned</th><th>Action</th></tr></thead>
+        <tbody id="ldTable"><tr><td colspan="8"><div class="loading"><div class="spin"></div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LEADS: DASHBOARD ===== -->
+<div class="page" id="page-leaddash">
+  <div class="stats-row ld-kpis" id="ldDashKpis"></div>
+  <div class="ld-grid">
+    <div class="card"><div class="card-head"><div class="card-title">Stage funnel</div></div><div class="ld-bars" id="ldFunnel"></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Lead source</div></div><div class="ld-bars" id="ldSources"></div></div>
+    <div class="card ld-adm"><div class="card-head"><div class="card-title">Salesperson-wise</div></div>
+      <div class="table-wrap"><table><thead><tr><th>Salesperson</th><th>Total</th><th>Open</th><th>Won</th><th>Lost</th><th>Conversion</th><th>Overdue</th></tr></thead><tbody id="ldPeople"></tbody></table></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Application</div></div><div class="ld-bars" id="ldApps"></div></div>
+    <div class="card ld-wide"><div class="card-head"><div class="card-title">Agle 7 din ke follow-up</div><span class="ld-muted" id="ldWeekCount"></span></div>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Lead</th><th>Customer</th><th>Phone</th><th>Stage</th><th class="ld-adm">Assigned</th></tr></thead><tbody id="ldWeek"></tbody></table></div></div>
   </div>
 </div>
 
@@ -784,6 +823,49 @@
       </div>
     </div>
     <div class="modal-foot"><button class="btn" onclick="closeModal('custModal')">Cancel</button><button class="btn btn-primary" onclick="submitCust()">Add</button></div>
+  </div>
+</div>
+
+<!-- LEAD MODAL -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-head"><div class="modal-title" id="ldModalTitle">New Lead</div><button class="modal-close" onclick="closeModal('leadModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ld-id">
+      <div class="ld-sec">Customer</div>
+      <div class="form-grid ld-grid3">
+        <div class="form-group"><label class="form-label">Customer Name *</label><input class="form-control" id="ld-name" list="ldCustList" placeholder="Naam / dealer" autocomplete="off" onchange="ldFillCustomer()"><datalist id="ldCustList"></datalist></div>
+        <div class="form-group"><label class="form-label">Phone *</label><input class="form-control" id="ld-phone" type="tel" placeholder="10 digit mobile"></div>
+        <div class="form-group"><label class="form-label">Company / Dealer</label><input class="form-control" id="ld-company" placeholder="Company"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="ld-email" type="email" placeholder="email@..."></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-control" id="ld-city" placeholder="City"></div>
+        <div class="form-group"><label class="form-label">State</label><input class="form-control" id="ld-state" placeholder="State"></div>
+      </div>
+      <div class="ld-sec">Battery requirement</div>
+      <div class="form-grid ld-grid3">
+        <div class="form-group"><label class="form-label">Application Type *</label><select class="form-control" id="ld-app"><option value="">-- Select --</option><option>2 Wheeler (Electric Bike/Scooter)</option><option>3 Wheeler (E-Rickshaw/Auto)</option><option>Solar (Home/Commercial)</option><option>Inverter / Home UPS</option><option>Cycle (E-Cycle)</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Voltage</label><select class="form-control" id="ld-volt"><option value="">-- V --</option><option>12V</option><option>24V</option><option>36V</option><option>48V</option><option>60V</option><option>72V</option><option>96V</option><option>Custom</option></select></div>
+        <div class="form-group"><label class="form-label">Capacity</label><select class="form-control" id="ld-cap"><option value="">-- Ah --</option><option>20Ah</option><option>30Ah</option><option>40Ah</option><option>50Ah</option><option>60Ah</option><option>75Ah</option><option>100Ah</option><option>150Ah</option><option>200Ah</option><option>Custom</option></select></div>
+        <div class="form-group"><label class="form-label">Qty (No. of batteries)</label><input class="form-control" id="ld-qty" type="number" min="1" placeholder="No."></div>
+        <div class="form-group"><label class="form-label">Budget</label><select class="form-control" id="ld-budget"><option value="">-- Select --</option><option value="Under 5000">Under ₹5K</option><option value="5000-10000">₹5K–₹10K</option><option value="10000-25000">₹10K–₹25K</option><option value="25000-50000">₹25K–₹50K</option><option value="50000-100000">₹50K–₹1L</option><option value="Above 100000">Above ₹1L</option></select></div>
+        <div class="form-group"><label class="form-label">Existing Brand</label><select class="form-control" id="ld-brand"><option value="">-- Brand --</option><option>Exide</option><option>Amaron</option><option>Luminous</option><option>Okaya</option><option>Livguard</option><option>Su-Kam</option><option>Microtek</option><option>Loom Solar</option><option>Local Brand</option><option>No Battery (New)</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Lead Source</label><select class="form-control" id="ld-source"><option value="">-- Source --</option><option>Walk-in</option><option>Referral</option><option>Exhibition</option><option>Social Media</option><option>WhatsApp</option><option>Cold Call</option><option>Dealer</option><option>IndiaMART</option><option>Website</option><option>Other</option></select></div>
+        <div class="form-group" id="ld-assign-wrap"><label class="form-label">Assigned To</label><select class="form-control" id="ld-assign"></select></div>
+      </div>
+      <div class="ld-sec">Stage &amp; follow-up</div>
+      <div class="ld-pills" id="ldPills"><button type="button" class="ld-pill" data-s="New Lead" onclick="ldPickStage('New Lead')">🆕 New</button><button type="button" class="ld-pill" data-s="Quotation Sent" onclick="ldPickStage('Quotation Sent')">📄 Quotation</button><button type="button" class="ld-pill" data-s="Follow-up" onclick="ldPickStage('Follow-up')">📞 Follow-up</button><button type="button" class="ld-pill" data-s="Order Confirmed" onclick="ldPickStage('Order Confirmed')">✅ Won</button><button type="button" class="ld-pill" data-s="Lost" onclick="ldPickStage('Lost')">❌ Lost</button></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Next Follow-up</label><input class="form-control" id="ld-follow" type="date"></div>
+        <div class="form-group" id="ld-lost-wrap" style="display:none;"><label class="form-label">Lost ka kaaran *</label><input class="form-control" id="ld-lost" placeholder="Price zyada / doosra brand / need nahi…"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-control" id="ld-notes" rows="3" placeholder="Koi important baat…"></textarea></div>
+      <div class="ld-meta" id="ldMeta"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="ldDelBtn" onclick="deleteLead()" style="display:none;margin-right:auto;">Delete</button>
+      <button class="btn" onclick="closeModal('leadModal')">Cancel</button>
+      <button class="btn btn-primary" id="ldSaveBtn" onclick="saveLead()">Save Lead</button>
+    </div>
   </div>
 </div>
 
@@ -1402,7 +1484,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=ap2"></script>
+<script src="app.js?v=ld1"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
