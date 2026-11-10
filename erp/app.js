@@ -20,8 +20,8 @@ document.getElementById('userAv').textContent = (user.name || 'U')[0].toUpperCas
 
 // Role access
 const roleAccess = {
-    Admin:      ['admindashboard','ordertracking','orders','pendingorders','completedorders','crm','production','batteryexchange','dispatch','accounts','customers','products','suppliers','users','materialprod'],
-  Sales:      ['orders','pendingorders','completedorders','customers','mydashboard','batteryexchange'],
+    Admin:      ['admindashboard','leads','leaddash','ordertracking','orders','pendingorders','completedorders','crm','production','batteryexchange','dispatch','accounts','customers','products','suppliers','users','materialprod'],
+  Sales:      ['orders','pendingorders','completedorders','customers','mydashboard','batteryexchange','leads','leaddash'],
   Accounts:   ['accounts'],
   Production: ['production','batteryexchange','deliverychallan'],
   CRM:        ['crm','orders','pendingorders','completedorders'],
@@ -53,7 +53,7 @@ const roleAccess = {
 
   if (user.role === 'Accounts') {
     document.querySelector('.sidebar').style.display = 'flex';
-    ['sec-tracking','sec-master','sec-admin','sec-sales','sec-finance'].forEach(id => {
+    ['sec-tracking','sec-master','sec-admin','sec-sales','sec-finance','sec-leads'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
   } else if (user.role === 'Sales') {
@@ -65,12 +65,12 @@ const roleAccess = {
   } else if (user.role === 'Production') {
     document.querySelector('.sidebar').style.display = 'flex';
     // Production sirf Production tracker — Sales tabs hata diye, filter Production page ke andar hi hai
-    ['sec-sales','sec-master','sec-admin','sec-finance'].forEach(id => {
+    ['sec-sales','sec-master','sec-admin','sec-finance','sec-leads'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
   } else if (user.role === 'CRM' || user.role === 'Dispatch') {
     document.querySelector('.sidebar').style.display = 'flex';
-    ['sec-sales','sec-master','sec-admin','sec-finance'].forEach(id => {
+    ['sec-sales','sec-master','sec-admin','sec-finance','sec-leads'].forEach(id => {
       const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
   } else if (user.role !== 'Admin') {
@@ -91,6 +91,8 @@ const roleAccess = {
 // PAGE META
 const pageMeta = {
   admindashboard:{title:'Dashboard',sub:'Admin overview & analytics'},
+  leads:{title:'Lead Pipeline',sub:'Naye customer — pehli baat se order tak'},
+  leaddash:{title:'Lead Dashboard',sub:'Stage, source aur salesperson-wise leads'},
   ordertracking:{title:'Track Order',sub:'Order ID se poori history'},
   orders:{title:'Sales Orders',sub:'Manage all customer orders'},
   crm:{title:'CRM Tracker',sub:'Order lifecycle tracking'},
@@ -143,6 +145,7 @@ function navOrdersFiltered(filter, el) {
 
 function loadPage(id) {
   if (id === 'admindashboard') loadAdminDashboard();
+  else if (id === 'leads' || id === 'leaddash') loadLeads(id);
   else if (id === 'ordertracking') loadOrderTracking();
   else if (id === 'orders') loadOrders();
   else if (id === 'crm') loadCRM();
@@ -3897,33 +3900,208 @@ function logout() {
   window.location.href = 'index.html';
 }
 
-const LEAD_TRACKER_URL = 'https://litpax-technology.github.io/SalesLeadTracker/';
+// ========== LEADS (ERP ke andar) ==========
+// Sales: sirf apni leads (backend filter karta hai) · Admin: sab + Assigned To badal sakta hai
+const LD_STAGES = ['New Lead', 'Quotation Sent', 'Follow-up', 'Order Confirmed', 'Lost'];
+const LD_SHORT  = { 'New Lead': 'New', 'Quotation Sent': 'Quotation', 'Follow-up': 'Follow-up', 'Order Confirmed': 'Won', 'Lost': 'Lost' };
+const LD_EMOJI  = { 'New Lead': '🆕', 'Quotation Sent': '📄', 'Follow-up': '📞', 'Order Confirmed': '✅', 'Lost': '❌' };
+const LD_NEXT   = { 'New Lead': 'Quotation Sent', 'Quotation Sent': 'Follow-up', 'Follow-up': 'Order Confirmed' };
+let ldAll = [], ldMe = { admin: false }, ldPeople = [], ldStage = 'Open', ldDueOnly = false, ldLoaded = false;
 
-// ERP user ko Lead Tracker ke role se map karo
-// (Lead Tracker me jinke account hain sirf unhe auto-login milega)
-function leadTrackerRoleFor(u) {
-  if (!u) return null;
-  if (u.role === 'Admin') return 'admin';
-  const key = (u.salesName || u.name || '').trim().toLowerCase();
-  const known = ['mohit', 'vijay', 'sahil', 'sneha'];   // 👈 naye salesman add karne ho to yahan + Lead Tracker ROLES me daalo
-  return known.includes(key) ? key : null;
+const ldEsc = v => String(v == null ? '' : v).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+function ldToday() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ldAddDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ldDmy(ymd) { const m = String(ymd || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : (ymd || ''); }
+function ldOpen(l) { return l.Stage !== 'Order Confirmed' && l.Stage !== 'Lost'; }
+function ldDue(l) { return ldOpen(l) && l['Next Follow-up'] && l['Next Follow-up'] <= ldToday(); }
+function ldBadge(st) { return `<span class="ld-st ld-st-${(LD_SHORT[st] || 'New').toLowerCase().replace(/[^a-z]/g, '')}">${LD_EMOJI[st] || ''} ${ldEsc(LD_SHORT[st] || st)}</span>`; }
+
+function loadLeads(page) {
+  const tb = document.getElementById('ldTable');
+  if (!ldLoaded && tb) tb.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spin"></div></div></td></tr>';
+  api({ action: 'getLeads' }, r => {
+    if (!r || !r.success) { if (tb) tb.innerHTML = `<tr><td colspan="8" class="ld-empty">${ldEsc((r && r.message) || 'Leads load nahi hui')}</td></tr>`; return; }
+    ldAll = r.data || []; ldMe = r.me || {}; ldPeople = r.salesPeople || []; ldLoaded = true;
+    document.querySelectorAll('.ld-adm').forEach(el => el.style.display = ldMe.admin ? '' : 'none');
+    const ow = document.getElementById('ldOwner');
+    if (ow) {
+      const cur = ow.value;
+      ow.style.display = ldMe.admin ? '' : 'none';
+      ow.innerHTML = '<option value="">Sab salesperson</option>' + ldPeople.map(n => `<option>${ldEsc(n)}</option>`).join('') + '<option value="__none">Unassigned</option>';
+      ow.value = cur;
+    }
+    if (page === 'leaddash') renderLeadDash(); else renderLeads();
+  });
 }
 
-function goToLeadTracker() {
-  // ERP login ko localStorage me backup rakho — Lead Tracker se wapas aane pe restore ho jayega
-  try {
-    const cur = sessionStorage.getItem('erp_user');
-    if (cur) localStorage.setItem('erp_user', cur);
-    try { const t = sessionStorage.getItem('erp_token'); if (t) localStorage.setItem('erp_token', t); } catch (e) {}
-  } catch (e) {}
+function ldToggleDue() { ldDueOnly = !ldDueOnly; document.getElementById('ldDueBtn').classList.toggle('ld-on', ldDueOnly); renderLeads(); }
+function ldSetStage(s) { ldStage = s; renderLeads(); }
 
-  const ltRole = leadTrackerRoleFor(user);
-  if (ltRole) {
-    try {
-      sessionStorage.setItem('ltx_session', JSON.stringify({ role: ltRole, time: Date.now() }));
-    } catch (e) {}
-  }
-  window.location.href = LEAD_TRACKER_URL;
+function ldVisible() {   // Admin ke owner filter ke baad
+  const ow = (document.getElementById('ldOwner') || {}).value || '';
+  return ldAll.filter(l => !ow || (ow === '__none' ? !l['Assigned To'] : l['Assigned To'] === ow));
+}
+
+function renderLeads() {
+  const base = ldVisible();
+  const cnt = s => base.filter(l => l.Stage === s).length;
+  const due = base.filter(ldDue).length;
+  document.getElementById('ldKpis').innerHTML = [
+    ['Open leads', base.filter(ldOpen).length, ''], ['Quotation', cnt('Quotation Sent'), ''], ['Follow-up', cnt('Follow-up'), ''],
+    ['Won', cnt('Order Confirmed'), 'c-green'], ['Aaj / overdue follow-up', due, due ? 'c-red' : '']
+  ].map(([l, v, c]) => `<div class="stat ${c}"><div class="stat-lbl">${l}</div><div class="stat-val">${v}</div></div>`).join('');
+  const tabs = [['Open', 'Open', base.filter(ldOpen).length]].concat(LD_STAGES.map(s => [s, LD_EMOJI[s] + ' ' + LD_SHORT[s], cnt(s)])).concat([['All', 'All', base.length]]);
+  document.getElementById('ldStageTabs').innerHTML = tabs.map(([k, t, n]) =>
+    `<button class="ld-tab${ldStage === k ? ' on' : ''}" onclick="ldSetStage('${k}')">${t} <b>${n}</b></button>`).join('');
+  const q = (document.getElementById('ldSearch').value || '').trim().toLowerCase();
+  let rows = base.filter(l => ldStage === 'All' ? true : ldStage === 'Open' ? ldOpen(l) : l.Stage === ldStage);
+  if (ldDueOnly) rows = rows.filter(ldDue);
+  if (q) rows = rows.filter(l => [l['Lead ID'], l['Customer Name'], l.Company, l.Phone, l.City, l.State, l.Notes].join(' ').toLowerCase().includes(q));
+  // follow-up wali (pehle overdue) upar, phir nayi
+  rows = rows.slice().sort((a, b) => {
+    const fa = ldOpen(a) && a['Next Follow-up'] ? a['Next Follow-up'] : '9999', fb = ldOpen(b) && b['Next Follow-up'] ? b['Next Follow-up'] : '9999';
+    return fa < fb ? -1 : fa > fb ? 1 : (b['Lead ID'] > a['Lead ID'] ? 1 : -1);
+  });
+  const tb = document.getElementById('ldTable'), td = ldToday();
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" class="ld-empty">${ldAll.length ? 'Is filter me koi lead nahi' : 'Abhi koi lead nahi — <b>+ New Lead</b> se shuru karo'}</td></tr>`; return; }
+  tb.innerHTML = rows.map(l => {
+    const f = l['Next Follow-up'], open = ldOpen(l);
+    const fcls = open && f ? (f < td ? 'ld-over' : f === td ? 'ld-today' : '') : '';
+    const req = [l.Voltage, l.Capacity, l['No. of Batteries'] ? '× ' + l['No. of Batteries'] : ''].filter(Boolean).join(' ');
+    const nx = LD_NEXT[l.Stage];
+    return `<tr>
+      <td class="td-id">${ldEsc(l['Lead ID'])}<div class="ld-sub">${ldDmy(l['Date Added'])}${l['Lead Source'] ? ' · ' + ldEsc(l['Lead Source']) : ''}</div></td>
+      <td class="td-bold">${ldEsc(l['Customer Name'])}${(l.Company && l.Company !== l['Customer Name']) || l.City ? `<div class="ld-sub">${ldEsc([l.Company !== l['Customer Name'] ? l.Company : '', l.City].filter(Boolean).join(' · '))}</div>` : ''}</td>
+      <td><a class="ld-tel" href="tel:${ldEsc(l.Phone)}">${ldEsc(l.Phone)}</a> <a class="ld-wa" href="https://wa.me/91${ldEsc(String(l.Phone).slice(-10))}" target="_blank" title="WhatsApp">💬</a></td>
+      <td>${ldEsc(String(l['Application Type'] || '').replace(/\s*\(.*\)$/, ''))}${req ? `<div class="ld-sub">${ldEsc(req)}</div>` : ''}</td>
+      <td>${ldBadge(l.Stage)}${l.Stage === 'Lost' && l['Lost Reason'] ? `<div class="ld-sub">${ldEsc(l['Lost Reason'])}</div>` : ''}</td>
+      <td class="${fcls}">${open && f ? ldDmy(f) + (fcls === 'ld-over' ? ' ⚠' : fcls === 'ld-today' ? ' • aaj' : '') : '—'}</td>
+      <td class="ld-adm"${ldMe.admin ? '' : ' style="display:none"'}>${ldEsc(l['Assigned To']) || '<span class="ld-muted">—</span>'}</td>
+      <td class="ld-act"><button class="btn btn-sm" onclick="openLeadModal('${ldEsc(l['Lead ID'])}')">Edit</button>${nx ? `<button class="btn btn-sm" onclick="ldMoveNext('${ldEsc(l['Lead ID'])}')" title="Agla stage: ${ldEsc(LD_SHORT[nx])}">${LD_EMOJI[nx]} ›</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- Add / Edit ----
+function ldPickStage(s) {
+  document.querySelectorAll('#ldPills .ld-pill').forEach(b => b.classList.toggle('on', b.dataset.s === s));
+  document.getElementById('ldPills').dataset.stage = s;
+  document.getElementById('ld-lost-wrap').style.display = s === 'Lost' ? '' : 'none';
+}
+const LD_MAP = [['ld-name', 'Customer Name'], ['ld-phone', 'Phone'], ['ld-company', 'Company'], ['ld-email', 'Email'], ['ld-city', 'City'], ['ld-state', 'State'],
+  ['ld-app', 'Application Type'], ['ld-volt', 'Voltage'], ['ld-cap', 'Capacity'], ['ld-qty', 'No. of Batteries'], ['ld-budget', 'Budget Range'],
+  ['ld-brand', 'Existing Brand'], ['ld-source', 'Lead Source'], ['ld-follow', 'Next Follow-up'], ['ld-lost', 'Lost Reason'], ['ld-notes', 'Notes']];
+
+function openLeadModal(id) {
+  const l = id ? ldAll.find(x => x['Lead ID'] === id) : null;
+  document.getElementById('ld-id').value = l ? l['Lead ID'] : '';
+  document.getElementById('ldModalTitle').textContent = l ? `${l['Lead ID']} — ${l['Customer Name']}` : 'New Lead';
+  LD_MAP.forEach(([el, k]) => {
+    const e = document.getElementById(el); let v = l ? (l[k] || '') : '';
+    if (e.tagName === 'SELECT' && v && ![...e.options].some(o => o.value === v)) e.insertAdjacentHTML('beforeend', `<option>${ldEsc(v)}</option>`);   // purani value bhi dikhe
+    e.value = v;
+  });
+  if (!l) document.getElementById('ld-follow').value = ldAddDays(1);
+  ldPickStage(l ? l.Stage : 'New Lead');
+  // Assigned To — sirf Admin badal sakta hai
+  const aw = document.getElementById('ld-assign-wrap'), as = document.getElementById('ld-assign');
+  const admin = !!ldMe.admin || user.role === 'Admin';
+  aw.style.display = admin ? '' : 'none';
+  as.innerHTML = '<option value="">-- Unassigned --</option>' + ldPeople.map(n => `<option>${ldEsc(n)}</option>`).join('');
+  if (l && l['Assigned To'] && ![...as.options].some(o => o.value === l['Assigned To'])) as.insertAdjacentHTML('beforeend', `<option>${ldEsc(l['Assigned To'])}</option>`);
+  as.value = l ? (l['Assigned To'] || '') : '';
+  document.getElementById('ldDelBtn').style.display = (l && admin) ? '' : 'none';
+  document.getElementById('ldMeta').innerHTML = l ? `Banai: ${ldEsc(l['Created By'])} · ${ldDmy(l['Date Added'])}${l['Last Updated'] ? ` &nbsp;·&nbsp; Aakhri badlav: ${ldEsc(l['Updated By'])} · ${ldEsc(l['Last Updated'])}` : ''}` : '';
+  // customer suggestions (ERP Customers)
+  const fill = () => { document.getElementById('ldCustList').innerHTML = custCache.map(c => `<option value="${ldEsc(c.CompanyName)}">${ldEsc([c.ContactPerson, c.City].filter(Boolean).join(' · '))}</option>`).join(''); };
+  if (custCache.length) fill(); else api({ action: 'getCustomers' }, r => { custCache = (r.success && r.data) ? r.data : []; fill(); });
+  if (!ldLoaded && admin) api({ action: 'getLeads' }, r => { if (r && r.success) { ldPeople = r.salesPeople || []; ldMe = r.me || ldMe; ldAll = r.data || []; ldLoaded = true;
+    const keep = as.value; as.innerHTML = '<option value="">-- Unassigned --</option>' + ldPeople.map(n => `<option>${ldEsc(n)}</option>`).join(''); as.value = keep; } });
+  openModal('leadModal');
+}
+
+function ldFillCustomer() {   // ERP customer chuna → phone/city/company bhar do (khaali ho to)
+  const n = document.getElementById('ld-name').value.trim().toLowerCase();
+  const c = custCache.find(x => String(x.CompanyName || '').trim().toLowerCase() === n);
+  if (!c) return;
+  [['ld-phone', c.Phone], ['ld-city', c.City], ['ld-company', c.CompanyName]].forEach(([id, v]) => { const e = document.getElementById(id); if (e && !e.value && v) e.value = v; });
+}
+
+function saveLead(force) {
+  const id = document.getElementById('ld-id').value;
+  const d = { action: 'saveLead', Stage: document.getElementById('ldPills').dataset.stage || 'New Lead' };
+  if (id) d['Lead ID'] = id;
+  LD_MAP.forEach(([el, k]) => { d[k] = document.getElementById(el).value.trim(); });
+  if (document.getElementById('ld-assign-wrap').style.display !== 'none') d['Assigned To'] = document.getElementById('ld-assign').value;
+  if (!d['Customer Name']) return toast('Customer name daalo', 'e');
+  if (String(d.Phone).replace(/\D/g, '').length < 10) return toast('Phone number sahi daalo (10 digit)', 'e');
+  if (!d['Application Type']) return toast('Application type chuno', 'e');
+  if (d.Stage === 'Lost' && !d['Lost Reason']) return toast('Lost ka kaaran likho', 'e');
+  if (force) d.force = '1';
+  const btn = document.getElementById('ldSaveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
+  api(d, r => {
+    btn.disabled = false; btn.textContent = 'Save Lead';
+    if (r && r.duplicate) { if (confirm('⚠ ' + r.message + '\n\nPhir bhi nayi lead banayein?')) saveLead(true); return; }
+    if (!r || !r.success) return toast((r && r.message) || 'Save nahi hua', 'e');
+    toast(id ? `${r.id} update ho gayi` : `Lead ${r.id} ban gayi`, 's');
+    closeModal('leadModal');
+    const pg = document.querySelector('.page.active');
+    loadLeads(pg && pg.id === 'page-leaddash' ? 'leaddash' : 'leads');
+  });
+}
+
+function ldMoveNext(id) {
+  const l = ldAll.find(x => x['Lead ID'] === id), nx = l && LD_NEXT[l.Stage];
+  if (!nx) return;
+  const d = { action: 'saveLead', 'Lead ID': id, Stage: nx };
+  if (nx === 'Follow-up' && (!l['Next Follow-up'] || l['Next Follow-up'] <= ldToday())) d['Next Follow-up'] = ldAddDays(2);   // follow-up ki date aage
+  api(d, r => {
+    if (!r || !r.success) return toast((r && r.message) || 'Stage nahi badla', 'e');
+    toast(`${id} → ${LD_SHORT[nx]}`, 's');
+    loadLeads('leads');
+  });
+}
+
+function deleteLead() {
+  const id = document.getElementById('ld-id').value;
+  if (!id || !confirm(id + ' ko delete karein? Ye wapas nahi aayegi.')) return;
+  api({ action: 'deleteLead', 'Lead ID': id }, r => {
+    if (!r || !r.success) return toast((r && r.message) || 'Delete nahi hua', 'e');
+    toast(id + ' delete ho gayi', 's'); closeModal('leadModal'); loadLeads('leads');
+  });
+}
+
+// ---- Dashboard ----
+function ldBars(el, pairs, total) {
+  const max = Math.max(1, ...pairs.map(p => p[1]));
+  document.getElementById(el).innerHTML = pairs.length ? pairs.map(([k, v, cls]) =>
+    `<div class="ld-bar"><span class="ld-bar-k">${ldEsc(k)}</span><span class="ld-bar-t"><i class="${cls || ''}" style="width:${Math.round(v / max * 100)}%"></i></span><b>${v}</b><span class="ld-muted">${total ? Math.round(v / total * 100) + '%' : ''}</span></div>`).join('')
+    : '<div class="ld-empty">Abhi data nahi</div>';
+}
+function renderLeadDash() {
+  const L = ldVisible(), n = L.length, won = L.filter(l => l.Stage === 'Order Confirmed').length, lost = L.filter(l => l.Stage === 'Lost').length;
+  const closed = won + lost, conv = closed ? Math.round(won / closed * 100) : 0;
+  const week = L.filter(l => ldOpen(l) && l['Next Follow-up'] && l['Next Follow-up'] <= ldAddDays(7)).sort((a, b) => a['Next Follow-up'] < b['Next Follow-up'] ? -1 : 1);
+  const thisMonth = ldToday().slice(0, 7);
+  document.getElementById('ldDashKpis').innerHTML = [
+    ['Total leads', n, ''], ['Is mahine nayi', L.filter(l => String(l['Date Added']).slice(0, 7) === thisMonth).length, ''],
+    ['Open', L.filter(ldOpen).length, ''], ['Won', won, 'c-green'], ['Lost', lost, ''], ['Conversion (won / closed)', conv + '%', 'c-amber']
+  ].map(([l, v, c]) => `<div class="stat ${c}"><div class="stat-lbl">${l}</div><div class="stat-val">${v}</div></div>`).join('');
+  ldBars('ldFunnel', LD_STAGES.map(s => [LD_EMOJI[s] + ' ' + LD_SHORT[s], L.filter(l => l.Stage === s).length, 'ld-c-' + LD_SHORT[s].toLowerCase().replace(/[^a-z]/g, '')]), n);
+  const group = k => { const m = {}; L.forEach(l => { const v = l[k] || '(khaali)'; m[v] = (m[v] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8); };
+  ldBars('ldSources', group('Lead Source'), n);
+  ldBars('ldApps', group('Application Type'), n);
+  const ppl = {}; L.forEach(l => { const k = l['Assigned To'] || 'Unassigned'; (ppl[k] = ppl[k] || []).push(l); });
+  document.getElementById('ldPeople').innerHTML = Object.entries(ppl).sort((a, b) => b[1].length - a[1].length).map(([k, a]) => {
+    const w = a.filter(l => l.Stage === 'Order Confirmed').length, ls = a.filter(l => l.Stage === 'Lost').length, c = w + ls;
+    return `<tr><td class="td-bold">${ldEsc(k)}</td><td>${a.length}</td><td>${a.filter(ldOpen).length}</td><td>${w}</td><td>${ls}</td><td>${c ? Math.round(w / c * 100) + '%' : '—'}</td><td>${a.filter(l => ldDue(l) && l['Next Follow-up'] < ldToday()).length || '—'}</td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="ld-empty">Abhi data nahi</td></tr>';
+  document.getElementById('ldWeekCount').textContent = week.length + ' follow-up';
+  const td = ldToday();
+  document.getElementById('ldWeek').innerHTML = week.map(l => `<tr onclick="openLeadModal('${ldEsc(l['Lead ID'])}')" style="cursor:pointer">
+    <td class="${l['Next Follow-up'] < td ? 'ld-over' : l['Next Follow-up'] === td ? 'ld-today' : ''}">${ldDmy(l['Next Follow-up'])}</td><td class="td-id">${ldEsc(l['Lead ID'])}</td>
+    <td class="td-bold">${ldEsc(l['Customer Name'])}</td><td>${ldEsc(l.Phone)}</td><td>${ldBadge(l.Stage)}</td>
+    <td class="ld-adm"${ldMe.admin ? '' : ' style="display:none"'}>${ldEsc(l['Assigned To'])}</td></tr>`).join('') || '<tr><td colspan="6" class="ld-empty">Agle 7 din me koi follow-up nahi</td></tr>';
 }
 
 const DEALER_CHECK_URL = 'https://litpax-technology.github.io/Dealer-Check/';
