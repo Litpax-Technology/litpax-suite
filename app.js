@@ -22,7 +22,7 @@
     var ctrl = window.AbortController ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, SUITE.TIMEOUT_MS);
     var req;
-    if (app === 'PLT' || app === 'SERVICE') {
+    if (app === 'PLT' || app === 'SERVICE' || app === 'REPLACE') {
       var q = Object.keys(body).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(Array.isArray(body[k]) ? body[k].join(',') : body[k]); }).join('&');
       req = fetch(url + '?' + q + '&callback=cb', { redirect: 'follow', signal: ctrl ? ctrl.signal : undefined });
     } else {
@@ -208,7 +208,7 @@
       if (d.staff) sessionStorage.setItem('suite_staff', JSON.stringify(d.staff));
       if (d.sessions && d.sessions.erp_staff) sessionStorage.setItem('erp_staff', JSON.stringify(d.sessions.erp_staff));
     } catch (e) {}
-    return svcSso().then(function () { start(d); });   // Service Hub bhi isi login se
+    return Promise.all([svcSso(), repCheck()]).then(function () { start(d); });   // Service Hub + Advance Replacement bhi isi login se
   }
   
   function doLogin() {
@@ -229,6 +229,24 @@
       if (r && r.ok && r.token && SUITE.SERVICE.ROLES[r.role]) svcSave(r, r.user || '');
     }).catch(function () {});   // Service band ho to bhi baaki Suite chale
   }
+    /* ---------- Advance Replacement (alag GAS): Roles tab me role ho to hi sidebar me ---------- */
+  function repCheck() {
+    S.rep = null;
+    try { sessionStorage.removeItem('rep_ok'); } catch (e) {}
+    if (!SUITE.REPLACE_URL || /^PASTE_/.test(SUITE.REPLACE_URL) || !S.token) return Promise.resolve();
+    var st = null; try { st = JSON.parse(sessionStorage.getItem('suite_staff') || 'null'); } catch (e) {}
+    return api('REPLACE', 'repMe', st && st.token ? { sfa: st.app, sfi: st.id, sft: st.token } : {}).then(function (r) {
+      if (r && r.ok && r.access) { S.rep = r.me; try { sessionStorage.setItem('rep_ok', r.me.perms.Create ? 'create' : 'view'); } catch (e) {} }
+    }).catch(function () {});   // Replacement GAS band ho to bhi baaki Suite chale
+  }
+  /** ERP "Advance Battery Replacement" / Service ticket → Advance Replacement app (ticket se aaya to form bhara hua) */
+  function openReplace(pre) {
+    if (!navItems().some(function (x) { return x.id === 'm-replace'; })) return toast('No access to Advance Replacement — ask the Admin', 'bad');
+    try { if (pre) sessionStorage.setItem('rep_prefill', JSON.stringify(pre)); } catch (e) {}
+    var had = !!S.frames.replace;
+    go('m-replace');
+    if (had && pre) try { S.frames.replace.contentWindow.postMessage({ source: 'litpax-suite', type: 'rep-new' }, location.origin); } catch (e) {}
+  }
   function svcSave(r, un) {
     try {
       localStorage.setItem('hub_role', r.role); localStorage.setItem('hub_token', r.token); localStorage.setItem('hub_user', un.toLowerCase());
@@ -244,7 +262,8 @@
     if (htk) api('SERVICE', 'logout', { token: htk }).catch(function () {});
     try { SESSION_KEYS.concat(['suite_token'], STAFF_KEYS).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
     svcClear();
-    S.token = ''; S.user = null;
+    try { sessionStorage.removeItem('rep_ok'); sessionStorage.removeItem('rep_prefill'); } catch (e) {}
+    S.token = ''; S.user = null; S.rep = null;
     Object.keys(S.frames).forEach(function (k) { S.frames[k].remove(); });
     S.frames = {}; S.appNav = {}; S.open = {}; S.apr = 0;
     if ($('#snSearch')) $('#snSearch').value = '';
@@ -346,7 +365,7 @@
     tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>'
   };
   var APPICO = { overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
-                 'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'spark', settings: 'gear' };
+                 'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-replace': 'battery', 'm-agent': 'spark', settings: 'gear' };
   var PAGEICO = [[/switch|staff/i, 'users'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
     [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],
@@ -1142,7 +1161,7 @@
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
     if (!tok) { svcClear(); return showLogin(); }
     S.token = tok;
-    api('ERP', 'suiteMe').then(function (d) { return (svcRole() ? Promise.resolve() : svcSso()).then(function () { start(d); }); })
+    api('ERP', 'suiteMe').then(function (d) { return Promise.all([svcRole() ? Promise.resolve() : svcSso(), repCheck()]).then(function () { start(d); }); })
       .catch(function () { signOut(); });
   }
   document.addEventListener('DOMContentLoaded', boot);
