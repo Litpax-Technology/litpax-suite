@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advance Replacement · Litpax</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=ar1">
+<script>
+  // Advance Replacement sirf Suite ke andar khulta hai (login Suite ka hi hai)
+  (function () { var ok = false; try { ok = window.top !== window.self && window.top.location.origin === location.origin; } catch (e) {} if (!ok && !/[?&]solo=1/.test(location.search)) { document.documentElement.style.display = 'none'; var u = new URL('../#m-replace', location.href).href; try { window.top.location = u; } catch (e) { location.replace(u); } } })();
+</script>
+</head>
+<body>
+<main class="rp-app">
+  <header class="rp-head">
+    <div>
+      <h1>Advance Replacement</h1>
+      <p>New battery goes first, the old one comes back later</p>
+    </div>
+    <div id="rpMe" class="rp-me"></div>
+  </header>
+
+  <div id="rpKpis" class="rp-kpis"></div>
+
+  <div class="rp-tools">
+    <input id="rpSearch" class="rp-search" type="search" placeholder="Search case, customer, phone, serial, ticket…" aria-label="Search cases" oninput="arRender()">
+    <button id="rpNewBtn" class="btn btn-primary" onclick="arNew()" hidden>+ New Replacement</button>
+    <button id="rpRolesBtn" class="btn" onclick="arRolesOpen()" hidden>Roles &amp; lists</button>
+    <button class="btn btn-icon" title="Refresh" aria-label="Refresh" onclick="arLoad()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+  </div>
+
+  <div id="rpChips" class="rp-chips"></div>
+  <div id="rpList" class="rp-list"></div>
+</main>
+
+<!-- modal -->
+<div id="rpOv" class="rp-ov" onclick="if(event.target===this)modalClose()">
+  <div class="rp-modal" role="dialog" aria-modal="true" aria-labelledby="rpMdTitle">
+    <div class="rp-md-head"><h2 id="rpMdTitle"></h2><button type="button" class="rp-x" onclick="modalClose()" aria-label="Close">✕</button></div>
+    <div id="rpMdBody" class="rp-md-body"></div>
+  </div>
+</div>
+<div id="rpToast" class="rp-toast" role="status" aria-live="polite"></div>
+
+<script src="../config.js?v=ar1"></script>
+<script src="app.js?v=ar1"></script>
+<script src="../suite-bridge.js"></script>
+</body>
+</html>
