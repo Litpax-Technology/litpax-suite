@@ -35,7 +35,6 @@ window.SUITE = {
     cash:     { label: 'Cash Ledger',     path: 'https://litpax-technology.github.io/Cash-Ledger-/' },
     tasks:    { label: 'Company Tasks',   path: 'https://litpax-technology.github.io/Litpax-Company-Task/' },
     service:  { label: 'Service Hub',     path: 'service/index.html' },
-    replace:  { label: 'Advance Replacement', path: 'service/replace/index.html' },
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
 
