@@ -35,17 +35,16 @@ const roleAccess = {
     el.style.display = allowed.includes(mod) ? 'flex' : 'none';
   });
 
-  // Create Lead button — har Sales user ko dikhega
+  // Create Lead, Dealer Check, Apps menu — Sales aur Admin dono ko
+  const salesOrAdmin = user.role === 'Sales' || user.role === 'Admin';
   const leadBtn = document.getElementById('btnCreateLead');
-  if (leadBtn && user.role === 'Sales') leadBtn.style.display = 'inline-flex';
+  if (leadBtn && salesOrAdmin) leadBtn.style.display = 'inline-flex';
 
-  // Dealer Check button — Sales ko dikhega
   const dealerBtn = document.getElementById('btnDealerCheck');
-  if (dealerBtn && user.role === 'Sales') dealerBtn.style.display = 'inline-flex';
+  if (dealerBtn && salesOrAdmin) dealerBtn.style.display = 'inline-flex';
 
-  // Apps menu (6 dots) — Sales ko dikhega: PI Maker, Rate List, Specification Builder
   const appsMenu = document.getElementById('appsMenu');
-  if (appsMenu && user.role === 'Sales') appsMenu.style.display = 'block';
+  if (appsMenu && salesOrAdmin) appsMenu.style.display = 'block';
 
   if (user.role === 'Sales' || user.role === 'Admin') {
     const pipeline = document.getElementById('ordersPipeline');
