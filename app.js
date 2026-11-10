@@ -347,7 +347,7 @@
   };
   var APPICO = { overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'spark', settings: 'gear' };
-  var PAGEICO = [[/switch|staff/i, 'users'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
+  var PAGEICO = [[/switch|staff/i, 'users'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
     [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],
     [/item/i, 'box'], [/opening/i, 'flag'], [/summary/i, 'trend'], [/ledger/i, 'book'], [/reorder/i, 'alert'],
