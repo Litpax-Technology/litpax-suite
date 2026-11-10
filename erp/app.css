@@ -1121,5 +1121,11 @@ html.in-suite .btn-logout { display: none; }
 .apps-menu:hover .apps-drop, .apps-menu.open .apps-drop { display: grid; }
 .apps-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 12px; text-decoration: none; cursor: pointer; transition: background .15s; }
 .apps-tile:hover { background: rgba(236, 79, 85, .08); }
-.apps-ico { font-size: 22px; line-height: 1; }
+.apps-ico { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; color: #fff; box-shadow: 0 6px 14px -6px rgba(16, 24, 40, .35); }
+.apps-ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ai-lead   { background: linear-gradient(135deg, #ec4f55, #f5b82e); }
+.ai-dealer { background: linear-gradient(135deg, #3b6cff, #7c5cff); }
+.ai-pi     { background: linear-gradient(135deg, #12b981, #0ea5a4); }
+.ai-rate   { background: linear-gradient(135deg, #f59e0b, #f97316); }
+.ai-spec   { background: linear-gradient(135deg, #121212, #4b4b55); }
 .apps-lbl { font-size: 11.5px; font-weight: 600; color: var(--n2-ink); text-align: center; line-height: 1.25; }
