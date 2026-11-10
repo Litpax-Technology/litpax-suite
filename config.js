@@ -9,6 +9,7 @@ window.SUITE = {
   PLT_URL:  'https://script.google.com/macros/s/AKfycbwSENECChjy8cOZg_VP1BwXj0s_gw2q0dqyhHD81dQRD2XYvkOj_suhyb4mpfqmx3PzUA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbzTBAQDtrUOlWvpFj_XCJQvHgm8w-N3INeWqLPYxWKrkIaNzBWl1DmWUjvtIvvGReS9xw/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbze9GyqzpDPjQJo-TSwB5vQ60xR5HdrHqWEAyhxX13picf4PWQAp8UQ6SUNa2WvQRFaNw/exec',
+  REPLACE_URL: 'https://script.google.com/macros/s/AKfycbyBdWRcoVUikw6ZD9Xnqmeb-htz34d29DEldH6PJ27CKSI8wEe64dRySUNQdXalkEHpjQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwBbK2Ase0S4YSdtgqZQQ3D8AsHNT3nO02ip2YeR4aNoHufSWQkZ96hVdlHdOX6RRLX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
   APP_NAME: 'Litpax Suite',
@@ -34,6 +35,7 @@ window.SUITE = {
     cash:     { label: 'Cash Ledger',     path: 'https://litpax-technology.github.io/Cash-Ledger-/' },
     tasks:    { label: 'Company Tasks',   path: 'https://litpax-technology.github.io/Litpax-Company-Task/' },
     service:  { label: 'Service Hub',     path: 'service/index.html' },
+    replace:  { label: 'Advance Replacement', path: 'service/replace/index.html' },
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
 
@@ -112,6 +114,8 @@ window.SUITE = {
   if (/\/plt\//.test(p)) {
     window.CONFIG = { API_URL: S.PLT_URL, FLOOR: S.PLT.FLOOR, POLL_MS: S.PLT.POLL_MS, LOG_LIMIT: S.PLT.LOG_LIMIT,
       ENFORCE_SEQUENCE: S.PLT.ENFORCE_SEQUENCE, TIMEOUT_MS: S.TIMEOUT_MS };
+  } else if (/\/service\/replace\//.test(p)) {   // service ke andar wala Advance Replacement (apni GAS)
+    window.CONFIG = { API_URL: S.REPLACE_URL, TIMEOUT_MS: 25000, STATES: S.SERVICE.STATES };
   } else if (/\/service\//.test(p)) {
     window.CONFIG = Object.assign({ API_URL: S.SERVICE_URL, REPAIR_URL: S.SERVICE_URL }, S.SERVICE);
   } else if (/\/agent\//.test(p)) {
