@@ -136,6 +136,8 @@ async function boot() {
 function emptyMsg(m) { $('rpKpis').innerHTML = ''; $('rpChips').innerHTML = ''; $('rpList').innerHTML = '<div class="empty">' + esc(m) + '</div>'; }
 // Service ticket se aaya → form bhara hua
 function arPrefill() {
+  let o = ''; try { o = sessionStorage.getItem('rep_open') || ''; sessionStorage.removeItem('rep_open'); } catch (e) {}
+  if (o && AR.access) return arOpen(o);   // ticket / Customer page se aaya → seedha case
   let p = null; try { p = JSON.parse(sessionStorage.getItem('rep_prefill') || 'null'); sessionStorage.removeItem('rep_prefill'); } catch (e) {}
   if (!p || !AR.access) return;
   if (!arPerm('Create')) return toast('⚠️ Aapke role me naya case banana nahi hai');
@@ -242,10 +244,10 @@ async function arOpen(id) {
   const x = r.row, st = x['Status'], kv = rows => kvh(rows.map(a => [a[0], a[1] === '' || a[1] == null ? '' : esc(a[1])]));
   const steps = arSteps(x), canEdit = arPerm('Create') && (st === 'Pending Approval' || st === 'Open');
   let h = '<div class="d-head"><span class="pill p-' + (AR_TONE[st] || 'blue') + '">' + esc(st) + '</span>' +
-    (x['Ticket ID'] ? '<span class="tk">Ticket ' + esc(x['Ticket ID']) + '</span>' : '') + '<span class="muted">' + esc(niceDate(x['Created At']) + ' · ' + x['Created By']) + '</span></div>';
+    (x['Ticket ID'] ? (suiteCan('m-service') && /^LTX-/i.test(x['Ticket ID']) ? '<button type="button" class="lnk tk" data-id="' + esc(x['Ticket ID']) + '" onclick="suiteOpen(\'ticket\', this.dataset.id)">Ticket ' + esc(x['Ticket ID']) + ' ↗</button>' : '<span class="tk">Ticket ' + esc(x['Ticket ID']) + '</span>') : '') + '<span class="muted">' + esc(niceDate(x['Created At']) + ' · ' + x['Created By']) + '</span></div>';
   if (steps.length || canEdit) h += '<div class="d-acts">' + steps.map(s => '<button type="button" class="btn btn-sm ' + s[4] + '" data-id="' + esc(id) + '" data-s="' + s[0] + '" onclick="arStep(this.dataset.id,this.dataset.s)">' + esc(s[3]) + '</button>').join('') +
     (canEdit ? '<button type="button" class="btn btn-sm" onclick="arNew(AR.cur, AR.cur[\'Case ID\'])">Edit details</button>' : '') + '</div>';
-  h += sec('Customer', kv([['Name', x['Customer Name']], ['Phone', x['Phone']], ['City', [x['City'], x['State']].filter(Boolean).join(', ')], ['Dealer', x['Dealer']]]));
+  h += sec('Customer', (suiteCan('m-erp') && (x['Phone'] || x['Customer Name']) ? '<div class="d-xl"><button type="button" class="lnk" data-k="' + esc(x['Phone'] || x['Customer Name']) + '" onclick="suiteOpen(\'customer\', this.dataset.k)">ERP 360 ↗ orders, payments, service</button></div>' : '') + kv([['Name', x['Customer Name']], ['Phone', x['Phone']], ['City', [x['City'], x['State']].filter(Boolean).join(', ')], ['Dealer', x['Dealer']]]));
   h += sec('Old battery', kv([['Battery', [x['Battery Category'], x['Battery Model']].filter(Boolean).join(' · ')], ['Serial no', x['Old Serial']],
     ['Charger', x['Charger'] === 'Yes' ? [x['Charger Model'], x['Charger Serial'] && 'SN ' + x['Charger Serial']].filter(Boolean).join(' · ') : 'No'],
     ['Warranty', x['Warranty']], ['Complaint', x['Complaint']], ['Remarks', x['Remarks']],
@@ -348,3 +350,7 @@ async function arRolesSave(btn) {
   if (me2 && me2.ok) AR.me = me2.me;
   arRender();
 }
+
+/* ---------- LINKED RECORDS — Suite ke dusre records (ticket, ERP customer) ---------- */
+function suiteCan(mod) { try { return (sessionStorage.getItem('suite_can') || '').split(',').indexOf(mod) !== -1; } catch (e) { return false; } }
+function suiteOpen(type, id) { try { window.top.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: type, id: String(id) }, location.origin); } catch (e) {} }
