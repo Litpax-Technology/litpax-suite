@@ -50,14 +50,14 @@ async function doLogin() {
   const err = document.getElementById('login-err');
 
   if (!_selectedRole) {
-    err.textContent = '❌ Pehle role select karo';
+    err.textContent = '❌ Select a role first';
     err.style.display = 'block';
     return;
   }
 
   if (_pinLocked) {
     err.style.display = 'block';
-    err.textContent = '🔒 Account locked — wait karo';
+    err.textContent = '🔒 Account locked — please wait';
     return;
   }
 
@@ -76,7 +76,7 @@ async function doLogin() {
   } catch (e) {
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     err.style.display = 'block';
-    err.textContent = '⚠ Server busy — dobara try karo';
+    err.textContent = '⚠ Server busy — please try again';
     return;
   }
   if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
@@ -90,11 +90,11 @@ async function doLogin() {
       let secs = 30;
       err.style.display = 'block';
       const tick = () => {
-        err.textContent = `🔒 3 galat attempts — ${secs}s baad try karo`;
+        err.textContent = `🔒 3 wrong attempts — try again in ${secs}s`;
         if (secs <= 0) {
           _pinLocked   = false;
           _pinAttempts = 0;
-          err.textContent = '❌ Galat PIN — dobara try karo';
+          err.textContent = '❌ Wrong PIN — please try again';
           clearInterval(_lockTimer);
         }
         secs--;
@@ -103,7 +103,7 @@ async function doLogin() {
       _lockTimer = setInterval(tick, 1000);
     } else {
       err.style.display = 'block';
-      err.textContent = `❌ Galat PIN — ${3 - _pinAttempts} attempts bache`;
+      err.textContent = `❌ Wrong PIN — ${3 - _pinAttempts} attempts left`;
     }
     return;
   }
@@ -200,7 +200,7 @@ function compressImage(file, maxW = 800, q = 0.7) {
       URL.revokeObjectURL(url);
       res(c.toDataURL('image/jpeg', q).split(',')[1]);
     };
-    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Photo read nahi hui (format support nahi)')); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Could not read the photo (format not supported)')); };
     img.src = url;
   });
 }
@@ -237,7 +237,7 @@ function viewItem(name) {
   document.getElementById('iv-name').textContent = s.name;
   document.getElementById('iv-meta').innerHTML =
     `${catBadge(s.cat)} <span style="color:var(--muted);">Stock: <b style="color:var(--navy);font-family:var(--mono);">${s.currentStock ?? '—'} ${s.unit || ''}</b></span>`;
-  document.getElementById('iv-desc').textContent = s.desc || 'Description nahi daala gaya';
+  document.getElementById('iv-desc').textContent = s.desc || 'No description added';
   const img = document.getElementById('iv-img'), no = document.getElementById('iv-noimg');
   if (s.imgId) { img.src = imgUrl(s.imgId, 1000); img.style.display = 'block'; no.style.display = 'none'; }
   else { img.removeAttribute('src'); img.style.display = 'none'; no.style.display = 'flex'; }
@@ -316,7 +316,7 @@ async function api(action, body) {
       } catch (e) {
         if (e.name === 'AbortError') {               // 60s me jawab nahi — dobara mat bhejo
           setDot('err', 'Slow');
-          throw new Error('Server 60s me respond nahi kiya — dobara try karo');
+          throw new Error('Server did not respond in 60s — please try again');
         }
         if (e.message !== '__retry__') throw e;      // real error → band
         if (attempt < 5) {
@@ -327,7 +327,7 @@ async function api(action, body) {
       }
     }
     setDot('err', 'Offline');
-    throw new Error('Server thodi der busy hai — dobara try karo');
+    throw new Error('Server is busy for a moment — please try again');
   })();
 
   _pendingCalls[key] = promise;
@@ -416,7 +416,7 @@ function depBadge(d) {
 async function migrateCategories() {
   try {
     const r = await api('migrateCategories');
-    toast(`✓ ${r.message} — page reload ho raha hai`, 'ok');
+    toast(`✓ ${r.message} — reloading the page`, 'ok');
     setTimeout(() => location.reload(), 1500);
   } catch(e) { toast(e.message, 'err'); }
 }
@@ -613,25 +613,25 @@ async function saveInward() {
     if (!qty || qty <= 0) { toast('Enter a valid quantity', 'err'); return; }
   } else {         // baaki: kai items ek saath (purane IMS jaisa)
     rows = _inRows.filter(r => r.item || String(r.qty).trim() !== '');
-    if (!rows.length) { toast('Kam se kam ek item daalo', 'err'); return; }
+    if (!rows.length) { toast('Add at least one item', 'err'); return; }
     const seen = new Set();
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i], q = Number(r.qty) || 0;
-      if (!r.item)          { toast(`Row ${i + 1}: item select karo`, 'err'); return; }
-      if (q <= 0)           { toast(`${r.item}: valid qty daalo`, 'err'); return; }
-      if (seen.has(r.item)) { toast(`${r.item} do baar daala hai`, 'err'); return; }
+      if (!r.item)          { toast(`Row ${i + 1}: select an item`, 'err'); return; }
+      if (q <= 0)           { toast(`${r.item}: enter a valid qty`, 'err'); return; }
+      if (seen.has(r.item)) { toast(`${r.item} is added twice`, 'err'); return; }
       seen.add(r.item);
     }
   }
   const inPurposeChk = document.querySelector('input[name="in-purpose"]:checked')?.value || 'Raw Material';
   const invoiceVal   = document.getElementById('in-invoice').value.trim();
   if (inPurposeChk === 'Raw Material' && !invoiceVal) {
-    toast('PO / Invoice No. mandatory hai', 'err');
+    toast('PO / Invoice No. is required', 'err');
     document.getElementById('in-invoice').focus();
     return;
   }
   if (needsApprovalUI('', inPurposeChk) && !_inPhotos.length &&
-      !confirm('📄 Bill ki photo upload nahi ki — approve karne wale ko verify karne me dikkat hogi.\n\nFir bhi bina photo ke bhejein?')) return;
+      !confirm('📄 No bill photo uploaded — the approver will find it hard to verify.\n\nSend without a photo anyway?')) return;
 
   const btn = document.getElementById('in-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
@@ -676,10 +676,10 @@ async function saveInward() {
         if (res && res.pending) pending++; else saved++;
       } catch (e) {
         // Jo pehle chale gaye wo ho gaye; baaki ke liye bata do
-        throw new Error(`${rows[i].item}: ${e.message} — ${i} item pehle hi chale gaye, baaki dobara daalo`);
+        throw new Error(`${rows[i].item}: ${e.message} — ${i} item(s) were already sent, re-enter the rest`);
       }
     }
-    if (pending) toast(`⏳ ${pending} item approval ke liye bhej diye — approve hote hi stock me aa jayenge`, 'warn');
+    if (pending) toast(`⏳ ${pending} item(s) sent for approval — they will be added to stock once approved`, 'warn');
     else toast(`Inward saved ✓ — ${saved} item`, 'ok');
     closeM('inward-modal');
     _stocks = [];
@@ -866,7 +866,7 @@ function updAllInInfo() {
     if (!s) { el.innerHTML = ''; return; }
     const u = htmlEnc(s.unit || '');
     let h = `Stock: <b style="font-family:var(--mono);">${s.currentStock} ${u}</b> · ROP: <b style="font-family:var(--mono);">${s.reorderPoint} ${u}</b> · In Transit: <b style="font-family:var(--mono);">${s.mit || 0} ${u}</b>`;
-    if (_inRows.some((x, j) => j !== i && x.item === r.item)) h += ` · <b style="color:var(--red);">⚠ Ye item doosri row me bhi hai</b>`;
+    if (_inRows.some((x, j) => j !== i && x.item === r.item)) h += ` · <b style="color:var(--red);">⚠ This item is also in another row</b>`;
     el.innerHTML = h;
   });
   const n = _inRows.filter(r => r.item && Number(r.qty) > 0).length;
@@ -946,7 +946,7 @@ function outCatOpts(sel) {
     cats.map(c => `<option value="${htmlEnc(c)}" ${c === sel ? 'selected' : ''}>${htmlEnc(c)}</option>`).join('');
 }
 function outItemOpts(cat, sel) {
-  if (!cat) return '<option value="">-- Pehle Category --</option>';
+  if (!cat) return '<option value="">-- Select Category first --</option>';
   return '<option value="">-- Select Item --</option>' +
     _stocks.filter(s => s.cat === cat)
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -973,13 +973,13 @@ function updOutRowInfo(i) {
   if (!el || !r) return;
   if (!r.item) { el.innerHTML = ''; return; }
   const s = _stocks.find(x => x.name === r.item);
-  if (!s) { el.innerHTML = '<span style="color:var(--red);">Item stock me nahi mila</span>'; return; }
+  if (!s) { el.innerHTML = '<span style="color:var(--red);">Item not found in stock</span>'; return; }
   const q   = Number(r.qty) || 0;
   const dup = _outRows.some((x, j) => j !== i && x.item === r.item);
   let h = `Available: <b style="color:var(--navy);font-family:var(--mono);">${s.currentStock} ${htmlEnc(s.unit || '')}</b>`;
   if (s.imgId) h += ` · <span style="color:var(--accent);cursor:pointer;" data-n="${htmlEnc(s.name)}" onclick="viewItem(this.dataset.n)">📷 Photo</span>`;
-  if (dup) h += ` · <b style="color:var(--red);">⚠ Ye item doosri row me bhi hai</b>`;
-  else if (q > s.currentStock) h += ` · <b style="color:var(--red);">⛔ Stock se zyada</b>`;
+  if (dup) h += ` · <b style="color:var(--red);">⚠ This item is also in another row</b>`;
+  else if (q > s.currentStock) h += ` · <b style="color:var(--red);">⛔ More than stock</b>`;
   el.innerHTML = h;
 }
 function updAllOutInfo() {
@@ -1051,17 +1051,17 @@ async function loadSettings() {
 function renderSettings() {
   const wrap = document.getElementById('set-list');
   setEl('set-dirty', _setDirty ? '● Unsaved changes' : '');
-  if (!_setCats.length) { wrap.innerHTML = `<div class="empty"><div class="et">Koi category nahi</div></div>`; return; }
+  if (!_setCats.length) { wrap.innerHTML = `<div class="empty"><div class="et">No categories</div></div>`; return; }
   const unitOpts = sel => [...new Set([..._config.units, sel])]
     .map(u => `<option ${u === sel ? 'selected' : ''}>${htmlEnc(u)}</option>`).join('');
 
   wrap.innerHTML = _setCats.map((c, i) => {
     const used = setCatUse(c.name);
     const chips = c.noBrand
-      ? `<span style="font-size:11px;color:var(--muted);">No-brand — item naam seedha model se banega</span>`
+      ? `<span style="font-size:11px;color:var(--muted);">No brand — the item name is taken from the model</span>`
       : c.brands.map((b, j) => {
           const bu = setBrandUse(c.name, b);
-          return `<span class="set-chip">${htmlEnc(b)}${bu ? ` <b>${bu}</b>` : ''}<button type="button" onclick="setDelBrand(${i},${j})" ${bu ? 'disabled title="Is brand ke items hain"' : ''}>✕</button></span>`;
+          return `<span class="set-chip">${htmlEnc(b)}${bu ? ` <b>${bu}</b>` : ''}<button type="button" onclick="setDelBrand(${i},${j})" ${bu ? 'disabled title="This brand has items"' : ''}>✕</button></span>`;
         }).join('') +
         `<span class="set-add"><input class="inp" id="set-b-${i}" placeholder="+ Brand" onkeydown="if(event.key==='Enter')setAddBrand(${i})"><button type="button" class="btn bg bsm" onclick="setAddBrand(${i})">Add</button></span>`;
     return `<div class="set-row">
@@ -1076,7 +1076,7 @@ function renderSettings() {
           <span style="font-size:11px;color:var(--muted);">${used} items</span>
           <select class="inp" style="width:95px;font-size:12px;padding:4px 8px;" onchange="setUnit(${i},this.value)">${unitOpts(c.unit)}</select>
           <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" ${c.noBrand ? 'checked' : ''} onchange="setNoBrand(${i},this.checked)"> No brand</label>
-          <button type="button" class="btn brd bsm" style="margin-left:auto;" onclick="setDelCat(${i})" ${used ? 'disabled title="Is category ke items hain"' : ''}>Delete</button>
+          <button type="button" class="btn brd bsm" style="margin-left:auto;" onclick="setDelCat(${i})" ${used ? 'disabled title="This category has items"' : ''}>Delete</button>
         </div>
         <div class="set-chips">${chips}</div>
       </div>
@@ -1095,9 +1095,9 @@ function setNoBrand(i, v) { _setCats[i].noBrand = v; if (!_setCats[i].brands.len
 function setAddBrand(i) {
   const v = (document.getElementById('set-b-' + i).value || '').trim();
   if (!v) return;
-  if (v.includes(',')) { toast('Brand naam me comma nahi chalega', 'err'); return; }
+  if (v.includes(',')) { toast('Brand name cannot contain a comma', 'err'); return; }
   const c = _setCats[i];
-  if (c.brands.some(b => b.toLowerCase() === v.toLowerCase())) { toast(`${v} pehle se hai`, 'warn'); return; }
+  if (c.brands.some(b => b.toLowerCase() === v.toLowerCase())) { toast(`${v} already exists`, 'warn'); return; }
   const oi = c.brands.indexOf('Other');              // 'Other' hamesha aakhir me rahe
   if (oi === -1) c.brands.push(v); else c.brands.splice(oi, 0, v);
   setMark();
@@ -1105,7 +1105,7 @@ function setAddBrand(i) {
 }
 function setDelBrand(i, j) {
   const c = _setCats[i];
-  if (setBrandUse(c.name, c.brands[j])) { toast('Is brand ke items hain — hat nahi sakta', 'err'); return; }
+  if (setBrandUse(c.name, c.brands[j])) { toast('This brand has items — it cannot be removed', 'err'); return; }
   c.brands.splice(j, 1);
   setMark();
 }
@@ -1116,9 +1116,9 @@ function setBrandUse(cat, brand) {
 function setCatUse(cat) { return _stocks.filter(s => s.cat === cat).length; }
 function setAddCat() {
   const name = document.getElementById('set-new-name').value.trim();
-  if (!name) { toast('Category naam daalo', 'err'); return; }
-  if (name.includes(',')) { toast('Naam me comma nahi chalega', 'err'); return; }
-  if (_setCats.some(c => c.name.toLowerCase() === name.toLowerCase())) { toast(`${name} pehle se hai`, 'warn'); return; }
+  if (!name) { toast('Enter a category name', 'err'); return; }
+  if (name.includes(',')) { toast('Name cannot contain a comma', 'err'); return; }
+  if (_setCats.some(c => c.name.toLowerCase() === name.toLowerCase())) { toast(`${name} already exists`, 'warn'); return; }
   _setCats.push({
     name, brands: ['Other'],
     unit: document.getElementById('set-new-unit').value || 'Pcs',
@@ -1131,8 +1131,8 @@ function setAddCat() {
 }
 function setDelCat(i) {
   const c = _setCats[i];
-  if (setCatUse(c.name)) { toast('Is category ke items hain — delete nahi ho sakti', 'err'); return; }
-  if (!confirm(`"${c.name}" category hatani hai?`)) return;
+  if (setCatUse(c.name)) { toast('This category has items — it cannot be deleted', 'err'); return; }
+  if (!confirm(`Remove the "${c.name}" category?`)) return;
   _setCats.splice(i, 1);
   setMark();
 }
@@ -1163,7 +1163,7 @@ async function openOutwardModal(pre) {
   if (prod) prod.checked = true;
   resetOutPhotos();
   document.getElementById('out-rows').innerHTML =
-    '<div style="padding:12px 4px;font-size:12px;color:var(--muted);"><span class="loader"></span> Stock load ho raha hai...</div>';
+    '<div style="padding:12px 4px;font-size:12px;color:var(--muted);"><span class="loader"></span> Loading stock...</div>';
   document.getElementById('outward-modal').classList.add('open');
   if (!_stocks.length) {
     try { _stocks = await api('getStockSummary'); _items = _stocks; }
@@ -1176,19 +1176,19 @@ async function openOutwardModal(pre) {
 
 async function saveOutward() {
   const department = document.getElementById('out-dept').value;
-  if (!department) { toast('Department select karo', 'err'); return; }
+  if (!department) { toast('Select a department', 'err'); return; }
   const rows = _outRows.filter(r => r.item || String(r.qty).trim() !== '');
-  if (!rows.length) { toast('Kam se kam ek item daalo', 'err'); return; }
+  if (!rows.length) { toast('Add at least one item', 'err'); return; }
 
   const seen = new Set();
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i], q = Number(r.qty) || 0;
-    if (!r.item)          { toast(`Row ${i + 1}: item select karo`, 'err'); return; }
-    if (q <= 0)           { toast(`${r.item}: valid qty daalo`, 'err'); return; }
-    if (seen.has(r.item)) { toast(`${r.item} do baar daala hai`, 'err'); return; }
+    if (!r.item)          { toast(`Row ${i + 1}: select an item`, 'err'); return; }
+    if (q <= 0)           { toast(`${r.item}: enter a valid qty`, 'err'); return; }
+    if (seen.has(r.item)) { toast(`${r.item} is added twice`, 'err'); return; }
     seen.add(r.item);
     const s = _stocks.find(x => x.name === r.item);
-    if (s && q > s.currentStock) { toast(`${r.item}: available sirf ${s.currentStock} ${s.unit || ''}`, 'err'); return; }
+    if (s && q > s.currentStock) { toast(`${r.item}: only ${s.currentStock} ${s.unit || ''} available`, 'err'); return; }
   }
 
   const btn = document.getElementById('out-btn');
@@ -1286,7 +1286,7 @@ async function saveEditDispatch() {
 }
 
 async function deleteDispatch(id, model) {
-  if (!confirm(`"${model}" dispatch delete karna chahte ho?`)) return;
+  if (!confirm(`Delete the "${model}" dispatch?`)) return;
   try {
     await api('deleteDispatch', { id });
     toast('Dispatch deleted ✓', 'ok');
@@ -1353,7 +1353,7 @@ async function selectDispatchType(type) {
       sel.innerHTML = '<option value="">-- No chargers in WIP --</option>';
       const errEl = document.getElementById('dd-error');
       errEl.style.display = 'block';
-      errEl.textContent = '⚠ Koi charger WIP mein nahi hai — pehle Store se outward karwao';
+      errEl.textContent = '⚠ No chargers in WIP — issue them from the Store first';
     }
   }
 }
@@ -1388,13 +1388,13 @@ function updDirectDispatchQty() {
   const wipQty = stock.wip || 0;
   if (qty > wipQty) {
     err.style.display = 'block';
-    err.textContent = `⛔ WIP mein sirf ${wipQty} ${stock.unit} hai — ${qty} dispatch nahi ho sakta`;
+    err.textContent = `⛔ Only ${wipQty} ${stock.unit} in WIP — cannot dispatch ${qty}`;
     sum.style.display = 'none';
     btn.disabled = true;
   } else {
     err.style.display = 'none';
     sum.style.display = 'block';
-    sum.innerHTML = `✓ <b>${qty} ${stock.unit}</b> dispatch hogi &nbsp;|&nbsp; WIP mein bachega: <b>${wipQty - qty} ${stock.unit}</b>`;
+    sum.innerHTML = `✓ <b>${qty} ${stock.unit}</b> will be dispatched &nbsp;|&nbsp; Left in WIP: <b>${wipQty - qty} ${stock.unit}</b>`;
     btn.disabled = false;
   }
 }
@@ -1404,10 +1404,10 @@ async function saveDirectDispatch() {
   const qty        = Number(document.getElementById('dd-qty').value);
   const dispatchTo = document.getElementById('dd-to').value.trim();
   const date       = document.getElementById('dd-date').value;
-  if (!itemName)       { toast('Item select karo', 'err'); return; }
-  if (!qty || qty <= 0){ toast('Qty daalo', 'err'); return; }
-  if (!dispatchTo)     { toast('Dispatch To mandatory hai', 'err'); return; }
-  if (!date)           { toast('Date daalo', 'err'); return; }
+  if (!itemName)       { toast('Select an item', 'err'); return; }
+  if (!qty || qty <= 0){ toast('Enter a qty', 'err'); return; }
+  if (!dispatchTo)     { toast('Dispatch To is required', 'err'); return; }
+  if (!date)           { toast('Enter a date', 'err'); return; }
   const btn = document.getElementById('dd-btn');
   btn.disabled = true; btn.textContent = 'Processing...';
   try {
@@ -1464,7 +1464,7 @@ async function updDispatchPreview() {
       </div>` : '';
     const varHtml = tog('cell', 'Cell', mdl.cell1, mdl.cell2, _disCellVar) + tog('bms', 'BMS', mdl.bms1, mdl.bms2, _disBmsVar);
 
-    if (!items.length) { preview.innerHTML = varHtml + '<div style="color:var(--red);font-size:12px;margin-top:10px;">Master me is model ka Cell/BMS nahi bhara</div>'; if (btn) btn.disabled = true; return; }
+    if (!items.length) { preview.innerHTML = varHtml + '<div style="color:var(--red);font-size:12px;margin-top:10px;">Cell/BMS for this model is not filled in the Master</div>'; if (btn) btn.disabled = true; return; }
         const normKey = (str) => String(str || '')
       .replace(/[\u2018\u2019\u2032]/g, "'")
       .replace(/[\u201C\u201D\u2033]/g, '"')
@@ -1495,7 +1495,7 @@ async function updDispatchPreview() {
     preview.innerHTML = varHtml + `<div class="bom-preview">
       <div class="bp-title">Components required (×${qty})</div>
       ${rows.join('')}
-      ${hasShortage ? `<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:12px;color:var(--red);font-weight:600;">⛔ Insufficient stock — dispatch nahi ho sakta</div>` : ''}
+      ${hasShortage ? `<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:12px;color:var(--red);font-weight:600;">⛔ Insufficient stock — cannot dispatch</div>` : ''}
     </div>`;
 
     if (btn) {
@@ -1513,7 +1513,7 @@ async function saveDispatch() {
   if (!bomModel) { toast('Select a BOM model', 'err'); return; }
   if (!qtyProduced || qtyProduced <= 0) { toast('Enter a valid quantity', 'err'); return; }
   const btn = document.getElementById('dis-btn');
-  if (btn.disabled) { toast('Stock insufficient — dispatch nahi ho sakta', 'err'); return; }
+  if (btn.disabled) { toast('Insufficient stock — cannot dispatch', 'err'); return; }
   btn.disabled = true; btn.textContent = 'Processing...';
   try {
     const r = await api('addDispatch', {
@@ -1826,7 +1826,7 @@ async function saveItem() {
         await api('uploadItemImage', { name, data, mime: 'image/jpeg' });
       } catch (ie) { imgErr = ie.message; }
     }
-    if (imgErr) toast('Item save hua, par photo fail: ' + imgErr, 'warn');
+    if (imgErr) toast('Item saved, but the photo failed: ' + imgErr, 'warn');
     else toast(_editItemName ? 'Item updated ✓' : 'Item added ✓', 'ok');
     closeM('item-modal');
     _items = []; _stocks = [];
@@ -1855,13 +1855,13 @@ function openRename(name) {
 async function saveRename() {
   const oldName = document.getElementById('rn-old').value.trim();
   const newName = document.getElementById('rn-new').value.trim();
-  if (!newName)            { toast('Naya naam daalo', 'err'); return; }
-  if (oldName === newName) { toast('Naam same hai — kuch change nahi', 'warn'); return; }
+  if (!newName)            { toast('Enter the new name', 'err'); return; }
+  if (oldName === newName) { toast('Same name — nothing to change', 'warn'); return; }
   const btn = document.getElementById('rn-btn');
   btn.disabled = true; btn.textContent = 'Renaming...';
   try {
     const r = await api('renameItemEverywhere', { oldName, newName });
-    toast(`✓ Renamed — ${r.cellsUpdated} jagah update hui`, 'ok');
+    toast(`✓ Renamed — updated in ${r.cellsUpdated} places`, 'ok');
     closeM('rename-modal');
     _items = []; _stocks = [];
     loadItems();
@@ -1881,7 +1881,7 @@ async function loadBom() {
 async function refreshMaster() {
   try {
     const r = await api('refreshMaster');
-    toast(`✓ Master se ${r.models} models reload hue`, 'ok');
+    toast(`✓ Reloaded ${r.models} models from the Master`, 'ok');
     _boms = []; _stocks = [];
     loadBom();
   } catch(e) { toast(e.message, 'err'); }
@@ -1901,7 +1901,7 @@ function filterBom() {
       const lines = (b.items || []).map(x => x.role === 'Backup'
         ? `<span style="color:var(--muted);">Backup: ${htmlEnc(x.item)} ×${x.qty}</span>`
         : `${htmlEnc(x.item)} ×${x.qty}`);
-      comp = lines.length ? lines.join('<br>') : '<span style="color:var(--red);">BOM nahi bhara</span>';
+      comp = lines.length ? lines.join('<br>') : '<span style="color:var(--red);">BOM not filled</span>';
     }
     return `<tr>
     <td style="font-weight:600;color:var(--navy);">${b.bomName}
@@ -1912,7 +1912,7 @@ function filterBom() {
     <td><span class="badge ${b.active === 'YES' ? 'b-ok' : 'b-ro'}">${b.active === 'YES' ? 'Active' : 'Inactive'}</span></td>
     <td style="white-space:nowrap;">
       ${isM
-        ? `<span style="font-size:11px;color:var(--muted);">Master Sheet me edit karo</span>`
+        ? `<span style="font-size:11px;color:var(--muted);">Edit in the Master Sheet</span>`
         : `<button class="btn bg bsm" onclick="openBomEdit('${b.bomName.replace(/'/g,"\\'")}')">Edit BOM</button>
            <button class="btn brd bsm" onclick="delBom('${b.bomName.replace(/'/g,"\\'")}')">Del</button>`}
     </td>
@@ -2038,7 +2038,7 @@ async function saveBomItems() {
 }
 
 async function delBom(bomName) {
-  if (!confirm(`Delete BOM "${bomName}"? Components bhi delete ho jaayenge.`)) return;
+  if (!confirm(`Delete BOM "${bomName}"? Its components will be deleted too.`)) return;
   try {
     await api('deleteBomModel', { bomName });
     toast('BOM deleted', 'err');
@@ -2312,7 +2312,7 @@ async function loadReorder() {
 
     let html  = '';
     if (!cr.length && !ro.length) {
-      html = `<div class="empty"><div class="ei">✅</div><div class="et">All stocks healthy!</div><div class="es">${ok.length} items — koi reorder nahi chahiye</div></div>`;
+      html = `<div class="empty"><div class="ei">✅</div><div class="et">All stocks healthy!</div><div class="es">${ok.length} items — nothing to reorder</div></div>`;
     } else {
       if (cr.length) html += `<div class="sdiv" style="color:var(--red);">🔴 Critical — Out of Stock (${cr.length})</div><div class="ro-grid">${cr.map(roCard).join('')}</div>`;
       if (ro.length) html += `<div class="sdiv" style="color:var(--orange);margin-top:18px;">🟠 Reorder Required (${ro.length})</div><div class="ro-grid">${ro.map(roCard).join('')}</div>`;
@@ -2321,7 +2321,7 @@ async function loadReorder() {
 
     // ── NON-MOVING SECTION ──
     if (nmItems.length) {
-      html += `<div class="sdiv" style="color:var(--muted);margin-top:24px;">💤 Non-Moving Items — 1 month se koi IN/OUT nahi (${nmItems.length})</div>`;
+      html += `<div class="sdiv" style="color:var(--muted);margin-top:24px;">💤 Non-Moving Items — no IN/OUT for 1 month (${nmItems.length})</div>`;
       html += `<div class="card"><div class="tw"><table>
         <thead><tr><th>Item Name</th><th>Category</th><th>Current Stock</th><th>Last Movement</th></tr></thead>
         <tbody>${nmItems.map(s => {
@@ -2445,7 +2445,7 @@ async function genHistory() {
     const data = await api('getClosingHistory', { from, to });
     _historyData = data;
     if (!data.length) {
-      wrap.innerHTML = `<div class="empty"><div class="ei">📭</div><div class="et">No snapshots found</div><div class="es">Pehle Daily Closing save karo</div></div>`;
+      wrap.innerHTML = `<div class="empty"><div class="ei">📭</div><div class="et">No snapshots found</div><div class="es">Save a Daily Closing first</div></div>`;
       return;
     }
     const totalDays = data.length;
@@ -2526,7 +2526,7 @@ async function genHeatmap() {
   const cat   = (document.getElementById('hm-cat') || {}).value || '';
   const wrap  = document.getElementById('hm-content');
 
-  if (!month) { toast('Month select karo', 'err'); return; }
+  if (!month) { toast('Select a month', 'err'); return; }
 
   wrap.innerHTML = `<div class="empty"><div class="ei">⏳</div><div class="et">Calculating${cat ? ' — '+cat : ' all items'}...</div></div>`;
 
@@ -2672,7 +2672,7 @@ function filterOpeningStock() {
     const isLocked = existing.qty !== undefined && existing.qty !== '';
 
     const lockedStyle = 'background:var(--s2);color:var(--muted);cursor:not-allowed;';
-    const lockedAttr  = 'readonly onclick="toast(\'Opening stock lock ho chuka hai — change nahi ho sakta\',\'warn\')"';
+    const lockedAttr  = 'readonly onclick="toast(\'Opening stock is locked — it cannot be changed\',\'warn\')"';
 
     return `<tr>
       <td style="font-weight:600;color:var(--navy);">
@@ -2906,9 +2906,9 @@ async function confirmReceive() {
   const invoice  = document.getElementById('recv-invoice').value;
   const supplier = document.getElementById('recv-supplier').value;
   const by       = document.getElementById('recv-by').value || byName('Production');
-  if (!qty || qty <= 0) { toast('Valid qty daalo', 'err'); return; }
+  if (!qty || qty <= 0) { toast('Enter a valid qty', 'err'); return; }
   if (needsApprovalUI(_currentPOReceive.cat, 'Raw Material') && !_recvPhotos.length &&
-      !confirm('📄 Bill ki photo upload nahi ki — Accountant ko verify karne me dikkat hogi.\n\nFir bhi bina photo ke bhejein?')) return;
+      !confirm('📄 No bill photo uploaded — the Accountant will find it hard to verify.\n\nSend without a photo anyway?')) return;
   const btn = document.getElementById('recv-btn');
   btn.disabled = true; btn.textContent = 'Processing...';
   try {
@@ -2927,7 +2927,7 @@ async function confirmReceive() {
       qty, date, invoice, supplier, by,
       photos:   photoIds.join(','),
     });
-    if (res && res.pending) toast(`⏳ ${_currentPOReceive.itemName} — Accountant approval ke liye bhej diya`, 'warn');
+    if (res && res.pending) toast(`⏳ ${_currentPOReceive.itemName} — sent for Accountant approval`, 'warn');
     else toast(`✓ ${_currentPOReceive.itemName} received — stock updated`, 'ok');
     closeM('receive-modal');
     _currentPOReceive = null;
@@ -2939,7 +2939,7 @@ async function confirmReceive() {
 }
 
 async function cancelPOConfirm(poId) {
-  if (!confirm(`PO "${poId}" cancel karna chahte ho? Saari pending items cancel ho jaayengi.`)) return;
+  if (!confirm(`Cancel PO "${poId}"? All pending items will be cancelled.`)) return;
   try {
     await api('cancelPO', { poId });
     toast('PO cancelled ✓', 'warn');
@@ -2950,7 +2950,7 @@ async function cancelPOConfirm(poId) {
 }
 
 async function cancelPOItemConfirm(poId, itemName) {
-  if (!confirm(`"${itemName}" is PO se cancel karna chahte ho?`)) return;
+  if (!confirm(`Cancel "${itemName}" from this PO?`)) return;
   try {
     await api('cancelPOItem', { poId, itemName });
     toast(`${itemName} cancelled ✓`, 'warn');
@@ -2998,7 +2998,7 @@ async function saveCreatePO() {
     }
   }
 
-  if (!toCreate.length) { toast('Koi item select nahi hai', 'err'); return; }
+  if (!toCreate.length) { toast('No item selected', 'err'); return; }
 
   // Save nahi — pehle preview dikhao
   _pendingPOData = { supplier, expDate, items: toCreate };
@@ -3006,7 +3006,7 @@ async function saveCreatePO() {
 }
 
 function openIndentModal() {
-  toast('Ab seedha Reorder page se PO create karo', 'warn');
+  toast('Create the PO directly from the Reorder page now', 'warn');
 }
 
 // ── CREATE PO MODAL — openCreatePO (SELECT ALL TOGGLE ADDED) ──
@@ -3028,7 +3028,7 @@ async function openCreatePO() {
     const reorderItems = [...movingReorder, ...nonMovingReorder];
 
     if (!reorderItems.length) {
-      list.innerHTML = `<div class="empty" style="padding:20px;"><div class="ei">✅</div><div class="et">Koi reorder item nahi hai!</div></div>`;
+      list.innerHTML = `<div class="empty" style="padding:20px;"><div class="ei">✅</div><div class="et">No items to reorder!</div></div>`;
       if (btn) btn.disabled = true;
       return;
     }
@@ -3212,7 +3212,7 @@ async function loadADC() {
   const fromVal = document.getElementById('adc-from').value;
   const toVal   = document.getElementById('adc-to').value;
   const catVal  = document.getElementById('adc-cat').value;
-  if (!fromVal || !toVal) { toast('Date range select karo', 'err'); return; }
+  if (!fromVal || !toVal) { toast('Select a date range', 'err'); return; }
 
   const tb = document.getElementById('adc-tb');
   const em = document.getElementById('adc-empty');
@@ -3441,7 +3441,7 @@ function previewPOBeforeSave(items, supplier, expDate) {
   <div class="topbar">
     <div>
       <div class="topbar-title">⚠ DRAFT — Owner Approval Pending</div>
-      <div class="topbar-note">Approve karo tab PO save hoga</div>
+      <div class="topbar-note">The PO is saved once approved</div>
     </div>
     <div class="btn-row">
       <button class="btn-print" onclick="window.print()">🖨 Print Draft</button>
@@ -3682,8 +3682,8 @@ async function saveAddPOItem() {
   const poId     = document.getElementById('add-poi-id').value;
   const itemName = document.getElementById('add-poi-item').value;
   const qty      = Number(document.getElementById('add-poi-qty').value);
-  if (!itemName) { toast('Item select karo', 'err'); return; }
-  if (!qty || qty <= 0) { toast('Valid qty daalo', 'err'); return; }
+  if (!itemName) { toast('Select an item', 'err'); return; }
+  if (!qty || qty <= 0) { toast('Enter a valid qty', 'err'); return; }
   const btn = document.getElementById('add-poi-btn');
   btn.disabled = true; btn.textContent = 'Adding...';
   try {
@@ -3782,7 +3782,7 @@ async function loadReceived() {
     }
 
     if (!received.length) {
-      wrap.innerHTML = `<div class="empty"><div class="ei">📭</div><div class="et">Is date koi material nahi aaya</div></div>`;
+      wrap.innerHTML = `<div class="empty"><div class="ei">📭</div><div class="et">No material received on this date</div></div>`;
       return;
     }
 
@@ -3909,7 +3909,7 @@ function renderReorderChart(stocks) {
   if (!canvas) return;
   const items = stocks.filter(s => s.status !== 'OK').slice(0, 12);
   if (!items.length) {
-    canvas.parentElement.innerHTML = `<div class="empty" style="padding:40px;"><div class="ei">✅</div><div class="et">All stocks healthy!</div><div class="es">Koi reorder required nahi</div></div>`;
+    canvas.parentElement.innerHTML = `<div class="empty" style="padding:40px;"><div class="ei">✅</div><div class="et">All stocks healthy!</div><div class="es">No reorder needed</div></div>`;
     return;
   }
   const labels  = items.map(s => s.name.length > 14 ? s.name.slice(0,14)+'…' : s.name);
@@ -3943,7 +3943,7 @@ function renderWipChart(wipItems) {
   const canvas = document.getElementById('wipChart');
   if (!canvas) return;
   if (!wipItems || !wipItems.length) {
-    canvas.parentElement.innerHTML = `<div class="empty" style="padding:40px;"><div class="ei">🏭</div><div class="et">No WIP items</div><div class="es">Production mein kuch nahi</div></div>`;
+    canvas.parentElement.innerHTML = `<div class="empty" style="padding:40px;"><div class="ei">🏭</div><div class="et">No WIP items</div><div class="es">Nothing in production</div></div>`;
     return;
   }
   const labels = wipItems.map(s => s.name.length > 14 ? s.name.slice(0,14)+'…' : s.name);
@@ -4047,7 +4047,7 @@ async function renderLedger() {
   const em      = document.getElementById('ldg-empty');
   const summary = document.getElementById('ldg-summary');
   if (!item) {
-    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Item select karo</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Select an item</td></tr>`;
     summary.innerHTML = ''; em.style.display = 'none';
     return;
   }
@@ -4119,7 +4119,7 @@ async function renderLedger() {
 
 function printLedger() {
   const item = document.getElementById('ldg-item').value;
-  if (!item) { toast('Pehle item select karo', 'err'); return; }
+  if (!item) { toast('Select an item first', 'err'); return; }
   const tbHtml = document.getElementById('ldg-tb').innerHTML;
   const fromV  = document.getElementById('ldg-from').value;
   const toV    = document.getElementById('ldg-to').value;
