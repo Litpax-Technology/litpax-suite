@@ -91,9 +91,9 @@ const roleAccess = {
 // PAGE META
 const pageMeta = {
   admindashboard:{title:'Dashboard',sub:'Admin overview & analytics'},
-  leads:{title:'Lead Pipeline',sub:'Naye customer — pehli baat se order tak'},
-  leaddash:{title:'Lead Dashboard',sub:'Stage, source aur salesperson-wise leads'},
-  ordertracking:{title:'Track Order',sub:'Order ID se poori history'},
+  leads:{title:'Lead Pipeline',sub:'New customers — from first contact to order'},
+  leaddash:{title:'Lead Dashboard',sub:'Leads by stage, source and salesperson'},
+  ordertracking:{title:'Track Order',sub:'Full history by Order ID'},
   orders:{title:'Sales Orders',sub:'Manage all customer orders'},
   crm:{title:'CRM Tracker',sub:'Order lifecycle tracking'},
     production:{title:'Production',sub:'Production status & updates'},
@@ -106,7 +106,7 @@ const pageMeta = {
   suppliers:{title:'Suppliers',sub:'Supplier master data'},
   users:{title:'Users & Access',sub:'Manage users and roles'},
   accounts:{title:'Accounts',sub:'Order accounts & finance tracking'},
-  customer:{title:'Customer',sub:'Customer ke saare orders, payments, leads, service aur replacement'}
+  customer:{title:'Customer',sub:'All orders, payments, leads, service and replacements for this customer'}
 };
 
 function nav(id, el) {
@@ -134,8 +134,8 @@ function navOrdersFiltered(filter, el) {
   if (el) el.classList.add('active');
 
   const titles = {
-    pending:   { title: 'Pending Orders',   sub: 'Production abhi baaki hai' },
-    completed: { title: 'Completed Orders',  sub: 'Production complete ho chuka hai' }
+    pending:   { title: 'Pending Orders',   sub: 'Production still pending' },
+    completed: { title: 'Completed Orders',  sub: 'Production completed' }
   };
   const m = titles[filter] || {};
   document.getElementById('pageTitle').textContent = m.title || 'Orders';
@@ -325,7 +325,7 @@ function setText(id, val) { const el = document.getElementById(id); if (el) el.t
 function renderSalesPersonPerf(list) {
   const el = document.getElementById('ad-salesperson-list');
   if (!el) return;
-  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-txt">Koi data nahi hai</div></div>'; return; }
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-txt">No data</div></div>'; return; }
   el.innerHTML = list.map(s => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);">
       <div style="font-size:13px;font-weight:600;color:var(--text);">${s.name}</div>
@@ -340,7 +340,7 @@ function renderSalesPersonPerf(list) {
 function renderRecentOrders(list) {
   const el = document.getElementById('ad-recent-orders');
   if (!el) return;
-  if (!list.length) { el.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-txt">Koi order nahi hai</div></div></td></tr>'; return; }
+  if (!list.length) { el.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-txt">No orders</div></div></td></tr>'; return; }
   el.innerHTML = list.map(o => `
     <tr>
       <td class="td-id">${ordLink(o['Order ID'])}</td>
@@ -361,7 +361,7 @@ function api(params, cb) {
   const key = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
   window[key] = function(res) {
     delete window[key];
-    if (res && res.success === false && /^LOGIN:/.test(String(res.message || ''))) { toast('Session khatam — dobara login karo', 'e'); setTimeout(logout, 1500); return; }
+    if (res && res.success === false && /^LOGIN:/.test(String(res.message || ''))) { toast('Session expired — please log in again', 'e'); setTimeout(logout, 1500); return; }
     if (res && res.needStaff) { erpStaffNeed(res.message); return; }   // naam + PIN chahiye
     cb(res);
   };
@@ -400,7 +400,7 @@ function openModal(id) {
 }
 function closeModal(id) {
   if (id === 'orderModal' && currentOrderID) {
-    const ok = confirm(`Order ${currentOrderID} already ban chuka hai (items save ho gaye). Band karoge to order rahega hi — sirf naya item add karna ruk jayega. Band karein?`);
+    const ok = confirm(`Order ${currentOrderID} has already been created (items are saved). Closing keeps the order — you just won't be able to add more items. Close?`);
     if (!ok) return;
   }
   document.getElementById(id).classList.remove('show');
@@ -488,7 +488,7 @@ function onCustNameInput() {
   const cityEl  = document.getElementById('o-city');
   if (phoneEl && match.Phone) { phoneEl.value = match.Phone; clearErr(phoneEl); }
   if (cityEl && match.City)   { cityEl.value  = match.City;  clearErr(cityEl); }
-  toast('Customer details autofill ho gayi ✓');
+  toast('Customer details filled in ✓');
 }
 
 // ========== ORDERS ==========
@@ -587,7 +587,7 @@ function onDeleteOrderIdInput() {
 
 function submitDeleteOrder() {
   const typed = document.getElementById('del-order-id-input').value.trim();
-  if (typed !== pendingDeleteOrderID) { toast('Order ID match nahi kar raha', 'e'); return; }
+  if (typed !== pendingDeleteOrderID) { toast('Order ID does not match', 'e'); return; }
   const btn = document.getElementById('del-order-btn');
   btn.disabled = true; btn.textContent = 'Deleting...';
   api({ action: 'deleteOrder', 'Order ID': pendingDeleteOrderID }, r => {
@@ -666,7 +666,7 @@ function loadMasterModels(cb) {
   if (masterModels.length) { if (cb) cb(); return; }
   api({ action: 'getMasterModels' }, r => {
     masterModels = (r.success && r.data) ? r.data : [];
-    if (!r.success) toast('Master models load nahi hue — sirf Other chalega', 'w');
+    if (!r.success) toast('Could not load master models — only Other is available', 'w');
     if (cb) cb();
   });
 }
@@ -689,7 +689,7 @@ function modelPickerOptions() {
     Object.keys(groups).map(g => `<optgroup label="${g}">` +
       groups[g].map(m => `<option value="${m.code}">${m.code}${m.chemistry ? ' · ' + m.chemistry : ''}</option>`).join('') +
     '</optgroup>').join('') +
-    '<option value="__other__">➕ Other (Master mein nahi)</option>';
+    '<option value="__other__">➕ Other (not in master)</option>';
 }
 
 function modelPickerHTML(prefix, id) {
@@ -763,31 +763,31 @@ function validateOrderMeta() {
   fields.forEach(([id, label]) => {
     const el = document.getElementById(id);
     const val = (el?.value || '').trim();
-    if (!val) { markErr(el); if (!firstBad) firstBad = { el, msg: label + ' zaroori hai' }; }
+    if (!val) { markErr(el); if (!firstBad) firstBad = { el, msg: label + ' is required' }; }
   });
   const phoneEl  = document.getElementById('o-phone');
   const phoneVal = (phoneEl?.value || '').trim();
   if (phoneVal && !isValidPhone(phoneVal)) {
     markErr(phoneEl);
-    if (!firstBad) firstBad = { el: phoneEl, msg: 'Phone number sahi 10-digit number daalo (6-9 se start)' };
+    if (!firstBad) firstBad = { el: phoneEl, msg: 'Enter a valid 10-digit phone number (starting with 6-9)' };
   }
   const dateVal     = document.getElementById('o-date')?.value;
   const dispatchVal = document.getElementById('o-plandispatch')?.value;
   if (dateVal && dispatchVal && dispatchVal < dateVal) {
     markErr(document.getElementById('o-plandispatch'));
-    if (!firstBad) firstBad = { el: document.getElementById('o-plandispatch'), msg: 'Plan Dispatch Date, Order Date se pehle nahi ho sakti' };
+    if (!firstBad) firstBad = { el: document.getElementById('o-plandispatch'), msg: 'Plan Dispatch Date cannot be before the Order Date' };
   }
   const planPayVal = document.getElementById('o-planpay')?.value;
   clearErr(document.getElementById('o-planpay'));
   if (dateVal && planPayVal && planPayVal < dateVal) {
     markErr(document.getElementById('o-planpay'));
-    if (!firstBad) firstBad = { el: document.getElementById('o-planpay'), msg: 'Plan Payment Date, Order Date se pehle nahi ho sakti' };
+    if (!firstBad) firstBad = { el: document.getElementById('o-planpay'), msg: 'Plan Payment Date cannot be before the Order Date' };
   }
   const transEl  = document.getElementById('o-transchg');
   clearErr(transEl);
   if (transEl && transEl.value !== '' && (parseFloat(transEl.value) < 0)) {
     markErr(transEl);
-    if (!firstBad) firstBad = { el: transEl, msg: 'Transportation Charges negative nahi ho sakti' };
+    if (!firstBad) firstBad = { el: transEl, msg: 'Transportation Charges cannot be negative' };
   }
   if (firstBad) { toast(firstBad.msg, 'e'); firstBad.el?.focus(); return false; }
   return true;
@@ -810,24 +810,24 @@ function validateEditOrderMeta() {
   fields.forEach(([id, label]) => {
     const el = document.getElementById(id);
     const val = (el?.value || '').trim();
-    if (!val) { markErr(el); if (!firstBad) firstBad = { el, msg: label + ' zaroori hai' }; }
+    if (!val) { markErr(el); if (!firstBad) firstBad = { el, msg: label + ' is required' }; }
   });
   const phoneEl  = document.getElementById('e-phone');
   const phoneVal = (phoneEl?.value || '').trim();
   if (phoneVal && !isValidPhone(phoneVal)) {
     markErr(phoneEl);
-    if (!firstBad) firstBad = { el: phoneEl, msg: 'Phone number sahi 10-digit number daalo (6-9 se start)' };
+    if (!firstBad) firstBad = { el: phoneEl, msg: 'Enter a valid 10-digit phone number (starting with 6-9)' };
   }
   const origDate    = currentEditOrder ? toInputDate(currentEditOrder['Date'] || '') : '';
   const dispatchVal = document.getElementById('e-plandispatch')?.value;
   if (origDate && dispatchVal && dispatchVal < origDate) {
     markErr(document.getElementById('e-plandispatch'));
-    if (!firstBad) firstBad = { el: document.getElementById('e-plandispatch'), msg: 'Plan Dispatch Date, Order Date se pehle nahi ho sakti' };
+    if (!firstBad) firstBad = { el: document.getElementById('e-plandispatch'), msg: 'Plan Dispatch Date cannot be before the Order Date' };
   }
   const transEl = document.getElementById('e-transchg');
   if (transEl && transEl.value !== '' && (parseFloat(transEl.value) < 0)) {
     markErr(transEl);
-    if (!firstBad) firstBad = { el: transEl, msg: 'Transportation Charges negative nahi ho sakti' };
+    if (!firstBad) firstBad = { el: transEl, msg: 'Transportation Charges cannot be negative' };
   }
   if (firstBad) { toast(firstBad.msg, 'e'); firstBad.el?.focus(); return false; }
   return true;
@@ -839,18 +839,18 @@ function validateItemCard(id, prefix) {
   const qtyEl = document.getElementById(`${prefix}-qty-${id}`);
   const qty   = parseFloat(qtyEl?.value) || 0;
   clearErr(qtyEl);
-  if (qty <= 0) { markErr(qtyEl); toast('Qty 0 se zyada honi chahiye', 'e'); qtyEl?.focus(); return false; }
+  if (qty <= 0) { markErr(qtyEl); toast('Qty must be greater than 0', 'e'); qtyEl?.focus(); return false; }
 
   const ptEl = document.getElementById(`${prefix}-pricetype-${id}`);
   const pt   = ptEl?.value || '';
   if (pt === 'Per Watt') {
     const pwEl = document.getElementById(`${prefix}-perwatt-${id}`);
     clearErr(pwEl);
-    if ((parseFloat(pwEl?.value)||0) <= 0) { markErr(pwEl); toast('Per Watt Price 0 se zyada honi chahiye', 'e'); pwEl?.focus(); return false; }
+    if ((parseFloat(pwEl?.value)||0) <= 0) { markErr(pwEl); toast('Per Watt Price must be greater than 0', 'e'); pwEl?.focus(); return false; }
   } else {
     const priceEl = document.getElementById(`${prefix}-price-${id}`);
     clearErr(priceEl);
-    if ((parseFloat(priceEl?.value)||0) <= 0) { markErr(priceEl); toast('Rate/Unit 0 se zyada hona chahiye', 'e'); priceEl?.focus(); return false; }
+    if ((parseFloat(priceEl?.value)||0) <= 0) { markErr(priceEl); toast('Rate/Unit must be greater than 0', 'e'); priceEl?.focus(); return false; }
   }
   return true;
 }
@@ -871,7 +871,7 @@ function validateChargerFields() {
     if (!model) markErr(modelEl); else clearErr(modelEl);
     if (qty <= 0) markErr(qtyEl); else clearErr(qtyEl);
     if (price <= 0) markErr(priceEl); else clearErr(priceEl);
-    toast('Charger ki saari details bharo (Model, Qty, Price) ya checkbox hata do', 'e');
+    toast('Fill in all charger details (Model, Qty, Price) or untick the checkbox', 'e');
     return false;
   }
   return true;
@@ -895,21 +895,21 @@ let itemSaveInProgress = false;
 function saveAndAddMore() {
   const btn = document.getElementById('saveAddMoreBtn');
   const cards = document.querySelectorAll('#itemsBody [id^="item-row-"]');
-  if (!cards.length) { toast('Koi item nahi hai', 'e'); return; }
+  if (!cards.length) { toast('No items', 'e'); return; }
   const card = cards[cards.length - 1];
   const id   = card.id.replace('item-row-', '');
 
   const model = document.getElementById(`im-model-${id}`)?.value?.trim();
-  if (!model) { toast('Model select karo (Other ho to Voltage + Ampere bharo)', 'e'); return; }
+  if (!model) { toast('Select a model (for Other, fill in Voltage + Ampere)', 'e'); return; }
 
   const btype = document.getElementById(`im-btype-${id}`)?.value || '';
-  if (!btype) { toast('Battery Type select karo', 'e'); return; }
+  if (!btype) { toast('Select a Battery Type', 'e'); return; }
 
   const pt      = document.getElementById(`im-pricetype-${id}`)?.value || '';
-  if (!pt) { toast('Price Type select karo', 'e'); return; }
+  if (!pt) { toast('Select a Price Type', 'e'); return; }
   if (!validateItemCard(id, 'im')) return;
   const isDup = savedItemsData.some(it => (it['Product Model']||'').trim().toLowerCase() === model.toLowerCase() && (it['Battery Type']||'') === btype);
-  if (isDup) { toast('Yeh item (Model + Battery Type) order mein already add ho chuka hai — Qty badha do uske jagah', 'e'); return; }
+  if (isDup) { toast('This item (Model + Battery Type) is already in the order — increase its Qty instead', 'e'); return; }
   const perWatt = pt === 'Per Watt';
   const volt    = parseFloat(document.getElementById(`im-volt-${id}`)?.value) || 0;
   const amp     = parseFloat(document.getElementById(`im-amp-${id}`)?.value) || 0;
@@ -963,7 +963,7 @@ function saveAndAddMore() {
     const cust = document.getElementById('o-cust').value.trim();
     const todayVal = document.getElementById('o-date')?.value;
     const possibleDup = (allOrders||[]).find(o => (o['Customer Name']||'').trim().toLowerCase() === cust.toLowerCase() && toInputDate(o['Date']||'') === todayVal);
-    if (possibleDup) toast(`⚠ ${cust} ka order aaj already hai (${possibleDup['Order ID']}) — duplicate check kar lo`, 'w');
+    if (possibleDup) toast(`⚠ ${cust} already has an order today (${possibleDup['Order ID']}) — check for a duplicate`, 'w');
 
     let totalQty = 0;
     savedItemsData.forEach(i => { totalQty += parseFloat(i['Qty']) || 0; });
@@ -1120,11 +1120,11 @@ function calcCharger() {
 
 function saveAndAddMoreCharger() {
   const model = document.getElementById('charger-model')?.value?.trim();
-  if (!model) { toast('Charger Model bharo', 'e'); return; }
+  if (!model) { toast('Enter the Charger Model', 'e'); return; }
   const qty   = parseFloat(document.getElementById('charger-qty')?.value) || 0;
-  if (!qty) { toast('Charger Qty bharo', 'e'); return; }
+  if (!qty) { toast('Enter the Charger Qty', 'e'); return; }
   const price = parseFloat(document.getElementById('charger-price')?.value) || 0;
-  if (!price) { toast('Charger Price bharo', 'e'); return; }
+  if (!price) { toast('Enter the Charger Price', 'e'); return; }
   const total = parseFloat((qty * price * 1.05).toFixed(2));
 
   savedChargersData.push({ model, qty, price, total });
@@ -1304,9 +1304,9 @@ function hasPartialItemCard() {
 function submitOrder() {
   const btn = document.getElementById('submitOrderBtn');
   if (btn && btn.disabled) return;
-  if (itemSaveInProgress) { toast('Item save ho raha hai — 1 second ruko', 'w'); return; }
+  if (itemSaveInProgress) { toast('Saving item — wait a second', 'w'); return; }
   if (hasPartialItemCard()) {
-    toast('Aakhri item adhoora bhara hai — pehle poora bharo (ya khaali chhodo), fir Create Order karo', 'e');
+    toast('The last item is incomplete — fill it in fully (or leave it blank), then click Create Order', 'e');
     return;
   }
 
@@ -1341,7 +1341,7 @@ function submitOrder() {
         if (!validateItemCard(id, 'im')) { if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; } return; }
         const btypeChk = document.getElementById(`im-btype-${id}`)?.value || '';
         const isDup = savedItemsData.some(it => (it['Product Model']||'').trim().toLowerCase() === model.toLowerCase() && (it['Battery Type']||'') === btypeChk);
-        if (isDup) { toast('Yeh item (Model + Battery Type) order mein already add ho chuka hai — Qty badha do uske jagah', 'e'); if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; } return; }
+        if (isDup) { toast('This item (Model + Battery Type) is already in the order — increase its Qty instead', 'e'); if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; } return; }
         if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
         const pt = document.getElementById(`im-pricetype-${id}`)?.value || '';
         const volt = parseFloat(document.getElementById(`im-volt-${id}`)?.value) || 0;
@@ -1386,16 +1386,16 @@ function submitOrder() {
     if (model) {
       const btypeChk = document.getElementById(`im-btype-${id}`)?.value || '';
       const comboKey = model.toLowerCase() + '|' + btypeChk;
-      if (seenCombos.includes(comboKey)) { toast('Yeh item (Model + Battery Type) order mein already hai — Qty badha do uske jagah', 'e'); itemsValid = false; return; }
+      if (seenCombos.includes(comboKey)) { toast('This item (Model + Battery Type) is already in the order — increase its Qty instead', 'e'); itemsValid = false; return; }
       seenCombos.push(comboKey);
     }
   });
   if (!itemsValid) return;
   const todayVal2 = document.getElementById('o-date')?.value;
   const possibleDup2 = (allOrders||[]).find(o => (o['Customer Name']||'').trim().toLowerCase() === cust.toLowerCase() && toInputDate(o['Date']||'') === todayVal2);
-  if (possibleDup2) toast(`⚠ ${cust} ka order aaj already hai (${possibleDup2['Order ID']}) — duplicate check kar lo`, 'w');
+  if (possibleDup2) toast(`⚠ ${cust} already has an order today (${possibleDup2['Order ID']}) — check for a duplicate`, 'w');
   const items = getItemRows();
-  if (items.length === 0) { toast('Pehle koi item save karo', 'e'); return; }
+  if (items.length === 0) { toast('Save at least one item first', 'e'); return; }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
 
@@ -1664,7 +1664,7 @@ function loadPaymentsList(orderID) {
   el.innerHTML = '<div class="loading"><div class="spin"></div></div>';
   api({ action: 'getPayments', 'Order ID': orderID }, r => {
     if (!r.success || !r.data.length) {
-      el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">Koi payment entry nahi abhi</div>';
+      el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">No payment entries yet</div>';
       document.getElementById('pm-total-received').textContent = '₹0';
       document.getElementById('pm-balance').textContent = document.getElementById('pm-orderval-display').textContent;
       return;
@@ -1695,9 +1695,9 @@ function loadPaymentsList(orderID) {
 function submitPayment() {
   const btn = document.getElementById('pm-submit-btn');
   const amount = parseFloat(document.getElementById('pm-amount').value) || 0;
-  if (!amount) { toast('Amount bharo', 'e'); return; }
+  if (!amount) { toast('Enter the amount', 'e'); return; }
   const mode = document.getElementById('pm-mode').value;
-  if (!mode) { toast('Payment mode select karo', 'e'); return; }
+  if (!mode) { toast('Select a payment mode', 'e'); return; }
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   api({
     action: 'addPayment',
@@ -1723,8 +1723,8 @@ function submitPayment() {
 }
 
 function deletePayment(paymentID, orderID, amountLabel) {
-  if (!paymentID) { toast('Payment ID nahi mila', 'e'); return; }
-  if (!confirm(`Payment ₹${amountLabel} (${paymentID}) delete karein? Ye wapas nahi hoga.`)) return;
+  if (!paymentID) { toast('Payment ID not found', 'e'); return; }
+  if (!confirm(`Delete payment ₹${amountLabel} (${paymentID})? This cannot be undone.`)) return;
   api({ action: 'deletePayment', 'Payment ID': paymentID, 'Order ID': orderID }, r => {
     if (r.success) {
       toast('Payment deleted');
@@ -1848,7 +1848,7 @@ function renderProduction(billedMap) {
     if (prodFilter === 'pending')         list = allProd.filter(p => prodLiveStatus(p) === 'Pending');
     else if (prodFilter === 'inprogress') list = allProd.filter(p => prodLiveStatus(p) === 'In Progress');
     else if (prodFilter === 'completed')  list = allProd.filter(p => prodLiveStatus(p) === 'Completed');
-    if (!list.length) { document.getElementById('prodTable').innerHTML = `<tr><td colspan="22"><div class="empty"><div class="empty-ico">⚙️</div><div class="empty-txt">Is filter mein koi item nahi</div></div></td></tr>`; return; }
+    if (!list.length) { document.getElementById('prodTable').innerHTML = `<tr><td colspan="22"><div class="empty"><div class="empty-ico">⚙️</div><div class="empty-txt">No items match this filter</div></div></td></tr>`; return; }
     const prodGroups = {};
     const prodSeq = [];
     list.forEach(p => {
@@ -1881,7 +1881,7 @@ function renderProduction(billedMap) {
           <td rowspan="${count}" style="vertical-align:middle;${bt}">${fmtDisplayDate(first['Order Date']||'')}</td>
           <td class="td-bold" rowspan="${count}" style="vertical-align:middle;${bt}">
             <div>${first['Customer Name']||''}</div>
-            <button class="btn btn-sm" style="margin-top:6px;white-space:nowrap;background:var(--warning-dim);color:var(--warning);border-color:var(--warning-b);" onclick='showProdSpec(${JSON.stringify(first['Customer Name']||'')})' title="Is customer ki battery spec dekho">🔋 Spec</button>
+            <button class="btn btn-sm" style="margin-top:6px;white-space:nowrap;background:var(--warning-dim);color:var(--warning);border-color:var(--warning-b);" onclick='showProdSpec(${JSON.stringify(first['Customer Name']||'')})' title="View this customer's battery spec">🔋 Spec</button>
           </td>
           <td rowspan="${count}" style="vertical-align:middle;${bt}">${first['Charger Model']||'—'}</td>
           <td rowspan="${count}" style="vertical-align:middle;${bt}">${first['Charger Qty']||'—'}</td>
@@ -1939,11 +1939,11 @@ function ensureProdSpecModal() {
         <button onclick="closeProdSpec()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3,#888);">✕</button>
       </div>
       <div style="padding:16px 20px;">
-        <div style="font-size:12px;color:var(--text3,#888);margin-bottom:12px;">Is customer ki battery pe kya-kya jayega — Sticker, BMS, Connector, Box waghera. (Sirf dekhne ke liye)</div>
+        <div style="font-size:12px;color:var(--text3,#888);margin-bottom:12px;">What goes on this customer's battery — sticker, BMS, connector, box, etc. (view only)</div>
         <div id="prodSpecBody" style="overflow-x:auto;"></div>
       </div>
       <div style="display:flex;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--border,#e5e7eb);">
-        <button class="btn" onclick="closeProdSpec()">Band karo</button>
+        <button class="btn" onclick="closeProdSpec()">Close</button>
       </div>
     </div>
   </div>`;
@@ -1969,7 +1969,7 @@ function showProdSpec(custName) {
     const cols = (r.success && r.columns) ? r.columns : [];
     const rows = (r.success && r.data) ? r.data : [];
     if (!cols.length || !rows.length) {
-      box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3,#888);font-size:13px;">Is customer ki battery spec abhi set nahi hui hai.</div>';
+      box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3,#888);font-size:13px;">No battery spec has been set for this customer yet.</div>';
       return;
     }
     const esc = v => String(v == null ? '' : v).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
@@ -1996,7 +1996,7 @@ function plannedPending(p) {
 }
 
 function openPlannedSlip() {
-  if (!allProd || !allProd.length) { toast('Pehle Production data load karo', 'w'); return; }
+  if (!allProd || !allProd.length) { toast('Load the Production data first', 'w'); return; }
   plannedPickerItems = allProd.filter(p => plannedPending(p) > 0);
   plannedSel = {};
   const d = new Date();
@@ -2034,7 +2034,7 @@ function slotTotal(sel) { return sel ? PLAN_SLOTS.reduce((t, s) => t + (parseFlo
 function renderPlannedPicker() {
   const data = plannedFiltered();
   const body = document.getElementById('ps-picker-body');
-  if (!data.length) { body.innerHTML = '<tr><td colspan="17"><div class="empty"><div class="empty-txt">Koi pending item nahi</div></div></td></tr>'; updatePlannedSummary(); return; }
+  if (!data.length) { body.innerHTML = '<tr><td colspan="17"><div class="empty"><div class="empty-txt">No pending items</div></div></td></tr>'; updatePlannedSummary(); return; }
   body.innerHTML = data.map(p => {
     const iid = p['Item ID'] || '';
     const pend = plannedPending(p);
@@ -2059,7 +2059,7 @@ function renderPlannedPicker() {
       <td style="color:var(--success);font-weight:600;">${parseFloat(p['Produced Qty'])||0}</td>
       <td style="color:var(--warning);font-weight:600;">${pend}</td>
       ${slotInputs}
-      <td id="ps-tot-${iid}" style="font-weight:700;color:${over ? 'var(--error)' : 'var(--accent)'};" title="${over ? 'Pending (' + pend + ') se zyada' : ''}">${tot || '—'}</td>
+      <td id="ps-tot-${iid}" style="font-weight:700;color:${over ? 'var(--error)' : 'var(--accent)'};" title="${over ? 'Pending (' + pend + ') exceeded' : ''}">${tot || '—'}</td>
     </tr>`;
   }).join('');
   updatePlannedSummary();
@@ -2095,7 +2095,7 @@ function refreshPlannedTotal(iid) {
   const over = p && tot > plannedPending(p);
   cell.textContent = tot || '—';
   cell.style.color = over ? 'var(--error)' : 'var(--accent)';
-  cell.title = over ? 'Pending (' + plannedPending(p) + ') se zyada' : '';
+  cell.title = over ? 'Pending (' + plannedPending(p) + ') exceeded' : '';
 }
 
 function togglePlannedSelectAll() {
@@ -2152,12 +2152,12 @@ async function runMaterialCheck() {
 
   if (!window.IMS_URL) {
     box.style.display = 'block';
-    box.innerHTML = '<div style="padding:10px;color:var(--error);font-size:12px;">⚠ config.js mein IMS_URL nahi hai</div>';
+    box.innerHTML = '<div style="padding:10px;color:var(--error);font-size:12px;">⚠ IMS_URL is missing in config.js</div>';
     return;
   }
   const seq = ++_mcSeq;
   box.style.display = 'block';
-  box.innerHTML = '<div class="loading"><div class="spin"></div> IMS se stock check ho raha hai...</div>';
+  box.innerHTML = '<div class="loading"><div class="spin"></div> Checking stock in IMS...</div>';
   try {
     let d = null;
     for (let attempt = 1; attempt <= 2 && !d; attempt++) {
@@ -2170,13 +2170,13 @@ async function runMaterialCheck() {
       if (t.startsWith('{')) d = JSON.parse(t);        // HTML/404 aaya to ek baar retry
     }
     if (seq !== _mcSeq) return;
-    if (!d || d.error || !d.success) throw new Error((d && (d.error || d.message)) || 'IMS se jawab nahi aaya');
+    if (!d || d.error || !d.success) throw new Error((d && (d.error || d.message)) || 'No response from IMS');
     _mcLastKey = key; _mcLast = d;
     renderMaterialCheck(d);
   } catch (e) {
     if (seq !== _mcSeq) return;
     _mcAnyShort = false;
-    box.innerHTML = `<div style="padding:10px;color:var(--error);font-size:12px;">⚠ Material check nahi hua: ${e.message}</div>`;
+    box.innerHTML = `<div style="padding:10px;color:var(--error);font-size:12px;">⚠ Material check failed: ${e.message}</div>`;
   }
 }
 
@@ -2195,14 +2195,14 @@ function renderMaterialCheck(d) {
     const bk = (c.storeShort > 0 && c.backups && c.backups.length)
       ? `<div style="font-size:10.5px;color:var(--text2);margin-top:3px;">↳ Backup: ${c.backups.map(b => `${esc(b.component)} — Store ${fmt(b.store)} / WIP ${fmt(b.wip)}`).join(' · ')}</div>`
       : '';
-    const miss = c.inItems ? '' : '<div style="font-size:10.5px;color:var(--error);">IMS Items mein ye naam nahi mila</div>';
+    const miss = c.inItems ? '' : '<div style="font-size:10.5px;color:var(--error);">Name not found in IMS Items</div>';
     let shortCell;
     if (c.short > 0) {
       shortCell = `<span style="color:var(--error);">⛔ ${fmt(c.storeShort)}</span>
-        <div style="font-size:10px;color:var(--error);font-weight:500;">WIP ke baad bhi ${fmt(c.short)} kam</div>`;
+        <div style="font-size:10px;color:var(--error);font-weight:500;">Short by ${fmt(c.short)} even after WIP</div>`;
     } else if (c.storeShort > 0) {
       shortCell = `<span style="color:var(--warning);">⚠ ${fmt(c.storeShort)}</span>
-        <div style="font-size:10px;color:var(--text3);font-weight:500;">Store se zyada — WIP se cover</div>`;
+        <div style="font-size:10px;color:var(--text3);font-weight:500;">Above store stock — covered by WIP</div>`;
     } else {
       shortCell = `<span style="color:var(--success);">✓</span>`;
     }
@@ -2218,12 +2218,12 @@ function renderMaterialCheck(d) {
 
   const notes = models
     .filter(m => m.status === 'notInMaster' || m.status === 'noBom')
-    .map(m => `<div>• <b>${esc(m.model)}</b> — ${m.status === 'noBom' ? 'Master BOM nahi bhara' : 'Master mein nahi, check nahi hua'}</div>`)
+    .map(m => `<div>• <b>${esc(m.model)}</b> — ${m.status === 'noBom' ? 'Master BOM not filled' : 'Not in master, not checked'}</div>`)
     .join('');
 
-  const badge = anyTotalShort ? ['b-delay', '⛔ Stock kam hai']
-              : anyStoreShort ? ['b-pending', '⚠ Store stock se zyada']
-              : ['b-ready', '✓ Stock theek hai'];
+  const badge = anyTotalShort ? ['b-delay', '⛔ Stock short']
+              : anyStoreShort ? ['b-pending', '⚠ Above store stock']
+              : ['b-ready', '✓ Stock OK'];
 
   box.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -2264,7 +2264,7 @@ function applyMcBadges(models, comps) {
 
 function confirmPlannedSlip() {
   const planDate = document.getElementById('ps-plan-date').value;
-  if (!planDate) { toast('Plan Date select karo', 'e'); return; }
+  if (!planDate) { toast('Select a Plan Date', 'e'); return; }
   const ids = Object.keys(plannedSel);
 
   const rows = [], warns = [], remarkMap = {};
@@ -2291,11 +2291,11 @@ function confirmPlannedSlip() {
     remarkMap[iid] = p['Sales Remarks'] || '';
     rows.push(row);
   }
-  if (!rows.length) { toast('Kam se kam ek item ke kisi slot me qty daalo', 'e'); return; }
-  if (_mcAnyShort) warns.push('Material Check: kuch components ki requirement IMS Store stock se zyada hai');
+  if (!rows.length) { toast('Enter a qty in at least one slot of one item', 'e'); return; }
+  if (_mcAnyShort) warns.push('Material Check: some components need more than the IMS store stock');
 
   if (warns.length) {
-    const ok = confirm('⚠ Dhyan do:\n\n• ' + warns.join('\n• ') + '\n\nFir bhi slip banayein?');
+    const ok = confirm('⚠ Please note:\n\n• ' + warns.join('\n• ') + '\n\nCreate the slip anyway?');
     if (!ok) return;
   }
 
@@ -2304,7 +2304,7 @@ function confirmPlannedSlip() {
 
   // popup CLICK ke saath kholo — warna browser block karta hai
   const win = window.open('', '_blank', 'width=900,height=680');
-  if (win) win.document.write('<p style="font-family:Arial;padding:24px;color:#555;">Planned slip ban rahi hai...</p>');
+  if (win) win.document.write('<p style="font-family:Arial;padding:24px;color:#555;">Creating planned slip...</p>');
 
   const planDateDisp = fmtDisplayDate(planDate);
 
@@ -2336,7 +2336,7 @@ function confirmPlannedSlip() {
       if (!res || !res.success) failed++;
       if (--pending === 0) {
         if (btn) { btn.disabled = false; btn.textContent = '✓ Confirm & Generate Slip'; }
-        if (failed) toast(failed + ' item save nahi hue (baaki ho gaye)', 'w');
+        if (failed) toast(failed + ' item(s) failed to save (the rest were saved)', 'w');
         else toast('Planned production saved!');
         closeModal('plannedSlipModal');
 
@@ -2410,7 +2410,7 @@ function buildPlannedSlipPrint(rows, planDateDisp, chargerList, specCols, specMa
     const key = String(custName||'').trim();
     const sRows = specMap[key];
     if (!sRows || !sRows.length) {
-      return `<div class="spec-none">🔋 <b>Battery Spec:</b> Spec set nahi hai</div>`;
+      return `<div class="spec-none">🔋 <b>Battery Spec:</b> Not set</div>`;
     }
     const head = specCols.map(c => `<th>${esc(c)}</th>`).join('');
     const body = sRows.map(row => '<tr>' + specCols.map(c => `<td>${esc(row[c])||'—'}</td>`).join('') + '</tr>').join('');
@@ -2499,21 +2499,21 @@ function printOrderRow(o) { currentEditOrder = o; printOrder(); }
 
 function printAccountsOrder(orderID) {
   const o = accOrderFull[orderID];
-  if (!o) { toast('Order data nahi mila — page refresh karo', 'e'); return; }
+  if (!o) { toast('Order data not found — refresh the page', 'e'); return; }
   currentEditOrder = o;
   printOrder();   // wahi Sales waala PDF/print
 }
 
 // ========== ORDER PRINT / PDF ==========
 function printOrder() {
-  if (!currentEditOrder) { toast('Order data nahi mila', 'e'); return; }
+  if (!currentEditOrder) { toast('Order data not found', 'e'); return; }
   const o   = currentEditOrder;
   const oid = o['Order ID'] || '';
 
   // Window CLICK ke saath hi kholni hai — async callback se kholi to browser block kar deta hai
   const win = window.open('', '_blank', 'width=960,height=720');
-  if (!win) { toast('Popup block ho gaya — address bar ke popup icon se allow karo', 'e'); return; }
-  win.document.write('<p style="font-family:Arial;padding:24px;color:#555;">Order data load ho raha hai...</p>');
+  if (!win) { toast('Popup blocked — allow it from the popup icon in the address bar', 'e'); return; }
+  win.document.write('<p style="font-family:Arial;padding:24px;color:#555;">Loading order data...</p>');
 
   api({ action: 'getItemsByOrder', 'Order ID': oid }, ir => {
     const items = (ir.data || []).filter(i => (i['Battery Type'] || '') !== 'Charger');
@@ -2588,7 +2588,7 @@ ${payments.length ? `
 <table style="margin-top:10px;">
   <thead><tr><th>#</th><th>Date</th><th>Mode</th><th>Reference</th><th>Remarks</th><th class="r">Amount</th></tr></thead>
   <tbody>${paymentRows}</tbody>
-</table>` : '<div style="margin-top:10px;color:#888;font-size:11.5px;">Koi payment entry nahi abhi</div>'}`;
+</table>` : '<div style="margin-top:10px;color:#888;font-size:11.5px;">No payment entries yet</div>'}`;
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>${esc(oid)} — ${esc(o['Customer Name'])}</title>
@@ -2661,7 +2661,7 @@ ${payments.length ? `
 <div class="sec-t">📦 Order Items</div>
 <table>
   <thead><tr><th>#</th><th>Item ID</th><th>Product Model</th><th>Battery Type</th><th>Warranty</th><th class="r">Qty</th><th class="r">Rate/Unit (Ex GST)</th><th class="r">Total (incl. 18% GST)</th></tr></thead>
-  <tbody>${itemRows || '<tr><td colspan="8" style="text-align:center;color:#888;">Koi item nahi</td></tr>'}</tbody>
+  <tbody>${itemRows || '<tr><td colspan="8" style="text-align:center;color:#888;">No items</td></tr>'}</tbody>
 </table>
 
 ${chargerBlock}
@@ -2861,7 +2861,7 @@ function renderDispatch() {
   // Status filter
   if (dspFilter !== 'all') data = data.filter(p => dspStatus(p) === dspFilter);
 
-  if (!data.length) { document.getElementById('dispatchTable').innerHTML = '<tr><td colspan="19"><div class="empty"><div class="empty-ico">🚚</div><div class="empty-txt">Is filter mein koi record nahi</div></div></td></tr>'; return; }
+  if (!data.length) { document.getElementById('dispatchTable').innerHTML = '<tr><td colspan="19"><div class="empty"><div class="empty-ico">🚚</div><div class="empty-txt">No records match this filter</div></div></td></tr>'; return; }
 
   // Order-wise grouping (Production jaisa)
   const groups = {}, seq = [];
@@ -2991,12 +2991,12 @@ function fetchChallanOrder() {
   const oid = (document.getElementById('dc-orderid').value || '').trim();
   const wrap = document.getElementById('dc-items-wrap');
   const meta = document.getElementById('dc-order-meta');
-  if (!oid) { toast('Order ID daalo', 'e'); return; }
+  if (!oid) { toast('Enter an Order ID', 'e'); return; }
   const items = dcItems.filter(p => String(p['Order ID']).trim().toLowerCase() === oid.toLowerCase());
   if (!items.length) {
     wrap.style.display = 'none';
     meta.innerHTML = '';
-    toast('Is Order ID ke items nahi mile', 'e');
+    toast('No items found for this Order ID', 'e');
     return;
   }
   const orderID = items[0]['Order ID'];
@@ -3070,14 +3070,14 @@ function submitChallan() {
       _sent: dcSentMap[String(p['Item ID'] || '').trim()] || 0
     });
   });
-  if (!lines.length) { toast('Kam se kam ek item select karo + qty daalo', 'e'); return; }
+  if (!lines.length) { toast('Select at least one item and enter a qty', 'e'); return; }
 
   const address = document.getElementById('dc-address').value.trim();
-  if (!address) { toast('Name & Address bharo', 'e'); return; }
+  if (!address) { toast('Enter the Name & Address', 'e'); return; }
 
   const over = lines.filter(l => l.qty > (l._total - l._sent));
   if (over.length) {
-    if (!confirm(`⚠ ${over.length} item ki challan qty pending se zyada hai. Fir bhi banayein?`)) return;
+    if (!confirm(`⚠ ${over.length} item(s) have a challan qty above pending. Create anyway?`)) return;
   }
 
   const oid = String(currentChallanItems[0]['Order ID']).trim();
@@ -3089,7 +3089,7 @@ function submitChallan() {
   const btn = document.getElementById('dc-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   const win = window.open('', '_blank', 'width=820,height=700');
-  if (win) win.document.write('<p style="font-family:Arial;padding:24px;color:#555;">Challan ban raha hai...</p>');
+  if (win) win.document.write('<p style="font-family:Arial;padding:24px;color:#555;">Creating challan...</p>');
 
   api({
     action: 'addDeliveryChallan',
@@ -3141,7 +3141,7 @@ function renderRecentChallans() {
   if (!el) return;
   const g = groupDC();
   const nos = Object.keys(g).sort((a, b) => Number(b) - Number(a)).slice(0, 30);
-  if (!nos.length) { el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text3);font-size:13px;">Abhi koi challan nahi bana</div>'; return; }
+  if (!nos.length) { el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text3);font-size:13px;">No challans yet</div>'; return; }
   el.innerHTML = nos.map(no => {
     const c = g[no];
     const totQty = c.items.reduce((s, x) => s + (parseFloat(x.qty) || 0), 0);
@@ -3158,9 +3158,9 @@ function renderRecentChallans() {
 
 function reprintChallan(no) {
   const c = groupDC()[String(no)];
-  if (!c) { toast('Challan nahi mila', 'e'); return; }
+  if (!c) { toast('Challan not found', 'e'); return; }
   const win = window.open('', '_blank', 'width=820,height=700');
-  if (!win) { toast('Popup block ho gaya — allow karo', 'e'); return; }
+  if (!win) { toast('Popup blocked — please allow it', 'e'); return; }
   win.document.write(buildChallanPrint(c));
   win.document.close();
 }
@@ -3269,7 +3269,7 @@ function openDispatchModal(p) {
   const warnEl = document.getElementById('dsp-pay-warning');
   if ((pay.balance||0) > 0) {
     warnEl.style.display = 'block';
-    warnEl.textContent = '⚠ Payment pending: ₹' + fmt(pay.balance) + ' balance hai is order ka';
+    warnEl.textContent = '⚠ Payment pending: ₹' + fmt(pay.balance) + ' balance on this order';
   } else warnEl.style.display = 'none';
 
   document.getElementById('dsp-qty').value      = (qty - disp) > 0 ? (qty - disp) : '';
@@ -3290,7 +3290,7 @@ function loadDispatchHistory(orderID, itemID) {
   el.innerHTML = '<div class="loading"><div class="spin"></div></div>';
   api({ action: 'getAllDispatches' }, r => {
     const list = (r.data||[]).filter(d => d['Order ID'] === orderID && d['Item ID'] === itemID);
-    if (!list.length) { el.innerHTML = '<div style="text-align:center;padding:8px;color:var(--text3);font-size:12px;">Koi dispatch entry nahi abhi</div>'; return; }
+    if (!list.length) { el.innerHTML = '<div style="text-align:center;padding:8px;color:var(--text3);font-size:12px;">No dispatch entries yet</div>'; return; }
     el.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Previous Dispatches</div>' +
       list.map(d => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--surface);">
@@ -3310,10 +3310,10 @@ const dscEsc = v => String(v == null ? '' : v).replace(/[<>&"]/g, c => ({ '<': '
 function pltApi(params) {
   return new Promise((resolve, reject) => {
     const url = (window.SUITE || {}).PLT_URL;
-    if (!url) return reject(new Error('PLT_URL config.js me nahi hai'));
+    if (!url) return reject(new Error('PLT_URL is missing in config.js'));
     const key = 'pcb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     const s = document.createElement('script');
-    const t = setTimeout(() => { done(); reject(new Error('PLT ne time par jawab nahi diya')); }, 60000);
+    const t = setTimeout(() => { done(); reject(new Error('PLT did not respond in time')); }, 60000);
     function done() { clearTimeout(t); delete window[key]; s.remove(); }
     window[key] = res => { done(); (res && res.ok === false) ? reject(new Error(res.error || 'PLT error')) : resolve(res || {}); };
     s.onerror = () => { done(); reject(new Error('PLT network error')); };
@@ -3327,7 +3327,7 @@ function dscReset() {
   DSC.emp = null; DSC.list = [];
   dscRender('');
   if (!DSC.staff) pltApi({ action: 'init', limit: 0 }).then(r => { DSC.staff = r.staff || []; })
-    .catch(e => toast('PLT staff list nahi aayi: ' + e.message, 'e'));
+    .catch(e => toast('Could not load PLT staff list: ' + e.message, 'e'));
   setTimeout(() => document.getElementById('dsp-scan')?.focus(), 150);
 }
 
@@ -3339,13 +3339,13 @@ function dscScan(raw) {
   const badge = v.replace(/^STAFF[^A-Za-z0-9]+/i, '').trim();
   const emp = (DSC.staff || []).find(s => String(s.id).toLowerCase() === badge.toLowerCase());
   if (emp) { DSC.emp = emp; dscRender('✓ Employee: ' + emp.name + ' (' + emp.id + ')', 'ok'); return; }
-  if (!DSC.staff) { dscRender('Staff list load ho rahi hai, 2 sec me dobara scan karo', 'bad'); return; }
-  if (!DSC.emp) { dscRender('Pehle employee badge scan karo', 'bad'); return; }
-  if (DSC.list.some(x => x.serial.toUpperCase() === v.toUpperCase())) { dscRender(v + ' pehle hi scan ho chuki', 'bad'); return; }
+  if (!DSC.staff) { dscRender('Loading staff list — scan again in 2 seconds', 'bad'); return; }
+  if (!DSC.emp) { dscRender('Scan the employee badge first', 'bad'); return; }
+  if (DSC.list.some(x => x.serial.toUpperCase() === v.toUpperCase())) { dscRender(v + ' is already scanned', 'bad'); return; }
   const c = currentDispatchData;
   dscRender('Checking ' + v + '...');
   pltApi({ action: 'dispatchCheck', serial: v, itemId: c.iid }).then(r => {
-    if (r.itemId !== c.iid) { dscRender(r.serial + ' is item ki nahi hai — ' + r.itemId + ' · ' + r.customer, 'bad'); return; }
+    if (r.itemId !== c.iid) { dscRender(r.serial + ' does not belong to this item — ' + r.itemId + ' · ' + r.customer, 'bad'); return; }
     if (DSC.list.some(x => x.serial === r.serial)) return;
     DSC.list.push(r);
     dscRender('✓ ' + r.serial, 'ok');
@@ -3371,9 +3371,9 @@ function dscRender(msg, kind) {
     ? '<span style="display:inline-block;background:var(--success-dim);border:1px solid var(--success-b);color:var(--success);font-weight:700;font-size:14px;padding:6px 12px;border-radius:8px;">👤 ' +
         dscEsc(DSC.emp.name) + ' (' + dscEsc(DSC.emp.id) + ')</span>' +
       ' &nbsp; Batteries scanned: <b>' + DSC.list.length + '</b>'
-    : '<span style="color:var(--error);font-weight:600;">⚠ Pehle employee badge scan karo</span>';
+    : '<span style="color:var(--error);font-weight:600;">⚠ Scan the employee badge first</span>';
   const sb = document.getElementById('dsp-scan');
-  if (sb) sb.placeholder = DSC.emp ? 'Ab battery scan karo' : 'Pehle employee badge scan karo';                 
+  if (sb) sb.placeholder = DSC.emp ? 'Now scan the battery' : 'Scan the employee badge first';                 
   const l = document.getElementById('dsp-scan-list');
   if (l) l.innerHTML = DSC.list.map((x, i) =>
         `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);padding:3px 8px;border-radius:6px;">${dscEsc(x.serial)} <a href="javascript:void 0" onclick="dscRemove(${i})" style="text-decoration:none;color:var(--text3);">×</a></span>`).join('');
@@ -3386,24 +3386,24 @@ function submitDispatch() {
   const c = currentDispatchData;
   if (!c) return;
   const btn = document.getElementById('dsp-submit-btn');
-  if (!DSC.emp) { toast('Pehle employee badge scan karo', 'e'); document.getElementById('dsp-scan')?.focus(); return; }
+  if (!DSC.emp) { toast('Scan the employee badge first', 'e'); document.getElementById('dsp-scan')?.focus(); return; }
   const dq = DSC.list.length;
-  if (dq <= 0) { toast('Kam se kam ek battery scan karo', 'e'); document.getElementById('dsp-scan')?.focus(); return; }
+  if (dq <= 0) { toast('Scan at least one battery', 'e'); document.getElementById('dsp-scan')?.focus(); return; }
   const transport = document.getElementById('dsp-transport').value.trim();
-  if (!transport) { toast('Transport Name bharo', 'e'); return; }
+  if (!transport) { toast('Enter the Transport Name', 'e'); return; }
   const lrEl = document.getElementById('dsp-lr');
   const lrNo = (lrEl?.value || '').trim();
   clearErr(lrEl);
-  if (!lrNo) { markErr(lrEl); toast('LR / Bilty No bharo', 'e'); lrEl?.focus(); return; }
+  if (!lrNo) { markErr(lrEl); toast('Enter the LR / Bilty No', 'e'); lrEl?.focus(); return; }
 
   // ⚠ WARNINGS — block kuch nahi, sirf confirm
   const warn = [];
-  if (c.balance > 0) warn.push('Payment pending hai — Balance ₹' + fmt(c.balance));
-  if (dq + c.disp > c.billed)   warn.push('Billed qty (' + c.billed + ') se zyada dispatch ho raha hai');
-  if (dq + c.disp > c.produced) warn.push('Produced qty (' + c.produced + ') se zyada dispatch ho raha hai');
-  if (dq + c.disp > c.qty)      warn.push('Order qty (' + c.qty + ') se zyada dispatch ho raha hai');
+  if (c.balance > 0) warn.push('Payment pending — Balance ₹' + fmt(c.balance));
+  if (dq + c.disp > c.billed)   warn.push('Billed qty (' + c.billed + ') exceeded by this dispatch');
+  if (dq + c.disp > c.produced) warn.push('Produced qty (' + c.produced + ') exceeded by this dispatch');
+  if (dq + c.disp > c.qty)      warn.push('Order qty (' + c.qty + ') exceeded by this dispatch');
   if (warn.length) {
-    const ok = confirm('⚠ Dhyan do:\n\n• ' + warn.join('\n• ') + '\n\nFir bhi dispatch karein?');
+    const ok = confirm('⚠ Please note:\n\n• ' + warn.join('\n• ') + '\n\nDispatch anyway?');
     if (!ok) return;
   }
 
@@ -3424,17 +3424,17 @@ function submitDispatch() {
   }).then(r => {
     if (btn) { btn.disabled = false; btn.textContent = '🚚 Save Dispatch'; }
     const res = (r.results || [])[0] || {};
-    if (!res.ok) { toast(res.error || 'Dispatch nahi hua', 'e'); return; }
+    if (!res.ok) { toast(res.error || 'Dispatch failed', 'e'); return; }
     if (document.getElementById('dsp-fms-chk')?.checked) {
       api({ action: 'markFMSProductionDone', 'Item ID': c.iid, 'Step': 'dispatch', 'Actual': fmtDisplayDate(document.getElementById('dsp-date').value) }, () => {});
     }
-    if (res.mode === 'SHADOW') toast('SHADOW mode: ERP me entry nahi bani — Links me MODE_DISPATCH = LIVE karo', 'w');
+    if (res.mode === 'SHADOW') toast('SHADOW mode: no ERP entry created — set MODE_DISPATCH = LIVE in Links', 'w');
     else toast('Dispatch saved! ' + res.ref + ' · ' + res.erp + ' · ' + res.count + ' battery');
     closeModal('dispatchModal');
     loadDispatch();
   }).catch(e => {
     if (btn) { btn.disabled = false; btn.textContent = '🚚 Save Dispatch'; }
-    toast('Dispatch nahi hua: ' + e.message, 'e');
+    toast('Dispatch failed: ' + e.message, 'e');
   });
 }
 
@@ -3465,7 +3465,7 @@ function loadCustomers() {
   api({ action: 'getCustomerInsights', salesName: isSales ? user.salesName : '' }, r => {
     allCustInsights = (r.success && r.data) ? r.data : [];
     allCustInsights.forEach((c, i) => { c._i = i; });
-    if (!r.success) toast(r.message || 'Customers load nahi hue', 'e');
+    if (!r.success) toast(r.message || 'Could not load customers', 'e');
     renderCustomers();
   });
 }
@@ -3494,7 +3494,7 @@ function renderCustomers() {
   else                                data.sort((a, b) => a.name.localeCompare(b.name));
 
   const tbl = document.getElementById('custTable');
-  if (!data.length) { tbl.innerHTML = '<tr><td colspan="12"><div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">Is list me koi customer nahi</div></div></td></tr>'; return; }
+  if (!data.length) { tbl.innerHTML = '<tr><td colspan="12"><div class="empty"><div class="empty-ico">👥</div><div class="empty-txt">No customers in this list</div></div></td></tr>'; return; }
 
   tbl.innerHTML = data.map(c => {
     const st = c.status === 'Overdue'  ? `<span class="badge b-delay">🔴 Overdue (${Math.abs(c.daysToNext)}d)</span>`
@@ -3652,7 +3652,7 @@ function renderAccounts(data, prodMap, orderValMap) {
   else if (accFilter === 'completed')  data = data.filter(a => accStatus(a) === 'Completed');
 
   if (!data.length) {
-    document.getElementById('accountsTable').innerHTML = '<tr><td colspan="22"><div class="empty"><div class="empty-ico">💰</div><div class="empty-txt">Is filter mein koi record nahi</div></div></td></tr>';
+    document.getElementById('accountsTable').innerHTML = '<tr><td colspan="22"><div class="empty"><div class="empty-ico">💰</div><div class="empty-txt">No records match this filter</div></div></td></tr>';
     return;
   }
 
@@ -3801,7 +3801,7 @@ function loadBillingHistory(orderID, itemID) {
   el.innerHTML = '<div class="loading"><div class="spin"></div></div>';
   api({ action: 'getBillings', 'Order ID': orderID, 'Item ID': itemID }, r => {
     if (!r.success || !r.data.length) {
-      el.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text3);font-size:12px;">Koi billing entry nahi abhi</div>';
+      el.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text3);font-size:12px;">No billing entries yet</div>';
       return;
     }
     el.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Previous Billings</div>' +
@@ -3819,11 +3819,11 @@ function loadBillingHistory(orderID, itemID) {
 function submitBilling() {
   const btn = document.getElementById('bl-submit-btn');
   const invoiceNo = document.getElementById('bl-invoice-no').value.trim();
-  if (!invoiceNo) { toast('Invoice No bharo', 'e'); return; }
+  if (!invoiceNo) { toast('Enter the Invoice No', 'e'); return; }
   const billedQty = parseFloat(document.getElementById('bl-billed-qty-input').value) || 0;
-  if (!billedQty) { toast('Billed Qty bharo', 'e'); return; }
+  if (!billedQty) { toast('Enter the Billed Qty', 'e'); return; }
   const amount = parseFloat(document.getElementById('bl-invoice-amount').value) || 0;
-  if (!amount) { toast('Invoice Amount bharo', 'e'); return; }
+  if (!amount) { toast('Enter the Invoice Amount', 'e'); return; }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   api({
@@ -3866,7 +3866,7 @@ function viewOrderPayments(orderID, custName, orderVal) {
   openModal('viewPaymentsModal');
   api({ action: 'getPayments', 'Order ID': orderID }, r => {
     if (!r.success || !r.data.length) {
-      document.getElementById('vp-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">Koi payment entry nahi abhi</div>';
+      document.getElementById('vp-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">No payment entries yet</div>';
       document.getElementById('vp-total').textContent   = '₹0';
       document.getElementById('vp-balance').textContent = '₹' + fmt(orderVal||0);
       return;
@@ -3929,7 +3929,7 @@ function loadLeads(page) {
   const tb = document.getElementById('ldTable');
   if (!ldLoaded && tb) tb.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spin"></div></div></td></tr>';
   api({ action: 'getLeads' }, r => {
-    if (!r || !r.success) { if (tb) tb.innerHTML = `<tr><td colspan="8" class="ld-empty">${ldEsc((r && r.message) || 'Leads load nahi hui')}</td></tr>`; return; }
+    if (!r || !r.success) { if (tb) tb.innerHTML = `<tr><td colspan="8" class="ld-empty">${ldEsc((r && r.message) || 'Could not load leads')}</td></tr>`; return; }
     ldAll = r.data || []; ldMe = r.me || {}; ldPeople = r.salesPeople || []; ldLoaded = true;
     document.querySelectorAll('.ld-adm').forEach(el => el.style.display = ldMe.admin ? '' : 'none');
     const ow = document.getElementById('ldOwner');
@@ -3957,7 +3957,7 @@ function renderLeads() {
   const due = base.filter(ldDue).length;
   document.getElementById('ldKpis').innerHTML = [
     ['Open leads', base.filter(ldOpen).length, ''], ['Quotation', cnt('Quotation Sent'), ''], ['Follow-up', cnt('Follow-up'), ''],
-    ['Won', cnt('Order Confirmed'), 'c-green'], ['Aaj / overdue follow-up', due, due ? 'c-red' : '']
+    ['Won', cnt('Order Confirmed'), 'c-green'], ['Due today / overdue', due, due ? 'c-red' : '']
   ].map(([l, v, c]) => `<div class="stat ${c}"><div class="stat-lbl">${l}</div><div class="stat-val">${v}</div></div>`).join('');
   const tabs = [['Open', 'Open', base.filter(ldOpen).length]].concat(LD_STAGES.map(s => [s, LD_EMOJI[s] + ' ' + LD_SHORT[s], cnt(s)])).concat([['All', 'All', base.length]]);
   document.getElementById('ldStageTabs').innerHTML = tabs.map(([k, t, n]) =>
@@ -3972,7 +3972,7 @@ function renderLeads() {
     return fa < fb ? -1 : fa > fb ? 1 : (b['Lead ID'] > a['Lead ID'] ? 1 : -1);
   });
   const tb = document.getElementById('ldTable'), td = ldToday();
-  if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" class="ld-empty">${ldAll.length ? 'Is filter me koi lead nahi' : 'Abhi koi lead nahi — <b>+ New Lead</b> se shuru karo'}</td></tr>`; return; }
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="8" class="ld-empty">${ldAll.length ? 'No leads match this filter' : 'No leads yet — start with <b>+ New Lead</b>'}</td></tr>`; return; }
   tb.innerHTML = rows.map(l => {
     const f = l['Next Follow-up'], open = ldOpen(l);
     const fcls = open && f ? (f < td ? 'ld-over' : f === td ? 'ld-today' : '') : '';
@@ -3986,7 +3986,7 @@ function renderLeads() {
       <td>${ldBadge(l.Stage)}${l.Stage === 'Lost' && l['Lost Reason'] ? `<div class="ld-sub">${ldEsc(l['Lost Reason'])}</div>` : ''}${l['Order ID'] ? `<div class="ld-sub">📦 ${ordLink(l['Order ID'])}</div>` : ''}</td>
       <td class="${fcls}">${open && f ? ldDmy(f) + (fcls === 'ld-over' ? ' ⚠' : fcls === 'ld-today' ? ' • aaj' : '') : '—'}</td>
       <td class="ld-adm"${ldMe.admin ? '' : ' style="display:none"'}>${ldEsc(l['Assigned To']) || '<span class="ld-muted">—</span>'}</td>
-      <td class="ld-act"><button class="btn btn-sm" onclick="openLeadModal('${ldEsc(l['Lead ID'])}')">Edit</button>${l.Stage === 'Order Confirmed' && !l['Order ID'] ? `<button class="btn btn-sm btn-primary" onclick="ldToOrder('${ldEsc(l['Lead ID'])}')" title="Is lead se order banao">📦 Order</button>` : ''}${nx ? `<button class="btn btn-sm" onclick="ldMoveNext('${ldEsc(l['Lead ID'])}')" title="Agla stage: ${ldEsc(LD_SHORT[nx])}">${LD_EMOJI[nx]} ›</button>` : ''}</td>
+      <td class="ld-act"><button class="btn btn-sm" onclick="openLeadModal('${ldEsc(l['Lead ID'])}')">Edit</button>${l.Stage === 'Order Confirmed' && !l['Order ID'] ? `<button class="btn btn-sm btn-primary" onclick="ldToOrder('${ldEsc(l['Lead ID'])}')" title="Create an order from this lead">📦 Order</button>` : ''}${nx ? `<button class="btn btn-sm" onclick="ldMoveNext('${ldEsc(l['Lead ID'])}')" title="Next stage: ${ldEsc(LD_SHORT[nx])}">${LD_EMOJI[nx]} ›</button>` : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -4042,17 +4042,17 @@ function saveLead(force) {
   if (id) d['Lead ID'] = id;
   LD_MAP.forEach(([el, k]) => { d[k] = document.getElementById(el).value.trim(); });
   if (document.getElementById('ld-assign-wrap').style.display !== 'none') d['Assigned To'] = document.getElementById('ld-assign').value;
-  if (!d['Customer Name']) return toast('Customer name daalo', 'e');
-  if (String(d.Phone).replace(/\D/g, '').length < 10) return toast('Phone number sahi daalo (10 digit)', 'e');
-  if (!d['Application Type']) return toast('Application type chuno', 'e');
-  if (d.Stage === 'Lost' && !d['Lost Reason']) return toast('Lost ka kaaran likho', 'e');
+  if (!d['Customer Name']) return toast('Enter the customer name', 'e');
+  if (String(d.Phone).replace(/\D/g, '').length < 10) return toast('Enter a valid phone number (10 digits)', 'e');
+  if (!d['Application Type']) return toast('Choose an application type', 'e');
+  if (d.Stage === 'Lost' && !d['Lost Reason']) return toast('Enter the reason for Lost', 'e');
   if (force) d.force = '1';
   const btn = document.getElementById('ldSaveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
   api(d, r => {
     btn.disabled = false; btn.textContent = 'Save Lead';
-    if (r && r.duplicate) { if (confirm('⚠ ' + r.message + '\n\nPhir bhi nayi lead banayein?')) saveLead(true); return; }
-    if (!r || !r.success) return toast((r && r.message) || 'Save nahi hua', 'e');
-    toast(id ? `${r.id} update ho gayi` : `Lead ${r.id} ban gayi`, 's');
+    if (r && r.duplicate) { if (confirm('⚠ ' + r.message + '\n\nCreate a new lead anyway?')) saveLead(true); return; }
+    if (!r || !r.success) return toast((r && r.message) || 'Save failed', 'e');
+    toast(id ? `${r.id} updated` : `Lead ${r.id} created`, 's');
     closeModal('leadModal');
     const pg = document.querySelector('.page.active');
     loadLeads(pg && pg.id === 'page-leaddash' ? 'leaddash' : 'leads');
@@ -4065,7 +4065,7 @@ function ldMoveNext(id) {
   const d = { action: 'saveLead', 'Lead ID': id, Stage: nx };
   if (nx === 'Follow-up' && (!l['Next Follow-up'] || l['Next Follow-up'] <= ldToday())) d['Next Follow-up'] = ldAddDays(2);   // follow-up ki date aage
   api(d, r => {
-    if (!r || !r.success) return toast((r && r.message) || 'Stage nahi badla', 'e');
+    if (!r || !r.success) return toast((r && r.message) || 'Stage not changed', 'e');
     toast(`${id} → ${LD_SHORT[nx]}`, 's');
     loadLeads('leads');
   });
@@ -4073,10 +4073,10 @@ function ldMoveNext(id) {
 
 function deleteLead() {
   const id = document.getElementById('ld-id').value;
-  if (!id || !confirm(id + ' ko delete karein? Ye wapas nahi aayegi.')) return;
+  if (!id || !confirm('Delete ' + id + '? This cannot be undone.')) return;
   api({ action: 'deleteLead', 'Lead ID': id }, r => {
-    if (!r || !r.success) return toast((r && r.message) || 'Delete nahi hua', 'e');
-    toast(id + ' delete ho gayi', 's'); closeModal('leadModal'); loadLeads('leads');
+    if (!r || !r.success) return toast((r && r.message) || 'Delete failed', 'e');
+    toast(id + ' deleted', 's'); closeModal('leadModal'); loadLeads('leads');
   });
 }
 
@@ -4085,7 +4085,7 @@ function ldBars(el, pairs, total) {
   const max = Math.max(1, ...pairs.map(p => p[1]));
   document.getElementById(el).innerHTML = pairs.length ? pairs.map(([k, v, cls]) =>
     `<div class="ld-bar"><span class="ld-bar-k">${ldEsc(k)}</span><span class="ld-bar-t"><i class="${cls || ''}" style="width:${Math.round(v / max * 100)}%"></i></span><b>${v}</b><span class="ld-muted">${total ? Math.round(v / total * 100) + '%' : ''}</span></div>`).join('')
-    : '<div class="ld-empty">Abhi data nahi</div>';
+    : '<div class="ld-empty">No data yet</div>';
 }
 function renderLeadDash() {
   const L = ldVisible(), n = L.length, won = L.filter(l => l.Stage === 'Order Confirmed').length, lost = L.filter(l => l.Stage === 'Lost').length;
@@ -4093,7 +4093,7 @@ function renderLeadDash() {
   const week = L.filter(l => ldOpen(l) && l['Next Follow-up'] && l['Next Follow-up'] <= ldAddDays(7)).sort((a, b) => a['Next Follow-up'] < b['Next Follow-up'] ? -1 : 1);
   const thisMonth = ldToday().slice(0, 7);
   document.getElementById('ldDashKpis').innerHTML = [
-    ['Total leads', n, ''], ['Is mahine nayi', L.filter(l => String(l['Date Added']).slice(0, 7) === thisMonth).length, ''],
+    ['Total leads', n, ''], ['New this month', L.filter(l => String(l['Date Added']).slice(0, 7) === thisMonth).length, ''],
     ['Open', L.filter(ldOpen).length, ''], ['Won', won, 'c-green'], ['Lost', lost, ''], ['Conversion (won / closed)', conv + '%', 'c-amber']
   ].map(([l, v, c]) => `<div class="stat ${c}"><div class="stat-lbl">${l}</div><div class="stat-val">${v}</div></div>`).join('');
   ldBars('ldFunnel', LD_STAGES.map(s => [LD_EMOJI[s] + ' ' + LD_SHORT[s], L.filter(l => l.Stage === s).length, 'ld-c-' + LD_SHORT[s].toLowerCase().replace(/[^a-z]/g, '')]), n);
@@ -4104,13 +4104,13 @@ function renderLeadDash() {
   document.getElementById('ldPeople').innerHTML = Object.entries(ppl).sort((a, b) => b[1].length - a[1].length).map(([k, a]) => {
     const w = a.filter(l => l.Stage === 'Order Confirmed').length, ls = a.filter(l => l.Stage === 'Lost').length, c = w + ls;
     return `<tr><td class="td-bold">${ldEsc(k)}</td><td>${a.length}</td><td>${a.filter(ldOpen).length}</td><td>${w}</td><td>${ls}</td><td>${c ? Math.round(w / c * 100) + '%' : '—'}</td><td>${a.filter(l => ldDue(l) && l['Next Follow-up'] < ldToday()).length || '—'}</td></tr>`;
-  }).join('') || '<tr><td colspan="7" class="ld-empty">Abhi data nahi</td></tr>';
+  }).join('') || '<tr><td colspan="7" class="ld-empty">No data yet</td></tr>';
   document.getElementById('ldWeekCount').textContent = week.length + ' follow-up';
   const td = ldToday();
   document.getElementById('ldWeek').innerHTML = week.map(l => `<tr onclick="openLeadModal('${ldEsc(l['Lead ID'])}')" style="cursor:pointer">
     <td class="${l['Next Follow-up'] < td ? 'ld-over' : l['Next Follow-up'] === td ? 'ld-today' : ''}">${ldDmy(l['Next Follow-up'])}</td><td class="td-id">${ldEsc(l['Lead ID'])}</td>
     <td class="td-bold">${ldEsc(l['Customer Name'])}</td><td>${ldEsc(l.Phone)}</td><td>${ldBadge(l.Stage)}</td>
-    <td class="ld-adm"${ldMe.admin ? '' : ' style="display:none"'}>${ldEsc(l['Assigned To'])}</td></tr>`).join('') || '<tr><td colspan="6" class="ld-empty">Agle 7 din me koi follow-up nahi</td></tr>';
+    <td class="ld-adm"${ldMe.admin ? '' : ' style="display:none"'}>${ldEsc(l['Assigned To'])}</td></tr>`).join('') || '<tr><td colspan="6" class="ld-empty">No follow-ups in the next 7 days</td></tr>';
 }
 
 const DEALER_CHECK_URL = 'https://litpax-technology.github.io/Dealer-Check/';
@@ -4256,7 +4256,7 @@ function uploadPaySlip() {
   const status = document.getElementById('payUploadStatus');
   btn.disabled = true; btn.textContent = 'Uploading...';
   status.style.display = 'block'; status.style.color = 'var(--warning)'; status.textContent = '⏳ Uploading...';
-  if (file.size > 4 * 1024 * 1024) { status.style.color = 'var(--error)'; status.textContent = '❌ File 4MB se badi hai'; btn.disabled = false; btn.textContent = '⬆ Upload Payment Proof'; return; }
+  if (file.size > 4 * 1024 * 1024) { status.style.color = 'var(--error)'; status.textContent = '❌ File is larger than 4MB'; btn.disabled = false; btn.textContent = '⬆ Upload Payment Proof'; return; }
 
   api({ action: 'getAccessToken' }, tokenRes => {
     const token = tokenRes?.token || '';
@@ -4307,7 +4307,7 @@ function loadCustDocs(custName) {
   const el = document.getElementById('custDocsList');
   el.innerHTML = '<div class="loading"><div class="spin"></div></div>';
   api({ action: 'getCustomerDocs', customerName: custName }, r => {
-    if (!r.success || !r.data.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">Koi document upload nahi hua abhi</div>'; return; }
+    if (!r.success || !r.data.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">No documents uploaded yet</div>'; return; }
     el.innerHTML = r.data.map(d => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
         <div>
@@ -4340,12 +4340,12 @@ function uploadCustDoc() {
   const btn    = document.getElementById('custDocUploadBtn');
   status.style.display = 'block'; status.style.color = 'var(--warning)'; status.textContent = '⏳ Uploading...';
   if (btn) { btn.disabled = true; btn.textContent = 'Uploading...'; }
-  if (file.size > 4 * 1024 * 1024) { status.style.color = 'var(--error)'; status.textContent = '❌ File 4MB se badi hai'; if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } return; }
+  if (file.size > 4 * 1024 * 1024) { status.style.color = 'var(--error)'; status.textContent = '❌ File is larger than 4MB'; if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } return; }
   const mimeType     = file.type || 'application/pdf';
   const custFileName = currentCustName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + file.name;
   api({ action: 'getAccessToken' }, tokenRes => {
     const token = tokenRes?.token || '';
-    if (!token) { status.style.color = 'var(--error)'; status.textContent = '❌ Token nahi mila'; if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } return; }
+    if (!token) { status.style.color = 'var(--error)'; status.textContent = '❌ Token not found'; if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } return; }
     api({ action: 'getCustFolderId' }, folderRes => {
       if (!folderRes.success || !folderRes.folderId) { status.style.color = 'var(--error)'; status.textContent = '❌ Folder error: ' + (folderRes.message || 'Unknown'); if (btn) { btn.disabled = false; btn.textContent = '⬆ Upload'; } return; }
       const folderId = folderRes.folderId;
@@ -4394,7 +4394,7 @@ function loadBatterySpec(custName) {
     if (!currentSpecColumns.length) {
       document.getElementById('specThead').innerHTML = '';
       document.getElementById('specTbody').innerHTML =
-        `<tr><td style="padding:16px;color:var(--error);font-size:12px;">Sheet me koi column header nahi mila — BatterySpec sheet check karo</td></tr>`;
+        `<tr><td style="padding:16px;color:var(--error);font-size:12px;">No column headers found — check the BatterySpec sheet</td></tr>`;
       return;
     }
     document.getElementById('specThead').innerHTML =
@@ -4483,8 +4483,8 @@ function saveSpecColumns() {
     if (cols.some(c => c.toLowerCase() === v.toLowerCase())) bad = true;  // duplicate
     cols.push(v);
   });
-  if (!cols.length) { toast('Kam se kam ek column rakho', 'e'); return; }
-  if (bad) { toast('Do columns ka naam same hai — alag rakho', 'e'); return; }
+  if (!cols.length) { toast('Keep at least one column', 'e'); return; }
+  if (bad) { toast('Two columns have the same name — make them different', 'e'); return; }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   api({ action: 'setBatterySpecColumns', columns: JSON.stringify(cols) }, r => {
@@ -4672,7 +4672,7 @@ function removeEditItemRow(id) {
   if (!isExist || !itemID) { row.remove(); return; }
 
   // Existing item — backend se bhi delete karo
-  if (!confirm('Yeh item order se hata dein? (Production/Accounts se bhi hat jayega)')) return;
+  if (!confirm('Remove this item from the order? (It will also be removed from Production/Accounts)')) return;
   row.remove();
   api({ action: 'deleteOrderItem', 'Item ID': itemID, 'Order ID': orderID }, r => {
     if (r.success) toast('Item removed');
@@ -4759,7 +4759,7 @@ function calcEditCharger() {
 function renderEditChargers(chargers) {
   const el = document.getElementById('edit-existing-chargers');
   if (!el) return;
-  if (!chargers.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0 2px;">Koi charger nahi hai is order mein abhi</div>'; return; }
+  if (!chargers.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 0 2px;">No chargers in this order yet</div>'; return; }
   el.innerHTML = chargers.map(c => {
     const cid = c['Charger ID'] || '';
     return `
@@ -4807,9 +4807,9 @@ function saveEditChargerRow(cid) {
   const model = document.getElementById(`echg-model-${cid}`)?.value?.trim();
   const qty   = parseFloat(document.getElementById(`echg-qty-${cid}`)?.value) || 0;
   const price = parseFloat(document.getElementById(`echg-price-${cid}`)?.value) || 0;
-  if (!model) { toast('Charger Model bharo', 'e'); return; }
-  if (qty <= 0) { toast('Qty 0 se zyada honi chahiye', 'e'); return; }
-  if (price <= 0) { toast('Price 0 se zyada honi chahiye', 'e'); return; }
+  if (!model) { toast('Enter the Charger Model', 'e'); return; }
+  if (qty <= 0) { toast('Qty must be greater than 0', 'e'); return; }
+  if (price <= 0) { toast('Price must be greater than 0', 'e'); return; }
   const total = parseFloat((qty * price * 1.05).toFixed(2));
   api({ action: 'updateChargerItem', 'Charger ID': cid, 'Order ID': orderID, 'Charger Model': model, 'Qty': qty, 'Price/Unit': price, 'Total': total }, r => {
     if (r.success) { toast('Charger updated!'); loadEditChargers(orderID); }
@@ -4819,7 +4819,7 @@ function saveEditChargerRow(cid) {
 
 function deleteEditCharger(cid) {
   const orderID = document.getElementById('e-orderid').value;
-  if (!confirm('Yeh charger delete karein?')) return;
+  if (!confirm('Delete this charger?')) return;
   api({ action: 'deleteChargerItem', 'Charger ID': cid, 'Order ID': orderID }, r => {
     if (r.success) { toast('Charger deleted'); loadEditChargers(orderID); }
     else toast(r.message || 'Delete failed', 'e');
@@ -4840,23 +4840,23 @@ function saveEditCharger() {
   const priceEl = document.getElementById('ec-price');
   const model = modelEl?.value?.trim();
   clearErr(modelEl); clearErr(qtyEl); clearErr(priceEl);
-  if (!model) { markErr(modelEl); toast('Charger Model bharo', 'e'); return; }
+  if (!model) { markErr(modelEl); toast('Enter the Charger Model', 'e'); return; }
   const qty = parseFloat(qtyEl?.value) || 0;
-  if (qty <= 0) { markErr(qtyEl); toast('Charger Qty 0 se zyada honi chahiye', 'e'); return; }
+  if (qty <= 0) { markErr(qtyEl); toast('Charger Qty must be greater than 0', 'e'); return; }
   const price = parseFloat(priceEl?.value) || 0;
-  if (price <= 0) { markErr(priceEl); toast('Charger Price 0 se zyada honi chahiye', 'e'); return; }
+  if (price <= 0) { markErr(priceEl); toast('Charger Price must be greater than 0', 'e'); return; }
   const total = parseFloat((qty * price * 1.05).toFixed(2));
   const btn = document.getElementById('ec-save-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   api({ action: 'addChargerItem', 'Order ID': orderID, 'Charger Model': model, 'Qty': qty, 'Price/Unit': price, 'Total': total }, r => {
     if (btn) { btn.disabled = false; btn.textContent = '+ Add Charger to Order'; }
     if (r.success) {
-      toast('Charger order mein add ho gaya!');
+      toast('Charger added to the order!');
       modelEl.value = ''; qtyEl.value = ''; priceEl.value = '';
       document.getElementById('ec-total').value = '';
       loadEditChargers(orderID);
     } else {
-      toast(r.message || 'Charger add nahi hua', 'e');
+      toast(r.message || 'Could not add the charger', 'e');
     }
   });
 }
@@ -4931,7 +4931,7 @@ function submitEditOrder() {
     const btypeChk = document.getElementById(`eim-btype-${id}`)?.value || '';
     const comboKey = model.toLowerCase() + '|' + btypeChk;
     if (editSeenCombos.includes(comboKey)) {
-      toast('Yeh item (Model + Battery Type) order mein already hai — Qty badha do uske jagah', 'e');
+      toast('This item (Model + Battery Type) is already in the order — increase its Qty instead', 'e');
       editItemsValid = false; return;
     }
     editSeenCombos.push(comboKey);
@@ -5109,7 +5109,7 @@ loadOrders();
   window.openTrackModal = function (orderID) {
     openModal('orderTrackModal');
     document.getElementById('trackModalTitle').textContent = '🔍 Track Order — ' + orderID;
-    document.getElementById('ot-result').innerHTML = '<div class="loading"><div class="spin"></div> History load ho rahi hai...</div>';
+    document.getElementById('ot-result').innerHTML = '<div class="loading"><div class="spin"></div> Loading history...</div>';
     const inp = document.getElementById('ot-orderid');
     if (inp) inp.value = orderID;   // trackOrder isi input se padhta hai
     trackOrder();
@@ -5129,14 +5129,14 @@ loadOrders();
 
   window.trackOrder = function () {
     const oid = (document.getElementById('ot-orderid').value || '').trim();
-    if (!oid) { toast('Order ID daalo', 'e'); return; }
+    if (!oid) { toast('Enter an Order ID', 'e'); return; }
     const box = document.getElementById('ot-result');
-    box.innerHTML = '<div class="loading"><div class="spin"></div> History load ho rahi hai...</div>';
+    box.innerHTML = '<div class="loading"><div class="spin"></div> Loading history...</div>';
 
     // Ek hi call me poora data — bahut fast
     api({ action: 'getTrackOrder', 'Order ID': oid }, r => {
       if (!r || !r.success) {
-        box.innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-txt">${(r && r.message) || 'History load nahi hui'}</div></div>`;
+        box.innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-txt">${(r && r.message) || 'Could not load history'}</div></div>`;
         return;
       }
       const bag = {
@@ -5161,7 +5161,7 @@ loadOrders();
   function render(oid, b) {
     const box = document.getElementById('ot-result');
     if (!b.order) {
-      box.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><div class="empty-txt">Order <b>${esc(oid)}</b> nahi mila</div></div>`;
+      box.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><div class="empty-txt">Order <b>${esc(oid)}</b> not found</div></div>`;
       return;
     }
     const o = b.order;
@@ -5321,7 +5321,7 @@ loadOrders();
         <span class="slip-icon">${String(s.name || '').toLowerCase().endsWith('.pdf') ? '📄' : '🖼️'}</span>
         <div class="slip-info"><div class="slip-name">${esc(s.name)}</div><div class="slip-date">${esc(s.date)}</div></div>
         <span class="btn btn-sm btn-info">View</span>
-      </a>`).join('') : '<div style="padding:14px;text-align:center;color:var(--text3);font-size:12px;">Koi payment slip upload nahi hui</div>';
+      </a>`).join('') : '<div style="padding:14px;text-align:center;color:var(--text3);font-size:12px;">No payment slips uploaded</div>';
 
     const crm0 = b.crm[0] || {};
     const crmNote = (crm0['Current Stage'] || crm0['Remarks'])
@@ -5353,13 +5353,13 @@ loadOrders();
           ${o['Order Remarks'] ? `<div style="margin-top:14px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;"><b>Remarks:</b> ${esc(o['Order Remarks'])}</div>` : ''}
         </div>
       </div>
-      ${cardTbl('📦 Order Items', ['#', 'Item ID', 'Product Model', 'Battery Type', 'Qty', 'Produced', 'Pending', 'Billed', 'Dispatched', 'Prod Status'], itemRows, 'Koi item nahi')}
+      ${cardTbl('📦 Order Items', ['#', 'Item ID', 'Product Model', 'Battery Type', 'Qty', 'Produced', 'Pending', 'Billed', 'Dispatched', 'Prod Status'], itemRows, 'No items')}
       ${b.chargers.length ? cardTbl('⚡ Chargers', ['#', 'Charger ID', 'Model', 'Qty', 'Rate/Unit', 'Total (incl. GST)'], chargerRows, '') : ''}
-      ${cardTbl('⚙️ Production', ['Item ID', 'Product Model', 'Start Actual', 'Complete Actual', 'Delay'], prodRows, 'Production data nahi hai abhi')}
-      ${cardTbl('🧾 Billing', ['Invoice No', 'Invoice Date', 'Item ID', 'Billed Qty', 'Amount'], billRows, 'Koi billing entry nahi')}
-      ${cardTbl('🚚 Dispatch', ['Item ID', 'Qty', 'Date', 'Transport', 'Vehicle', 'LR No', 'Driver'], dspRows, 'Koi dispatch nahi hua abhi')}
-      ${cardTbl('📄 Delivery Challans', ['DC No', 'Date', 'Items', 'Total Qty', 'Amount'], chRows, 'Koi challan nahi bana')}
-      ${cardTbl('💵 Payments', ['Date', 'Mode', 'Reference', 'Remarks', 'Amount'], payRows, 'Koi payment entry nahi')}
+      ${cardTbl('⚙️ Production', ['Item ID', 'Product Model', 'Start Actual', 'Complete Actual', 'Delay'], prodRows, 'No production data yet')}
+      ${cardTbl('🧾 Billing', ['Invoice No', 'Invoice Date', 'Item ID', 'Billed Qty', 'Amount'], billRows, 'No billing entries')}
+      ${cardTbl('🚚 Dispatch', ['Item ID', 'Qty', 'Date', 'Transport', 'Vehicle', 'LR No', 'Driver'], dspRows, 'No dispatches yet')}
+      ${cardTbl('📄 Delivery Challans', ['DC No', 'Date', 'Items', 'Total Qty', 'Amount'], chRows, 'No challans yet')}
+      ${cardTbl('💵 Payments', ['Date', 'Mode', 'Reference', 'Remarks', 'Amount'], payRows, 'No payment entries')}
       <div class="card"><div class="card-head"><div class="card-title">📎 Payment Slips</div></div><div style="padding:12px 16px;">${slipHTML}</div></div>
       ${crmNote ? `<div class="card"><div class="card-head"><div class="card-title">🎯 CRM</div></div>${crmNote}</div>` : ''}
     `;
@@ -5535,7 +5535,7 @@ function openRec(type, key, nm) {
   suiteOpen(type, key);   // ticket / case → Service Hub
 }
 function suiteOpen(type, id) {
-  if (window.parent === window) return toast('Ye record Litpax Suite me khulta hai', 'w');
+  if (window.parent === window) return toast('This record opens inside Litpax Suite', 'w');
   try { window.parent.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: type, id: id }, location.origin); } catch (e) {}
 }
 function suiteCan(mod) { try { return (sessionStorage.getItem('suite_can') || '').split(',').indexOf(mod) !== -1; } catch (e) { return false; } }
@@ -5547,17 +5547,17 @@ function openOrderRec(id) {
   if (o) return viewOrder(o);
   api({ action: 'getOrders' }, r => {
     const f = ((r && r.data) || []).find(x => x['Order ID'] === id);
-    if (!f) return toast(id + ' nahi mila', 'e');
-    if (user.role === 'Sales' && user.salesName && (f['Sales Person Name'] || '') !== user.salesName) return toast(id + ' aapka order nahi hai', 'e');
+    if (!f) return toast(id + ' not found', 'e');
+    if (user.role === 'Sales' && user.salesName && (f['Sales Person Name'] || '') !== user.salesName) return toast(id + ' is not your order', 'e');
     viewOrder(f);
   });
 }
 // ---- Lead: wahi lead form ----
 function openLeadRec(id) {
-  const go = () => { if (!ldAll.find(x => x['Lead ID'] === id)) return toast(id + ' nahi mili (ya aapki nahi hai)', 'e'); openLeadModal(id); };
+  const go = () => { if (!ldAll.find(x => x['Lead ID'] === id)) return toast(id + ' not found (or not yours)', 'e'); openLeadModal(id); };
   if (ldLoaded) return go();
   api({ action: 'getLeads' }, r => {
-    if (!r || !r.success) return toast((r && r.message) || 'Leads load nahi hui', 'e');
+    if (!r || !r.success) return toast((r && r.message) || 'Could not load leads', 'e');
     ldAll = r.data || []; ldMe = r.me || {}; ldPeople = r.salesPeople || []; ldLoaded = true; go();
   });
 }
@@ -5570,7 +5570,7 @@ function ldToOrder(id) {
   set('o-cust', l.Company || l['Customer Name']); set('o-phone', l.Phone); set('o-city', l.City); set('o-sales', l['Assigned To']);
   openModal('orderModal');
   const body = document.querySelector('#orderModal .modal-body') || document.querySelector('#orderModal .modal');
-  if (body) body.insertAdjacentHTML('afterbegin', `<div id="ldOrderNote" class="rec-note">📋 Lead <b>${recEsc(id)}</b> se order — banne ke baad lead ke saath jud jayega</div>`);
+  if (body) body.insertAdjacentHTML('afterbegin', `<div id="ldOrderNote" class="rec-note">📋 Lead <b>${recEsc(id)}</b> — the new order will be linked to this lead</div>`);
 }
 
 // ---- Customer page ----
@@ -5585,7 +5585,7 @@ function openCustomer(key, nm, hint) {
   document.getElementById('pageSub').textContent = pageMeta.customer.sub;
   document.getElementById('c360').innerHTML = '<div class="loading"><div class="spin"></div></div>';
   api({ action: 'getCustomer360', key, name: String(nm || '').trim(), hint: String(hint || '').trim() }, r => {
-    if (!r || !r.success) { document.getElementById('c360').innerHTML = `<div class="empty"><div class="empty-ico">👤</div><div class="empty-txt">${recEsc((r && r.message) || 'Customer load nahi hua')}</div></div>`; return; }
+    if (!r || !r.success) { document.getElementById('c360').innerHTML = `<div class="empty"><div class="empty-ico">👤</div><div class="empty-txt">${recEsc((r && r.message) || 'Could not load customer')}</div></div>`; return; }
     C360 = r; renderC360();
   });
 }
@@ -5618,8 +5618,8 @@ function renderC360() {
   const info = [['Contact', c.ContactPerson], ['Phone', tel, 1], ['City', c.City], ['GSTIN', c.GSTIN], ['Credit days', c.CreditDays], ['Added by', c['Added By']]]
     .map(([l, v, raw]) => `<div class="c360-kv"><span>${l}</span><b>${v ? (raw ? v : recEsc(v)) : '—'}</b></div>`).join('');
   const orders = r.orders.map(o => c360Row(`${ordLink(o.id)} <span class="c360-muted">· ${recEsc(fmtDisplayDate(o.date))}</span>`,
-    recEsc([o.qty ? o.qty + ' battery' : '', o.sales, o.final || ''].filter(Boolean).join(' · ')), `<b>${c360Rs(o.value)}</b>`,
-    o.due > 0 ? `<span class="c360-due">Baaki ${c360Rs(o.due)}</span>` : (o.value ? '<span class="c360-ok">Paid</span>' : ''))).join('');
+    recEsc([o.qty ? o.qty + ' batteries' : '', o.sales, o.final || ''].filter(Boolean).join(' · ')), `<b>${c360Rs(o.value)}</b>`,
+    o.due > 0 ? `<span class="c360-due">Due ${c360Rs(o.due)}</span>` : (o.value ? '<span class="c360-ok">Paid</span>' : ''))).join('');
   const pays = r.payments.map(p => c360Row(`<b>${c360Rs(p.Amount)}</b> <span class="c360-muted">· ${recEsc(fmtDisplayDate(p.Date || p['Payment Date'] || ''))}</span>`,
     recEsc([p.Mode || p['Payment Mode'], p['Reference'] || p['Ref No'] || ''].filter(Boolean).join(' · ')), ordLink(p['Order ID']))).join('');
   const leads = r.leads.map(l => c360Row(`${recA('lead', l.id, l.id)} <span class="c360-muted">· ${recEsc(fmtDisplayDate(l.date))}</span>`,
@@ -5629,7 +5629,7 @@ function renderC360() {
   const css = r.cases.map(k => c360Row(`${csLink(k.id)} <span class="c360-muted">· ${recEsc(k.date)}</span>`,
     recEsc([k.model, k.serial && 'SN ' + k.serial, k.warranty].filter(Boolean).join(' · ')), pill(k.status), k.ticket ? 'Ticket ' + tkLink(k.ticket) : '')).join('');
   document.getElementById('c360').innerHTML = `
-    <div class="c360-top"><button class="btn btn-sm" onclick="c360Back()">← Back</button>${r.found ? '' : '<span class="c360-warn">⚠ Customer master me nahi hai — orders / phone se dikha rahe hain</span>'}</div>
+    <div class="c360-top"><button class="btn btn-sm" onclick="c360Back()">← Back</button>${r.found ? '' : '<span class="c360-warn">⚠ Not in the customer master — showing records matched by name / phone</span>'}</div>
     <div class="c360-grid">
       <div class="c360-side">
         <div class="card c360-card">
@@ -5640,18 +5640,18 @@ function renderC360() {
         </div>
         <div class="stats-row c360-kpis">
           <div class="stat c-blue"><div class="stat-lbl">Orders</div><div class="stat-val">${t.orders}</div></div>
-          <div class="stat c-green"><div class="stat-lbl">Kul business</div><div class="stat-val">${c360Rs(t.value)}</div></div>
-          <div class="stat ${t.due ? 'c-red' : 'c-green'}"><div class="stat-lbl">Baaki payment</div><div class="stat-val">${c360Rs(t.due)}</div></div>
+          <div class="stat c-green"><div class="stat-lbl">Total business</div><div class="stat-val">${c360Rs(t.value)}</div></div>
+          <div class="stat ${t.due ? 'c-red' : 'c-green'}"><div class="stat-lbl">Payment due</div><div class="stat-val">${c360Rs(t.due)}</div></div>
           <div class="stat ${r.tickets.some(k => !/closed|cancel/i.test(k.status)) ? 'c-amber' : ''}"><div class="stat-lbl">Service tickets</div><div class="stat-val">${r.tickets.length}</div></div>
         </div>
-        ${r.hiddenOrders ? `<div class="c360-muted c360-hint">${r.hiddenOrders} order dusre salesperson ke hain (aapko nahi dikhte)</div>` : ''}
+        ${r.hiddenOrders ? `<div class="c360-muted c360-hint">${r.hiddenOrders} order(s) belong to other salespeople (hidden from you)</div>` : ''}
       </div>
       <div class="c360-main-col">
-        ${c360Sec('📦', 'Orders', r.orders.length, orders, 'Koi order nahi')}
-        ${c360Sec('💰', 'Payments', r.payments.length, pays, 'Koi payment nahi')}
-        ${r.team === 'Admin' || r.team === 'Sales' ? c360Sec('🎯', 'Leads', r.leads.length, leads, 'Koi lead nahi') : ''}
-        ${c360Sec('🛠', 'Service tickets', r.tickets.length, tks, 'Koi service ticket nahi')}
-        ${c360Sec('🔁', 'Advance Replacement', r.cases.length, css, 'Koi replacement case nahi')}
+        ${c360Sec('📦', 'Orders', r.orders.length, orders, 'No orders')}
+        ${c360Sec('💰', 'Payments', r.payments.length, pays, 'No payments')}
+        ${r.team === 'Admin' || r.team === 'Sales' ? c360Sec('🎯', 'Leads', r.leads.length, leads, 'No leads') : ''}
+        ${c360Sec('🛠', 'Service tickets', r.tickets.length, tks, 'No service tickets')}
+        ${c360Sec('🔁', 'Advance Replacement', r.cases.length, css, 'No replacement cases')}
       </div>
     </div>`;
 }
