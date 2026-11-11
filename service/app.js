@@ -3740,7 +3740,7 @@ function erpCustLink(phone, name) {   // ERP ko "phone|naam" — naam pehle dekh
   phone = String(phone || '').trim(); name = String(name || '').trim();
   const key = phone || name ? phone + '|' + name : '';
   if (!key || window.parent === window || !suiteCan('m-erp')) return '';
-  return ' <button type="button" class="lk xlink" data-k="' + esc(key) + '" onclick="event.stopPropagation();suiteOpen(\'customer\', this.dataset.k)" title="ERP me customer ke orders, payments, leads">ERP 360 ↗</button>';
+  return ' <button type="button" class="lk xlink" data-k="' + esc(key) + '" onclick="event.stopPropagation();suiteOpen(\'customer\', this.dataset.k)" title="Open the customer ERP page (orders, payments, leads)">ERP 360 ↗</button>';
 }
 // ticket ke Advance Replacement cases
 let _arCache = { t: 0, rows: null };
