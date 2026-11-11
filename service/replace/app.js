@@ -118,7 +118,7 @@ async function arRun(params, btn) {
 /* ---------- boot ---------- */
 window.addEventListener('load', boot);
 async function boot() {
-  if (!arOn()) return emptyMsg('REPLACE_URL config.js me set nahi hai.');
+  if (!arOn()) return emptyMsg('REPLACE_URL is not set in config.js.');
   let tk = ''; try { tk = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
   if (!tk) return emptyMsg('Please open this from Litpax Suite.');
   $('rpList').innerHTML = '<div class="sk"></div>'.repeat(3);
@@ -126,7 +126,7 @@ async function boot() {
   try { r = await arApi({ action: 'repMe' }); } catch (e) { if (e === 'auth') return; }
   if (!r || !r.ok) return emptyMsg((r && r.msg) || 'Could not connect — refresh and try again.');
   AR.me = r.me; AR.access = !!r.access; AR.set = r.settings;
-  if (!AR.access) return emptyMsg('Advance Replacement ka access nahi hai — Admin se role lagwao.');
+  if (!AR.access) return emptyMsg('You do not have access to Advance Replacement — ask the Admin for a role.');
   $('rpMe').innerHTML = '<b>' + esc(AR.me.name) + '</b><span>' + esc((AR.me.roles || []).join(', ')) + '</span>';
   $('rpNewBtn').hidden = !arPerm('Create');
   $('rpRolesBtn').hidden = !AR.me.admin;
@@ -140,7 +140,7 @@ function arPrefill() {
   if (o && AR.access) return arOpen(o);   // ticket / Customer page se aaya → seedha case
   let p = null; try { p = JSON.parse(sessionStorage.getItem('rep_prefill') || 'null'); sessionStorage.removeItem('rep_prefill'); } catch (e) {}
   if (!p || !AR.access) return;
-  if (!arPerm('Create')) return toast('⚠️ Aapke role me naya case banana nahi hai');
+  if (!arPerm('Create')) return toast('⚠️ Your role cannot create new cases');
   arNew({ 'Ticket ID': p.ticketId, 'Customer Name': p.name, 'Phone': p.phone, 'City': p.city, 'State': p.state, 'Dealer': p.dealer,
     'Complaint': p.complaint, 'Battery Model': p.model });
 }
@@ -197,7 +197,7 @@ function arNew(pre, editId) {
   const S = AR.set || {}, x = pre || {}, ch = x['Charger'] === 'Yes';
   const sel = (id, list, v) => '<select id="' + id + '">' + optList(list, v || '') + '</select>';
   modalOpen(editId ? 'Edit ' + editId : 'New Advance Replacement',
-    (x['Ticket ID'] && !editId ? '<div class="note">Ticket <b>' + esc(x['Ticket ID']) + '</b> se — details bhar di hain, check kar lo.</div>' : '') +
+    (x['Ticket ID'] && !editId ? '<div class="note">Details filled in from ticket <b>' + esc(x['Ticket ID']) + '</b> — please check them.</div>' : '') +
     '<div class="form-grid">' +
       fg('Ticket ID <span class="opt">(if any)</span>', 'ar_tk', 'text', x['Ticket ID'], ' maxlength="40"') +
       '<div class="fg"><label for="ar_war">Warranty <b>*</b></label>' + sel('ar_war', S.warranty, x['Warranty']) + '</div>' +
@@ -209,13 +209,13 @@ function arNew(pre, editId) {
       '<div class="fg"><label for="ar_cat">Battery category <b>*</b></label>' + sel('ar_cat', S.categories, x['Battery Category']) + '</div>' +
       fg('Battery model <b>*</b>', 'ar_model', 'text', x['Battery Model'], ' maxlength="100"') +
       fg('Old serial no', 'ar_serial', 'text', x['Old Serial'], ' maxlength="60"') +
-      '<div class="fg full"><label class="chk"><input type="checkbox" id="ar_ch"' + (ch ? ' checked' : '') + ' onchange="$(\'ar_chw\').hidden=!this.checked"> Charger bhi replace hoga</label></div>' +
+      '<div class="fg full"><label class="chk"><input type="checkbox" id="ar_ch"' + (ch ? ' checked' : '') + ' onchange="$(\'ar_chw\').hidden=!this.checked"> Charger is also being replaced</label></div>' +
       '<div id="ar_chw" class="form-grid sub"' + (ch ? '' : ' hidden') + '>' + fg('Charger model <b>*</b>', 'ar_chm', 'text', x['Charger Model'], ' maxlength="100"') +
         fg('Charger serial', 'ar_chs', 'text', x['Charger Serial'], ' maxlength="60"') + '</div>' +
       '<div class="fg full"><label for="ar_cmp">Complaint <b>*</b></label><textarea id="ar_cmp" maxlength="500" placeholder="e.g. No backup, swelling, 8 months old">' + esc(x['Complaint'] || '') + '</textarea></div>' +
       '<div class="fg full"><label for="ar_rem">Remarks</label><input id="ar_rem" maxlength="500" value="' + esc(x['Remarks'] || '') + '"></div>' +
     '</div>' +
-    ((S.approvalFor || []).length ? '<p class="muted">' + esc(S.approvalFor.join(' / ')) + ' → pehle Admin approve karega.</p>' : '') +
+    ((S.approvalFor || []).length ? '<p class="muted">' + esc(S.approvalFor.join(' / ')) + ' → the Admin approves first.</p>' : '') +
     '<button type="button" class="btn btn-primary btn-block" data-id="' + esc(editId || '') + '" onclick="arSave(this)">' + (editId ? 'Save changes' : 'Create case') + '</button>');
 }
 async function arSave(btn, force) {
@@ -229,7 +229,7 @@ async function arSave(btn, force) {
   if (d.charger === 'Yes' && !d.chargerModel) return toast('⚠️ Enter the charger model');
   if (force) d.force = '1';
   const r = await arRun(d, btn); if (!r) return;
-  if (r.duplicate) { if (confirm(r.msg + '\n\nPhir bhi naya case banana hai?')) return arSave(btn, true); return; }
+  if (r.duplicate) { if (confirm(r.msg + '\n\nCreate a new case anyway?')) return arSave(btn, true); return; }
   modalClose();
   toast('✅ ' + r.id + (d.id ? ' saved' : r.approval ? ' created — waiting for admin approval' : ' created — ready to send'));
   arLoad();
@@ -320,7 +320,7 @@ async function arRolesOpen() {
   const lst = (id, lbl, v, hint) => '<div class="fg full"><label for="' + id + '">' + lbl + '</label><input id="' + id + '" value="' + esc((v || []).join(', ')) + '" maxlength="400">' + (hint ? '<small class="muted">' + hint + '</small>' : '') + '</div>';
   AR.rowHtml = row;
   $('rpMdBody').innerHTML =
-    '<div class="note">Login match = kis login ko ye role mile: Suite role (Service, Repair…), ERP role (Sales, Production…) ya Staff team — comma se. Admin ko hamesha sab milta hai.</div>' +
+    '<div class="note">Login match = which logins get this role: Suite role (Service, Repair…), ERP role (Sales, Production…) or Staff team — comma-separated. Admin always gets everything.</div>' +
     '<div class="roles-wrap"><table class="roles"><thead><tr><th>Role</th><th>Login match</th>' + P.map(k => '<th>' + esc(k) + '</th>').join('') + '<th>Active</th><th></th></tr></thead>' +
     '<tbody id="arRoleRows">' + AR.roles.map(row).join('') + '</tbody></table></div>' +
     '<button type="button" class="btn btn-sm" style="margin:8px 0 18px" onclick="arRoleAdd()">+ Add role</button>' +
