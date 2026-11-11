@@ -250,7 +250,7 @@
   function openRecordX(rtype, id) {
     var mod = REC_APP[rtype];
     if (!mod || !id) return;
-    if (!navItems().some(function (x) { return x.id === 'm-' + mod; })) return toast('Ye record dekhne ka access nahi hai', 'bad');
+    if (!navItems().some(function (x) { return x.id === 'm-' + mod; })) return toast('You do not have access to this record', 'bad');
     var had = !!S.frames[mod];
     try { sessionStorage.setItem('suite_open', JSON.stringify({ app: mod, rtype: rtype, id: String(id), t: Date.now() })); } catch (e) {}
     go('m-' + mod);   // frame pehli baar bana to app khud suite_open padh ke record kholega
