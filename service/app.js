@@ -2664,7 +2664,7 @@ function renderTicket() {
   const cu = CUR.customer, rpl = CUR.replacements || [];
 
   let h = recHead('ticket', t['Ticket ID'], pill(s), [
-    ['Customer', (t['Customer ID'] ? lk('customer', t['Customer ID'], '', t['Company Name']) : tv(t['Company Name'])) + erpCustLink(t['Phone'] || t['Company Name'])],
+    ['Customer', (t['Customer ID'] ? lk('customer', t['Customer ID'], '', t['Company Name']) : tv(t['Company Name'])) + erpCustLink(t['Phone'], t['Company Name'])],
     ['Contact', tv([t['Contact Person'], t['Phone']].filter(Boolean).join(' · '))],
     ['Complaint', tv(t['Complaint'])],
     ['Items', items.length ? esc(items.filter(isDisp).length + ' / ' + items.length + ' dispatched') : '—'],
@@ -2919,7 +2919,7 @@ function renderCustomer() {
   const c = CUST.customer, T = CUST.tickets || [], I = CUST.items || [], F = CUST.feedback || [];
   const bats = I.filter(i => i['Item Type'] !== 'Charger').length, open = T.filter(t => !isEnded(t['Status'])).length;
   let h = recHead('customer', c['Customer ID'], open ? '<span class="pill pill-blue">' + open + ' open</span>' : '',
-    [['Phone', (c['Phone'] ? '<a href="tel:' + esc(c['Phone']) + '">' + esc(c['Phone']) + '</a>' : tv('')) + erpCustLink(c['Phone'] || c['Company Name'])], ['City', tv([c['City'], c['State']].filter(Boolean).join(', '))],
+    [['Phone', (c['Phone'] ? '<a href="tel:' + esc(c['Phone']) + '">' + esc(c['Phone']) + '</a>' : tv('')) + erpCustLink(c['Phone'], c['Company Name'])], ['City', tv([c['City'], c['State']].filter(Boolean).join(', '))],
      ['Tickets', esc(T.length)], ['Items serviced', esc(I.length + ' (' + bats + ' batteries)')]], esc(c['Company Name'] + (c['Contact Person'] ? ' · ' + c['Contact Person'] : '')));
   h += tabsHtml([['details', 'Details'], ['tickets', 'Tickets', T.length], ['items', 'Items', I.length], ['feedback', 'Feedback', F.length]]);
   let body = '';
@@ -3736,8 +3736,9 @@ function newAssignFill() {
    ============================================================ */
 function suiteCan(mod) { try { return (sessionStorage.getItem('suite_can') || '').split(',').indexOf(mod) !== -1; } catch (e) { return false; } }
 function suiteOpen(type, id) { try { window.parent.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: type, id: String(id) }, location.origin); } catch (e) {} }
-function erpCustLink(key) {
-  key = String(key || '').trim();
+function erpCustLink(phone, name) {   // ERP ko "phone|naam" — naam pehle dekha jaata hai
+  phone = String(phone || '').trim(); name = String(name || '').trim();
+  const key = phone || name ? phone + '|' + name : '';
   if (!key || window.parent === window || !suiteCan('m-erp')) return '';
   return ' <button type="button" class="lk xlink" data-k="' + esc(key) + '" onclick="event.stopPropagation();suiteOpen(\'customer\', this.dataset.k)" title="ERP me customer ke orders, payments, leads">ERP 360 ↗</button>';
 }
