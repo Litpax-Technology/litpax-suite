@@ -3980,7 +3980,7 @@ function renderLeads() {
     const nx = LD_NEXT[l.Stage];
     return `<tr>
       <td class="td-id">${ldEsc(l['Lead ID'])}<div class="ld-sub">${ldDmy(l['Date Added'])}${l['Lead Source'] ? ' · ' + ldEsc(l['Lead Source']) : ''}</div></td>
-      <td class="td-bold">${custLink(l['Customer Name'], l.Phone, l['Customer ID'])}${(l.Company && l.Company !== l['Customer Name']) || l.City ? `<div class="ld-sub">${ldEsc([l.Company !== l['Customer Name'] ? l.Company : '', l.City].filter(Boolean).join(' · '))}</div>` : ''}</td>
+      <td class="td-bold">${custLink(l['Customer Name'], l.Phone, l['Customer ID'], l.Company || l['Customer Name'])}${(l.Company && l.Company !== l['Customer Name']) || l.City ? `<div class="ld-sub">${ldEsc([l.Company !== l['Customer Name'] ? l.Company : '', l.City].filter(Boolean).join(' · '))}</div>` : ''}</td>
       <td><a class="ld-tel" href="tel:${ldEsc(l.Phone)}">${ldEsc(l.Phone)}</a> <a class="ld-wa" href="https://wa.me/91${ldEsc(String(l.Phone).slice(-10))}" target="_blank" title="WhatsApp">💬</a></td>
       <td>${ldEsc(String(l['Application Type'] || '').replace(/\s*\(.*\)$/, ''))}${req ? `<div class="ld-sub">${ldEsc(req)}</div>` : ''}</td>
       <td>${ldBadge(l.Stage)}${l.Stage === 'Lost' && l['Lost Reason'] ? `<div class="ld-sub">${ldEsc(l['Lost Reason'])}</div>` : ''}${l['Order ID'] ? `<div class="ld-sub">📦 ${ordLink(l['Order ID'])}</div>` : ''}</td>
@@ -5515,16 +5515,21 @@ let LD_ORDER_FOR = '';                 // lead se order ban raha hai to us lead 
 let C360 = null, C360_BACK = null;      // abhi khula customer + kahan se aaye the
 const recEsc = v => String(v == null ? '' : v).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
 // link banane wale (click → record)
-function recA(type, key, text) {
+function recA(type, key, text, nm) {
   if (!key) return recEsc(text || '');
-  return `<a href="#" class="rec-link" data-t="${recEsc(type)}" data-k="${recEsc(key)}" onclick="return recGo(this, event)">${recEsc(text || key)}</a>`;
+  return `<a href="#" class="rec-link" data-t="${recEsc(type)}" data-k="${recEsc(key)}"${nm ? ` data-n="${recEsc(nm)}"` : ''} onclick="return recGo(this, event)">${recEsc(text || key)}</a>`;
 }
-function custLink(name, phone, id) { const k = String(id || '').trim() || String(phone || '').replace(/\D/g, '').slice(-10) || String(name || '').trim(); return name ? recA('customer', k, name) : '—'; }
+// customer link: naam hi asli pehchaan (same phone wale doosre customer pe nahi jaana). vname = master me jo naam hoga (lead me Company)
+function custLink(name, phone, id, vname) {
+  name = String(name || '').trim(); if (!name) return '—';
+  const k = String(id || '').trim() || name;
+  return recA('customer', k, name, String(vname || name).trim());
+}
 function ordLink(id) { return id ? recA('order', id, id) : ''; }
-function recGo(el, e) { if (e) { e.preventDefault(); e.stopPropagation(); } openRec(el.dataset.t, el.dataset.k); return false; }
+function recGo(el, e) { if (e) { e.preventDefault(); e.stopPropagation(); } openRec(el.dataset.t, el.dataset.k, el.dataset.n); return false; }
 // kaunsa record kahan khulta hai
-function openRec(type, key) {
-  if (type === 'customer') return openCustomer(key);
+function openRec(type, key, nm) {
+  if (type === 'customer') return openCustomer(key, nm);
   if (type === 'order') return openOrderRec(key);
   if (type === 'lead') return openLeadRec(key);
   suiteOpen(type, key);   // ticket / case → Service Hub
@@ -5569,7 +5574,7 @@ function ldToOrder(id) {
 }
 
 // ---- Customer page ----
-function openCustomer(key) {
+function openCustomer(key, nm, hint) {
   key = String(key || '').trim(); if (!key) return;
   ['orderDetailModal', 'leadModal'].forEach(m => { const el = document.getElementById(m); if (el && el.classList.contains('show')) el.classList.remove('show'); });
   const cur = document.querySelector('.page.active');
@@ -5579,7 +5584,7 @@ function openCustomer(key) {
   document.getElementById('pageTitle').textContent = 'Customer';
   document.getElementById('pageSub').textContent = pageMeta.customer.sub;
   document.getElementById('c360').innerHTML = '<div class="loading"><div class="spin"></div></div>';
-  api({ action: 'getCustomer360', key }, r => {
+  api({ action: 'getCustomer360', key, name: String(nm || '').trim(), hint: String(hint || '').trim() }, r => {
     if (!r || !r.success) { document.getElementById('c360').innerHTML = `<div class="empty"><div class="empty-ico">👤</div><div class="empty-txt">${recEsc((r && r.message) || 'Customer load nahi hua')}</div></div>`; return; }
     C360 = r; renderC360();
   });
@@ -5654,6 +5659,10 @@ function renderC360() {
 // ---- Suite se aaya "ye record kholo" ----
 function recFromSuite(rtype, id) {
   try { sessionStorage.removeItem('suite_open'); } catch (e) {}
+  if (rtype === 'customer' && /\|/.test(String(id))) {   // Service / Replacement se: "phone|naam"
+    const [ph, nm] = String(id).split('|');
+    return openCustomer(ph || nm, '', ph ? nm : '');
+  }
   if (['customer', 'order', 'lead'].indexOf(rtype) !== -1 && id) openRec(rtype, id);
 }
 window.addEventListener('message', e => {
