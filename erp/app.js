@@ -105,7 +105,8 @@ const pageMeta = {
   products:{title:'Products',sub:'Product master data'},
   suppliers:{title:'Suppliers',sub:'Supplier master data'},
   users:{title:'Users & Access',sub:'Manage users and roles'},
-  accounts:{title:'Accounts',sub:'Order accounts & finance tracking'}
+  accounts:{title:'Accounts',sub:'Order accounts & finance tracking'},
+  customer:{title:'Customer',sub:'Customer ke saare orders, payments, leads, service aur replacement'}
 };
 
 function nav(id, el) {
@@ -342,9 +343,9 @@ function renderRecentOrders(list) {
   if (!list.length) { el.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-txt">Koi order nahi hai</div></div></td></tr>'; return; }
   el.innerHTML = list.map(o => `
     <tr>
-      <td class="td-id">${o['Order ID']||''}</td>
+      <td class="td-id">${ordLink(o['Order ID'])}</td>
       <td>${o['Date']||''}</td>
-      <td class="td-bold">${o['Customer Name']||''}</td>
+      <td class="td-bold">${custLink(o['Customer Name'], o['Customer Phone'], o['Customer ID'])}</td>
       <td>${o['Sales Person Name']||''}</td>
       <td style="font-weight:600;color:var(--accent);">₹${fmt(o['Total Order Value']||0)}</td>
       <td>${orderStatusBadge(o['Order Status'])}</td>
@@ -535,10 +536,10 @@ function renderOrders() {
 
   document.getElementById('ordersTable').innerHTML = data.map(o => `
     <tr>
-      <td class="td-id">${o['Order ID']||''}</td>
+      <td class="td-id">${ordLink(o['Order ID'])}</td>
       <td>${fmtDisplayDate(o['Date']||'')}</td>
       <td class="td-bold">${o['Sales Person Name']||''}</td>
-      <td class="td-bold">${o['Customer Name']||''}</td>
+      <td class="td-bold">${custLink(o['Customer Name'], o['Customer Phone'], o['Customer ID'])}</td>
       <td>${o['City']||''}</td>
       <td style="text-align:right;">${fmt(o['Total Qty'])}</td>
       <td style="font-weight:600;color:var(--accent);">₹${fmt(o['Total Order Value']||0)}</td>
@@ -608,7 +609,7 @@ function viewOrder(o) {
   document.getElementById('detailOrderID').textContent = 'Order: ' + (o['Order ID'] || '');
   const fields = [
     ['Order ID', o['Order ID']], ['Date', fmtDisplayDate(o['Date']||'')], ['Sales Person', o['Sales Person Name']],
-    ['Customer Name', o['Customer Name']], ['Customer Phone', o['Customer Phone']], ['City', o['City']],
+    ['Customer Name', custLink(o['Customer Name'], o['Customer Phone'], o['Customer ID'])], ['Customer Phone', o['Customer Phone']], ['City', o['City']],
     ['Total Qty', o['Total Qty']], ['Charger Qty', o['Charger Qty']||'—'],
     ['Total Order Value', o['Total Order Value'] ? '₹'+Number(o['Total Order Value']).toLocaleString('en-IN') : '—'],
     ['Payment Mode', o['Payment Mode']], ['Order Status', o['Order Status']],
@@ -618,6 +619,7 @@ function viewOrder(o) {
     ['Transport Charges', o['Transportation Charges']],
     ['Assigned CRM', o['Assigned CRM']], ['Final Status', o['Final Status']], ['Remarks', o['Order Remarks']]
   ];
+  if (o['Lead ID']) fields.push(['Lead', recA('lead', o['Lead ID'], o['Lead ID'])]);   // kis lead se bana
   document.getElementById('orderDetailBody').innerHTML = `
     <div class="detail-grid">${fields.map(([l,v]) => `<div class="detail-item"><div class="detail-lbl">${l}</div><div class="detail-val">${v||'—'}</div></div>`).join('')}</div>
     <div style="font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Order Items</div>
@@ -971,7 +973,7 @@ function saveAndAddMore() {
       action: 'addOrder',
       'Date': document.getElementById('o-date').value,
       'Sales Person Name': document.getElementById('o-sales').value,
-      'Customer Name': cust,
+      'Customer Name': cust, 'Lead ID': LD_ORDER_FOR || '',
       'Customer Phone': document.getElementById('o-phone').value,
       'City': document.getElementById('o-city').value,
       'Total Qty': totalQty,
@@ -1404,7 +1406,7 @@ function submitOrder() {
     action: 'addOrder',
     'Date': document.getElementById('o-date').value,
     'Sales Person Name': document.getElementById('o-sales').value,
-    'Customer Name': cust,
+    'Customer Name': cust, 'Lead ID': LD_ORDER_FOR || '',
     'Customer Phone': document.getElementById('o-phone').value,
     'City': document.getElementById('o-city').value,
     'Total Qty': totalQty,
@@ -1453,6 +1455,7 @@ function submitOrder() {
 
 function resetOrderForm() {
   currentOrderID = null;
+  LD_ORDER_FOR = ''; const ldn = document.getElementById('ldOrderNote'); if (ldn) ldn.remove();
   savedItemsData = [];
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
   const badge = document.getElementById('currentOrderBadge');
@@ -3502,7 +3505,7 @@ function renderCustomers() {
     const dsCol = c.daysSince == null ? '—'
                 : `<span style="font-weight:600;color:${c.daysSince > 30 ? 'var(--error)' : 'var(--text)'};">${c.daysSince}d</span>`;
     return `<tr>
-      <td class="td-bold">${esc(c.name)}</td>
+      <td class="td-bold">${custLink(c.name, c.phone, c.cust && c.cust.CustomerID)}</td>
       <td>${esc(c.city) || '—'}</td>
       <td>${esc(c.phone) || '—'}</td>
       <td>${esc(c.salesPerson) || '—'}</td>
@@ -3977,13 +3980,13 @@ function renderLeads() {
     const nx = LD_NEXT[l.Stage];
     return `<tr>
       <td class="td-id">${ldEsc(l['Lead ID'])}<div class="ld-sub">${ldDmy(l['Date Added'])}${l['Lead Source'] ? ' · ' + ldEsc(l['Lead Source']) : ''}</div></td>
-      <td class="td-bold">${ldEsc(l['Customer Name'])}${(l.Company && l.Company !== l['Customer Name']) || l.City ? `<div class="ld-sub">${ldEsc([l.Company !== l['Customer Name'] ? l.Company : '', l.City].filter(Boolean).join(' · '))}</div>` : ''}</td>
+      <td class="td-bold">${custLink(l['Customer Name'], l.Phone, l['Customer ID'])}${(l.Company && l.Company !== l['Customer Name']) || l.City ? `<div class="ld-sub">${ldEsc([l.Company !== l['Customer Name'] ? l.Company : '', l.City].filter(Boolean).join(' · '))}</div>` : ''}</td>
       <td><a class="ld-tel" href="tel:${ldEsc(l.Phone)}">${ldEsc(l.Phone)}</a> <a class="ld-wa" href="https://wa.me/91${ldEsc(String(l.Phone).slice(-10))}" target="_blank" title="WhatsApp">💬</a></td>
       <td>${ldEsc(String(l['Application Type'] || '').replace(/\s*\(.*\)$/, ''))}${req ? `<div class="ld-sub">${ldEsc(req)}</div>` : ''}</td>
-      <td>${ldBadge(l.Stage)}${l.Stage === 'Lost' && l['Lost Reason'] ? `<div class="ld-sub">${ldEsc(l['Lost Reason'])}</div>` : ''}</td>
+      <td>${ldBadge(l.Stage)}${l.Stage === 'Lost' && l['Lost Reason'] ? `<div class="ld-sub">${ldEsc(l['Lost Reason'])}</div>` : ''}${l['Order ID'] ? `<div class="ld-sub">📦 ${ordLink(l['Order ID'])}</div>` : ''}</td>
       <td class="${fcls}">${open && f ? ldDmy(f) + (fcls === 'ld-over' ? ' ⚠' : fcls === 'ld-today' ? ' • aaj' : '') : '—'}</td>
       <td class="ld-adm"${ldMe.admin ? '' : ' style="display:none"'}>${ldEsc(l['Assigned To']) || '<span class="ld-muted">—</span>'}</td>
-      <td class="ld-act"><button class="btn btn-sm" onclick="openLeadModal('${ldEsc(l['Lead ID'])}')">Edit</button>${nx ? `<button class="btn btn-sm" onclick="ldMoveNext('${ldEsc(l['Lead ID'])}')" title="Agla stage: ${ldEsc(LD_SHORT[nx])}">${LD_EMOJI[nx]} ›</button>` : ''}</td>
+      <td class="ld-act"><button class="btn btn-sm" onclick="openLeadModal('${ldEsc(l['Lead ID'])}')">Edit</button>${l.Stage === 'Order Confirmed' && !l['Order ID'] ? `<button class="btn btn-sm btn-primary" onclick="ldToOrder('${ldEsc(l['Lead ID'])}')" title="Is lead se order banao">📦 Order</button>` : ''}${nx ? `<button class="btn btn-sm" onclick="ldMoveNext('${ldEsc(l['Lead ID'])}')" title="Agla stage: ${ldEsc(LD_SHORT[nx])}">${LD_EMOJI[nx]} ›</button>` : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -5502,3 +5505,162 @@ async function erpStaffSave(btn) {
   toast('Saved', 's'); document.getElementById('erpAdmin').classList.remove('show');
   erpStaffAdminLoad();
 }
+
+/* =====================================================================
+   LINKED RECORDS — Salesforce jaisa: naam / ID pe click → us record ka page
+   Customer page (Customer 360): orders, payments, leads, Service tickets, Advance Replacement
+   Dusre app ka record (ticket, case) → Suite khud sahi app kholta hai (open-record message)
+   ===================================================================== */
+let LD_ORDER_FOR = '';                 // lead se order ban raha hai to us lead ki ID
+let C360 = null, C360_BACK = null;      // abhi khula customer + kahan se aaye the
+const recEsc = v => String(v == null ? '' : v).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+// link banane wale (click → record)
+function recA(type, key, text) {
+  if (!key) return recEsc(text || '');
+  return `<a href="#" class="rec-link" data-t="${recEsc(type)}" data-k="${recEsc(key)}" onclick="return recGo(this, event)">${recEsc(text || key)}</a>`;
+}
+function custLink(name, phone, id) { const k = String(id || '').trim() || String(phone || '').replace(/\D/g, '').slice(-10) || String(name || '').trim(); return name ? recA('customer', k, name) : '—'; }
+function ordLink(id) { return id ? recA('order', id, id) : ''; }
+function recGo(el, e) { if (e) { e.preventDefault(); e.stopPropagation(); } openRec(el.dataset.t, el.dataset.k); return false; }
+// kaunsa record kahan khulta hai
+function openRec(type, key) {
+  if (type === 'customer') return openCustomer(key);
+  if (type === 'order') return openOrderRec(key);
+  if (type === 'lead') return openLeadRec(key);
+  suiteOpen(type, key);   // ticket / case → Service Hub
+}
+function suiteOpen(type, id) {
+  if (window.parent === window) return toast('Ye record Litpax Suite me khulta hai', 'w');
+  try { window.parent.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: type, id: id }, location.origin); } catch (e) {}
+}
+function suiteCan(mod) { try { return (sessionStorage.getItem('suite_can') || '').split(',').indexOf(mod) !== -1; } catch (e) { return false; } }
+
+// ---- Order: wahi purana detail popup ----
+function openOrderRec(id) {
+  closeModal('orderDetailModal');
+  const o = (allOrders || []).find(x => x['Order ID'] === id) || (adAllOrders || []).find(x => x['Order ID'] === id);
+  if (o) return viewOrder(o);
+  api({ action: 'getOrders' }, r => {
+    const f = ((r && r.data) || []).find(x => x['Order ID'] === id);
+    if (!f) return toast(id + ' nahi mila', 'e');
+    if (user.role === 'Sales' && user.salesName && (f['Sales Person Name'] || '') !== user.salesName) return toast(id + ' aapka order nahi hai', 'e');
+    viewOrder(f);
+  });
+}
+// ---- Lead: wahi lead form ----
+function openLeadRec(id) {
+  const go = () => { if (!ldAll.find(x => x['Lead ID'] === id)) return toast(id + ' nahi mili (ya aapki nahi hai)', 'e'); openLeadModal(id); };
+  if (ldLoaded) return go();
+  api({ action: 'getLeads' }, r => {
+    if (!r || !r.success) return toast((r && r.message) || 'Leads load nahi hui', 'e');
+    ldAll = r.data || []; ldMe = r.me || {}; ldPeople = r.salesPeople || []; ldLoaded = true; go();
+  });
+}
+// ---- Lead → Order (lead ki details order form me) ----
+function ldToOrder(id) {
+  const l = ldAll.find(x => x['Lead ID'] === id); if (!l) return;
+  resetOrderForm();
+  LD_ORDER_FOR = id;
+  const set = (el, v) => { const e = document.getElementById(el); if (!e || !v) return; if (e.tagName === 'SELECT' && ![...e.options].some(o => o.value === v)) return; e.value = v; };
+  set('o-cust', l.Company || l['Customer Name']); set('o-phone', l.Phone); set('o-city', l.City); set('o-sales', l['Assigned To']);
+  openModal('orderModal');
+  const body = document.querySelector('#orderModal .modal-body') || document.querySelector('#orderModal .modal');
+  if (body) body.insertAdjacentHTML('afterbegin', `<div id="ldOrderNote" class="rec-note">📋 Lead <b>${recEsc(id)}</b> se order — banne ke baad lead ke saath jud jayega</div>`);
+}
+
+// ---- Customer page ----
+function openCustomer(key) {
+  key = String(key || '').trim(); if (!key) return;
+  ['orderDetailModal', 'leadModal'].forEach(m => { const el = document.getElementById(m); if (el && el.classList.contains('show')) el.classList.remove('show'); });
+  const cur = document.querySelector('.page.active');
+  if (cur && cur.id !== 'page-customer') C360_BACK = { page: cur.id.replace('page-', ''), title: document.getElementById('pageTitle').textContent, sub: document.getElementById('pageSub').textContent };
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-customer').classList.add('active');
+  document.getElementById('pageTitle').textContent = 'Customer';
+  document.getElementById('pageSub').textContent = pageMeta.customer.sub;
+  document.getElementById('c360').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+  api({ action: 'getCustomer360', key }, r => {
+    if (!r || !r.success) { document.getElementById('c360').innerHTML = `<div class="empty"><div class="empty-ico">👤</div><div class="empty-txt">${recEsc((r && r.message) || 'Customer load nahi hua')}</div></div>`; return; }
+    C360 = r; renderC360();
+  });
+}
+function c360Back() {
+  const b = C360_BACK;
+  if (!b) return nav(roleAccess[user.role] ? roleAccess[user.role][0] : 'orders');
+  const el = document.getElementById('nav-' + b.page);
+  if (document.getElementById('page-' + b.page)) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + b.page).classList.add('active');
+    document.getElementById('pageTitle').textContent = b.title; document.getElementById('pageSub').textContent = b.sub;
+    if (el) el.classList.add('active');
+  }
+}
+const c360Rs = v => '₹' + fmt(Math.round(v || 0));
+function c360Sec(icon, title, n, body, empty) {
+  return `<div class="card c360-rel"><div class="card-head"><div class="card-title">${icon} ${title} <span class="c360-n">${n}</span></div></div>${n ? body : `<div class="c360-empty">${empty}</div>`}</div>`;
+}
+function c360Row(main, sub, right, extra) {
+  return `<div class="c360-row"><div class="c360-main">${main}${sub ? `<div class="c360-sub">${sub}</div>` : ''}</div><div class="c360-right">${right || ''}${extra ? `<div class="c360-sub">${extra}</div>` : ''}</div></div>`;
+}
+function renderC360() {
+  const r = C360, c = r.customer, t = r.totals;
+  const can = suiteCan('m-service');
+  const tkLink = (id) => can ? recA('ticket', id, id) : recEsc(id);
+  const csLink = (id) => can ? recA('case', id, id) : recEsc(id);
+  const tone = s => /dispatch|complete|closed|order confirmed|delivered/i.test(s) ? 'b-ready' : /lost|cancel|reject/i.test(s) ? 'b-credit' : 'b-pending';
+  const pill = s => s ? `<span class="badge ${tone(s)}">${recEsc(s)}</span>` : '';
+  const tel = c.Phone ? `<a href="tel:${recEsc(c.Phone)}">${recEsc(c.Phone)}</a>` : '—';
+  const info = [['Contact', c.ContactPerson], ['Phone', tel, 1], ['City', c.City], ['GSTIN', c.GSTIN], ['Credit days', c.CreditDays], ['Added by', c['Added By']]]
+    .map(([l, v, raw]) => `<div class="c360-kv"><span>${l}</span><b>${v ? (raw ? v : recEsc(v)) : '—'}</b></div>`).join('');
+  const orders = r.orders.map(o => c360Row(`${ordLink(o.id)} <span class="c360-muted">· ${recEsc(fmtDisplayDate(o.date))}</span>`,
+    recEsc([o.qty ? o.qty + ' battery' : '', o.sales, o.final || ''].filter(Boolean).join(' · ')), `<b>${c360Rs(o.value)}</b>`,
+    o.due > 0 ? `<span class="c360-due">Baaki ${c360Rs(o.due)}</span>` : (o.value ? '<span class="c360-ok">Paid</span>' : ''))).join('');
+  const pays = r.payments.map(p => c360Row(`<b>${c360Rs(p.Amount)}</b> <span class="c360-muted">· ${recEsc(fmtDisplayDate(p.Date || p['Payment Date'] || ''))}</span>`,
+    recEsc([p.Mode || p['Payment Mode'], p['Reference'] || p['Ref No'] || ''].filter(Boolean).join(' · ')), ordLink(p['Order ID']))).join('');
+  const leads = r.leads.map(l => c360Row(`${recA('lead', l.id, l.id)} <span class="c360-muted">· ${recEsc(fmtDisplayDate(l.date))}</span>`,
+    recEsc([l.app, l.qty ? '× ' + l.qty : '', l.assigned].filter(Boolean).join(' · ')), ldBadge(l.stage), l.orderId ? '📦 ' + ordLink(l.orderId) : '')).join('');
+  const tks = r.tickets.map(k => c360Row(`${tkLink(k.id)} <span class="c360-muted">· ${recEsc(k.date)}</span>`,
+    recEsc([k.complaint, k.model, k.items && +k.items ? k.items + ' items' : ''].filter(Boolean).join(' · ')), pill(k.status))).join('');
+  const css = r.cases.map(k => c360Row(`${csLink(k.id)} <span class="c360-muted">· ${recEsc(k.date)}</span>`,
+    recEsc([k.model, k.serial && 'SN ' + k.serial, k.warranty].filter(Boolean).join(' · ')), pill(k.status), k.ticket ? 'Ticket ' + tkLink(k.ticket) : '')).join('');
+  document.getElementById('c360').innerHTML = `
+    <div class="c360-top"><button class="btn btn-sm" onclick="c360Back()">← Back</button>${r.found ? '' : '<span class="c360-warn">⚠ Customer master me nahi hai — orders / phone se dikha rahe hain</span>'}</div>
+    <div class="c360-grid">
+      <div class="c360-side">
+        <div class="card c360-card">
+          <div class="c360-av">${recEsc(String(c.CompanyName || '?').trim().charAt(0).toUpperCase())}</div>
+          <div class="c360-name">${recEsc(c.CompanyName)}</div>
+          <div class="c360-id">${recEsc(c.CustomerID || 'No ID')}</div>
+          <div class="c360-info">${info}</div>
+        </div>
+        <div class="stats-row c360-kpis">
+          <div class="stat c-blue"><div class="stat-lbl">Orders</div><div class="stat-val">${t.orders}</div></div>
+          <div class="stat c-green"><div class="stat-lbl">Kul business</div><div class="stat-val">${c360Rs(t.value)}</div></div>
+          <div class="stat ${t.due ? 'c-red' : 'c-green'}"><div class="stat-lbl">Baaki payment</div><div class="stat-val">${c360Rs(t.due)}</div></div>
+          <div class="stat ${r.tickets.some(k => !/closed|cancel/i.test(k.status)) ? 'c-amber' : ''}"><div class="stat-lbl">Service tickets</div><div class="stat-val">${r.tickets.length}</div></div>
+        </div>
+        ${r.hiddenOrders ? `<div class="c360-muted c360-hint">${r.hiddenOrders} order dusre salesperson ke hain (aapko nahi dikhte)</div>` : ''}
+      </div>
+      <div class="c360-main-col">
+        ${c360Sec('📦', 'Orders', r.orders.length, orders, 'Koi order nahi')}
+        ${c360Sec('💰', 'Payments', r.payments.length, pays, 'Koi payment nahi')}
+        ${r.team === 'Admin' || r.team === 'Sales' ? c360Sec('🎯', 'Leads', r.leads.length, leads, 'Koi lead nahi') : ''}
+        ${c360Sec('🛠', 'Service tickets', r.tickets.length, tks, 'Koi service ticket nahi')}
+        ${c360Sec('🔁', 'Advance Replacement', r.cases.length, css, 'Koi replacement case nahi')}
+      </div>
+    </div>`;
+}
+
+// ---- Suite se aaya "ye record kholo" ----
+function recFromSuite(rtype, id) {
+  try { sessionStorage.removeItem('suite_open'); } catch (e) {}
+  if (['customer', 'order', 'lead'].indexOf(rtype) !== -1 && id) openRec(rtype, id);
+}
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite' || e.data.type !== 'open-record') return;
+  recFromSuite(e.data.rtype, e.data.id);
+});
+setTimeout(() => {   // ERP pehli baar khula aur koi record kholna tha
+  let p = null; try { p = JSON.parse(sessionStorage.getItem('suite_open') || 'null'); } catch (e) {}
+  if (p && p.app === 'erp' && Date.now() - (p.t || 0) < 60000) recFromSuite(p.rtype, p.id);
+}, 400);
