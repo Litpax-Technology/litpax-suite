@@ -1452,6 +1452,7 @@ body, .app-wrap, .main { color: var(--text); }
 
 /* ── Advance Replacement tab (service/replace/ iframe me) ── */
 .ar-frame { display: block; width: 100%; height: calc(100vh - 150px); min-height: 520px; border: 0; background: transparent; }
+.lk.xlink { margin-left: 6px; font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: #eef4ff; color: #1e40af; border: 1px solid #c7d7fe; text-decoration: none; }
 
 /* ══════════════════════════════════════════════════════════════
    GALLERY WHITE — premium white theme (Bento ke upar override)
