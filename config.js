@@ -118,7 +118,7 @@ window.SUITE = {
   } else if (/\/service\/replace\//.test(p)) {   // service ke andar wala Advance Replacement (apni GAS)
     window.CONFIG = { API_URL: S.REPLACE_URL, TIMEOUT_MS: 25000, STATES: S.SERVICE.STATES };
   } else if (/\/service\//.test(p)) {
-    window.CONFIG = Object.assign({ API_URL: S.SERVICE_URL, REPAIR_URL: S.SERVICE_URL }, S.SERVICE);
+    window.CONFIG = Object.assign({ API_URL: S.SERVICE_URL, REPAIR_URL: S.SERVICE_URL, REPLACE_URL: S.REPLACE_URL }, S.SERVICE);
   } else if (/\/agent\//.test(p)) {
     window.CONFIG = { API_URL: S.AGENT_URL, TIMEOUT_MS: 120000 };
   } else if (/\/soms\//.test(p)) {
