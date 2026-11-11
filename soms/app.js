@@ -438,7 +438,7 @@ function openNewOrder(){
       <tbody id="soBody"></tbody>
     </table></div>
     <button class="btn btn-light btn-sm" onclick="addSplitRow()" style="margin-top:10px">+ Add Item</button>
-    <p class="masters-note">Ek hi item alag-alag vendor ko dena ho to use dobara add karo aur qty baant do. Har vendor ka alag order banega.</p>
+    <p class="masters-note">To split one item across vendors, add it again and divide the qty. Each vendor gets a separate order.</p>
     <div class="order-total">Total: <span id="soTotal" class="mono">₹0</span></div>
     <h4 class="mini-head" style="margin-top:16px">Details</h4>
     <div class="form-grid">
@@ -499,7 +499,7 @@ async function saveSplitOrder(){
   })).filter(i=>i.Material);
   if(!items.length) return toast('Add at least one item','error');
   for(const it of items){
-    if(!it.VendorID) return toast('Vendor select karo ('+it.Material+')','error');
+    if(!it.VendorID) return toast('Select a vendor ('+it.Material+')','error');
     if(!(Number(it.OrderedQty)>0)) return toast('Qty > 0 ('+it.Material+')','error');
     if(String(vendorTagFor(it.VendorID,it.Material)).toLowerCase()==='blacklisted')
       return toast('Vendor blacklisted for '+it.Material,'error');
@@ -639,7 +639,7 @@ async function saveOrder(){
 let editPO=null;
 function openEditOrder(po){
   const o=State.orders.find(x=>x.PO_No==po); if(!o){ toast('PO not found','error'); return; }
-  if(o.Status==='Closed'||o.Status==='Cancelled'){ toast('Closed/Cancelled PO edit nahi ho sakta','error'); return; }
+  if(o.Status==='Closed'||o.Status==='Cancelled'){ toast('A Closed/Cancelled PO cannot be edited','error'); return; }
   editPO=po;
   selectedVendorId=o.VendorID;
   const exp=o.RevisedExpectedDate||o.OriginalExpectedDate||'';
@@ -895,7 +895,7 @@ function drawInward(){
       </div>
       ${pending?`<div style="display:flex;flex-direction:column;gap:8px;min-width:210px">
         <div class="field"><label>Accepted qty</label><input type="number" min="0" step="any" id="inwAcc-${id}" value="${esc(r.Qty)}"></div>
-        <div class="field"><input id="inwNote-${id}" placeholder="Note (reject ke liye zaroori)"></div>
+        <div class="field"><input id="inwNote-${id}" placeholder="Note (required to reject)"></div>
         <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="inwardDecide('${id}','approve',this)">Approve</button>
         <button class="btn btn-danger btn-sm" onclick="inwardDecide('${id}','reject',this)">Reject</button></div></div>`:'<div></div>'}
     </div>`;
@@ -903,8 +903,8 @@ function drawInward(){
 }
 async function inwardDecide(id, decision, btn){
   const acc = $('#inwAcc-'+id), note = $('#inwNote-'+id);
-  if(decision==='reject' && !note.value.trim()){ toast('Reject ka reason likho','error'); note.focus(); return; }
-  if(decision==='approve' && !confirm(id+' approve karein? Stock IMS me judega aur GRN banega.')) return;
+  if(decision==='reject' && !note.value.trim()){ toast('Enter a reason for rejecting','error'); note.focus(); return; }
+  if(decision==='approve' && !confirm('Approve '+id+'? Stock will be added in IMS and a GRN created.')) return;
   btn.disabled = true;
   try{
     const r = await api({ action:'inwardDecide', id, decision, acceptedQty: acc ? acc.value : '', note: note.value.trim() });
@@ -980,7 +980,7 @@ function renderVendorTable(){
   const tb=$('#vendorTbody');
   if(!list.length){
     tb.innerHTML=`<tr><td colspan="9">${item
-      ? emptyState('Is item ka koi vendor mapped nahi','Vendor ke "Materials" me jaake map karo')
+      ? emptyState('No vendor mapped to this item','Map it from the vendor\'s "Materials"')
       : emptyState('No vendors yet','Add your first vendor')}</td></tr>`;
     return;
   }
@@ -1020,7 +1020,7 @@ function openVendorForm(vendorId){
       <div class="field"><label>GST</label><input id="veGst" value="${esc(v?v.GST:'')}"></div>
       <div class="field"><label>Payment Terms</label><select id="veTerms"><option value="">—</option>${opt(terms,v?v.PaymentTerms:'')}</select></div>
       <div class="field full"><label>Address</label><input id="veAddr" value="${esc(v?v.Address:'')}"></div>
-      <div class="field full"><label>Map Link (optional)</label><input id="veMap" placeholder="Google Maps link paste karo — khali chhodo to address se banega" value="${esc(v?(v.MapLink||''):'')}"></div>
+      <div class="field full"><label>Map Link (optional)</label><input id="veMap" placeholder="Paste a Google Maps link — leave blank to use the address" value="${esc(v?(v.MapLink||''):'')}"></div>
       ${v?`<div class="field"><label>Status</label><select id="veStatus">
         <option ${v.Status!=='Inactive'?'selected':''}>Active</option>
         <option ${v.Status==='Inactive'?'selected':''}>Inactive</option></select></div>`:''}
@@ -1035,7 +1035,7 @@ async function saveVendor(vendorId){
   const phone=$('#vePhone').value.trim();
   if(phone && !/^\d{10}$/.test(phone)) return toast('Phone must be 10 digits','error');
   const mapLink=$('#veMap').value.trim();
-  if(mapLink && !/^https?:\/\//i.test(mapLink)) return toast('Map link http se shuru hona chahiye','error');
+  if(mapLink && !/^https?:\/\//i.test(mapLink)) return toast('Map link must start with http','error');
   const btn=$('#veSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
   const fields={Name:name,Category:$('#veCat').value,Contact:$('#veContact').value,
     Phone:phone,GST:$('#veGst').value,Address:$('#veAddr').value,PaymentTerms:$('#veTerms').value,MapLink:mapLink};
@@ -1115,16 +1115,16 @@ async function saveMap(vendorId){
     LastRate: r.querySelector('.mm-rate').value,
     Remarks:  r.querySelector('.mm-rem').value
   })).filter(x=>x.Material);
-  if(!list.length) return toast('Kam se kam ek item select karo','error');
+  if(!list.length) return toast('Select at least one item','error');
   const seen = new Set();
   for(const x of list){
-    if(seen.has(x.Material)) return toast('"'+x.Material+'" do baar select hai','error');
+    if(seen.has(x.Material)) return toast('"'+x.Material+'" is selected twice','error');
     seen.add(x.Material);
   }
   const btn=$('#mmSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
   try{
     const r = await api({action:'addVendorMaterials', VendorID:vendorId, items:JSON.stringify(list)});
-    toast(r.added+' item(s) mapped'+(r.skipped&&r.skipped.length?' · '+r.skipped.length+' pehle se the':''),'success');
+    toast(r.added+' item(s) mapped'+(r.skipped&&r.skipped.length?' · '+r.skipped.length+' already existed':''),'success');
     await loadAll(); openMaterialMap(vendorId);
     if($('#vendorTbody')) renderVendorTable();
   }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Save All'; }
@@ -1319,7 +1319,7 @@ function renderIMSPOs(){
 
 /* ----- Sync items + categories from IMS ----- */
 async function syncFromIMS(){
-  if(!confirm('IMS se items + categories sync karein?\n• Categories IMS jaisi ho jayengi (extra SMS categories hat sakti hain)\n• Items add/update honge, delete nahi.')) return;
+  if(!confirm('Sync items + categories from IMS?\n• Categories will match IMS (extra SMS categories may be removed)\n• Items will be added/updated, not deleted.')) return;
   toast('Syncing from IMS…','info');
   try{
     const r = await api({action:'syncFromIMS'});
@@ -1360,7 +1360,7 @@ function openImportIMS(poid){
     </table></div>
     <div class="order-total" style="margin-top:10px">Total: <span id="impTotal" class="mono">₹0</span></div>
     <div id="impExtra" class="imp-extra"></div>
-    <p class="masters-note">Kisi item ka "+" dabao to usi item ka aur vendor add karo (qty baant do). Alag vendor = alag order. Bachi qty pending rahegi.</p>
+    <p class="masters-note">Click "+" on an item to add another vendor for it (split the qty). Different vendor = separate order. Remaining qty stays pending.</p>
     <div class="form-grid" style="margin-top:12px">
       <div class="field"><label>Order Date</label><input type="date" id="impDate" value="${todayStr()}"></div>
     </div>
@@ -1378,7 +1378,7 @@ function impRowHTML(mat, unit, qty, exp, first){
     <td><input type="number" min="0" step="any" class="imp-rate" placeholder="Rate" oninput="impRecalc()"></td>
     <td><input type="date" class="imp-exp" value="${esc(exp||'')}"></td>
     <td>${first
-      ? `<button class="rm" title="Split — isi item ka aur vendor" onclick="impSplit(this)">+</button>`
+      ? `<button class="rm" title="Split — add another vendor for this item" onclick="impSplit(this)">+</button>`
       : `<button class="rm" title="Remove" onclick="this.closest('tr').remove();impRecalc()">✕</button>`}</td>
   </tr>`;
 }
@@ -1411,7 +1411,7 @@ async function saveImportIMS(){
     Rate:r.querySelector('.imp-rate').value, VendorID:r.querySelector('.imp-vendor').value,
     ExpectedDate:r.querySelector('.imp-exp').value
   })).filter(x=>x.VendorID && Number(x.OrderedQty)>0);
-  if(!items.length) return toast('Kam se kam ek item ka vendor + qty daalo','error');
+  if(!items.length) return toast('Enter a vendor + qty for at least one item','error');
   const btn=$('#impSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
   try{
     const res=await api({action:'importIMSPO', IMS_POID:importPOID, Date:$('#impDate').value,
@@ -1748,7 +1748,7 @@ function setupDiaryUI(){
     <aside class="diary-panel">
       <div class="diary-head"><h3>📒 Diary Book</h3><button class="diary-x" onclick="closeDiary()">✕</button></div>
       <div class="diary-add">
-        <textarea id="diaryInput" rows="2" maxlength="1000" placeholder="Note likho... (Ctrl+Enter = Add)"
+        <textarea id="diaryInput" rows="2" maxlength="1000" placeholder="Write a note... (Ctrl+Enter = Add)"
           onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))addNote()"></textarea>
         <button class="btn btn-primary btn-sm" id="diaryAddBtn" onclick="addNote()">+ Add</button>
       </div>
@@ -1768,7 +1768,7 @@ function renderDiary(){
       <div><div class="diary-text">${esc(n.Note)}</div>
       <div class="diary-meta">${esc(n.Date)}${n.Status==='Done'&&n.DoneDate?' · Done '+esc(n.DoneDate):''}</div></div>
     </label>`;
-  box.innerHTML=(open.length?open.map(row).join(''):'<div class="diary-empty">Koi pending note nahi ✓</div>')
+  box.innerHTML=(open.length?open.map(row).join(''):'<div class="diary-empty">No pending notes ✓</div>')
     +(done.length?`<div class="diary-sep">Done (${done.length})</div>${done.slice(0,50).map(row).join('')}`:'');
 }
 async function addNote(){
