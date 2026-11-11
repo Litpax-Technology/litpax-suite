@@ -42,7 +42,7 @@
       <div class="pin-wrap">
         <input type="password" class="pin-input" id="login-pin" maxlength="15" placeholder="• • • • • •" autocomplete="off" onkeydown="if(event.key==='Enter') doLogin()">
       </div>
-      <div class="login-err" id="login-err">❌ Galat PIN — dobara try karein</div>
+      <div class="login-err" id="login-err">❌ Wrong PIN — please try again</div>
       <button class="login-btn" onclick="doLogin()"><span>Login</span><span>→</span></button>
       <div class="login-footer">Litpax Technology Pvt. Ltd. · Designed by Darpan</div>
     </div>
@@ -158,7 +158,7 @@
     <!-- INWARD -->
     <div class="page" id="page-inward">
       <div class="tb">
-        <div class="pt"><h1>Inward</h1><p>Bahar se store mein aaya raw material</p></div>
+        <div class="pt"><h1>Inward</h1><p>Raw material received into the store</p></div>
         <div class="ta"><button class="btn bgn" onclick="openInwardModal()">+ New Inward</button></div>
       </div>
       <div class="card" style="margin-bottom:12px;">
@@ -191,7 +191,7 @@
     <!-- OUTWARD -->
     <div class="page" id="page-outward">
       <div class="tb">
-        <div class="pt"><h1>Outward</h1><p>Store se production ko diya — daily</p></div>
+        <div class="pt"><h1>Outward</h1><p>Issued from store to production — daily</p></div>
         <div class="ta"><button class="btn brd" onclick="openOutwardModal()">+ New Outward</button></div>
       </div>
       <div class="card" style="margin-bottom:12px;">
@@ -228,7 +228,7 @@
     <!-- DISPATCH -->
     <div class="page" id="page-dispatch">
       <div class="tb">
-        <div class="pt"><h1>Dispatch</h1><p>Production → Finished Goods — BOM se auto deduction</p></div>
+        <div class="pt"><h1>Dispatch</h1><p>Production → Finished Goods — auto deduction via BOM</p></div>
         <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <input type="date" class="inp" id="dis-filter-date" style="width:160px;" onchange="loadDispatch()">
           <button class="btn bg bsm" onclick="document.getElementById('dis-filter-date').value='';loadDispatch()">All Dates</button>
@@ -247,7 +247,7 @@
     <!-- RECEIVED FROM STORE (Production) -->
     <div class="page" id="page-received">
       <div class="tb">
-        <div class="pt"><h1>📥 Received from Store</h1><p>Store se production mein aaya material</p></div>
+        <div class="pt"><h1>📥 Received from Store</h1><p>Material received in production from the store</p></div>
         <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <input type="date" class="inp" id="recv-date" style="width:160px;" onchange="loadReceived()">
           <select class="inp cat-filter-select" id="recv-cat" style="width:170px;" onchange="loadReceived()">
@@ -263,7 +263,7 @@
     </div>
     <div class="page" id="page-wip">
       <div class="tb">
-        <div class="pt"><h1>WIP Tracker</h1><p>Production mein kya kya hai — running balance</p></div>
+        <div class="pt"><h1>WIP Tracker</h1><p>What is in production — running balance</p></div>
         <div class="ta">
           <select class="inp cat-filter-select" id="wip-cat-f" style="width:160px;" onchange="filterWip()">
             <option value="">All Categories</option>
@@ -304,7 +304,7 @@
     <!-- BOM MANAGER -->
     <div class="page" id="page-bom">
       <div class="tb">
-        <div class="pt"><h1>BOM Manager</h1><p>Models + BOM Master Sheet se — edit wahin karo</p></div>
+        <div class="pt"><h1>BOM Manager</h1><p>Models + BOM from the Master Sheet — edit them there</p></div>
         <div class="ta">
           <input class="inp" id="bom-search" placeholder="🔍 Search model..." style="width:200px;" oninput="filterBom()">
           <button class="btn bg bsm" onclick="refreshMaster()">🔄 Refresh from Master</button>
@@ -425,7 +425,7 @@
     <!-- ADC CALCULATE PAGE -->
     <div class="page" id="page-adc">
       <div class="tb">
-        <div class="pt"><h1>ADC Calculate</h1><p>Average Daily Consumption — date range se inward/outward breakdown</p></div>
+        <div class="pt"><h1>ADC Calculate</h1><p>Average Daily Consumption — inward/outward breakdown for a date range</p></div>
         <div class="ta">
           <input type="date" class="inp" id="adc-from" style="width:145px;">
           <span style="font-size:12px;color:var(--muted);">to</span>
@@ -444,7 +444,7 @@
             <th>Total Inward</th><th>Total Outward</th><th>Days</th>
             <th style="background:#fef3c7;color:#b45309;">ADC</th>
           </tr></thead>
-          <tbody id="adc-tb"><tr class="lrow"><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Date range select karke Generate dabao</td></tr></tbody>
+          <tbody id="adc-tb"><tr class="lrow"><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Select a date range and click Generate</td></tr></tbody>
         </table></div>
         <div id="adc-empty" class="empty" style="display:none"><div class="ei">📉</div><div class="et">No data for this range</div></div>
       </div>
@@ -456,7 +456,7 @@
         <div class="ta"><button class="btn bp" onclick="saveOpeningStock()">💾 Save Opening Stock</button></div>
       </div>
       <div style="background:var(--amber-l);border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--amber);">
-  🔒 <b>One-time setup</b> — Opening stock ek baar save hone ke baad <b>lock ho jaata hai</b>, dobara change nahi hoga. Sirf woh items save honge jo abhi tak set nahi hain.
+  🔒 <b>One-time setup</b> — Once saved, opening stock is <b>locked</b> and cannot be changed again. Only items that are not set yet will be saved.
 </div>
       <!-- Category Filter -->
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
@@ -507,7 +507,7 @@
         <div id="indent-empty" class="empty" style="display:none">
           <div class="ei">📋</div>
           <div class="et">No POs yet</div>
-          <div class="es">Reorder page se Create PO karo</div>
+          <div class="es">Create a PO from the Reorder page</div>
         </div>
       </div>
     </div>
@@ -529,14 +529,14 @@
             <thead><tr><th>Date</th><th>Time</th><th>Item</th><th>Qty</th><th>Unit</th><th>Department</th><th>Requested By</th><th>Remarks</th><th>Status</th><th></th></tr></thead>
             <tbody id="req-tb"><tr class="lrow"><td colspan="10"><span class="loader"></span></td></tr></tbody>
         </table></div>
-        <div id="req-empty" class="empty" style="display:none"><div class="ei">🔔</div><div class="et">Koi pending request nahi</div></div>
+        <div id="req-empty" class="empty" style="display:none"><div class="ei">🔔</div><div class="et">No pending requests</div></div>
       </div>
     </div>
 
   <!-- STOCK LEDGER -->
     <div class="page" id="page-ledger">
       <div class="tb">
-        <div class="pt"><h1>Stock Ledger</h1><p>Item-wise running balance — opening se abhi tak</p></div>
+        <div class="pt"><h1>Stock Ledger</h1><p>Item-wise running balance — from opening to now</p></div>
         <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <select class="inp cat-filter-select" id="ldg-cat" style="width:160px;" onchange="filterLedgerItems()"><option value="">All Categories</option></select>
           <select class="inp" id="ldg-item" style="width:220px;" onchange="renderLedger()"><option value="">-- Select Item --</option></select>
@@ -551,7 +551,7 @@
       <div class="card">
         <div class="tw"><table>
           <thead><tr><th>Date</th><th>Type</th><th>Particulars</th><th>IN</th><th>OUT</th><th>Balance</th></tr></thead>
-          <tbody id="ldg-tb"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Item select karo</td></tr></tbody>
+          <tbody id="ldg-tb"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Select an item</td></tr></tbody>
         </table></div>
         <div id="ldg-empty" class="empty" style="display:none"><div class="ei">📒</div><div class="et">No entries in this range</div></div>
       </div>
@@ -560,23 +560,23 @@
     <!-- SETTINGS (Admin) -->
     <div class="page" id="page-settings">
       <div class="tb">
-        <div class="pt"><h1>Settings</h1><p>Category, brand aur default unit — yahan se add/edit karo</p></div>
+        <div class="pt"><h1>Settings</h1><p>Add or edit categories, brands and default units here</p></div>
         <div class="ta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <span id="set-dirty" style="font-size:12px;font-weight:600;color:var(--orange);"></span>
           <button class="btn bp" id="set-save-btn" onclick="saveSettings()">💾 Save Changes</button>
         </div>
       </div>
       <div class="card" style="margin-bottom:14px;">
-        <div class="ch"><h2>+ Nayi Category</h2></div>
+        <div class="ch"><h2>+ New Category</h2></div>
         <div style="padding:14px 18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input class="inp" id="set-new-name" placeholder="Category naam (jaise Cells LFP)" style="width:240px;" onkeydown="if(event.key==='Enter')setAddCat()">
+          <input class="inp" id="set-new-name" placeholder="Category name (e.g. Cells LFP)" style="width:240px;" onkeydown="if(event.key==='Enter')setAddCat()">
           <select class="inp" id="set-new-unit" style="width:100px;"></select>
           <label style="font-size:12px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="set-new-nobrand"> No brand</label>
           <button class="btn bg" onclick="setAddCat()">Add</button>
         </div>
       </div>
       <div class="card">
-        <div class="ch"><h2>Categories</h2><span style="font-size:11px;color:var(--muted);">▲▼ se order — yahi order dropdowns aur PO print me aata hai</span></div>
+        <div class="ch"><h2>Categories</h2><span style="font-size:11px;color:var(--muted);">Reorder with ▲▼ — this order is used in dropdowns and PO prints</span></div>
         <div id="set-list"></div>
       </div>
     </div>
@@ -761,7 +761,7 @@
         </div>
         <div class="fg">
           <div class="fi full">
-            <label class="inp-label">Charger Item * <span style="font-size:10px;color:var(--muted);">(sirf WIP mein available items)</span></label>
+            <label class="inp-label">Charger Item * <span style="font-size:10px;color:var(--muted);">(only items available in WIP)</span></label>
             <select class="inp" id="dd-item" onchange="updDirectDispatchInfo()">
               <option value="">-- Select Charger --</option>
             </select>
@@ -843,7 +843,7 @@
           <div class="fi"><label class="inp-label">Safety Factor</label><input class="inp" id="f-sf" type="number" min="1" step="0.1" placeholder="1.2" oninput="updROP()"></div>
           <div class="fi full"><label class="inp-label">Material In Transit</label><input class="inp" id="f-mit" type="number" min="0" placeholder="0"></div>
           <div class="fi full"><label class="inp-label">Remarks</label><input class="inp" id="f-remarks" placeholder="Optional"></div>
-          <div class="fi full"><label class="inp-label">Description</label><textarea class="inp" id="f-desc" rows="2" placeholder="Size, colour, connector type, pehchaan..."></textarea></div>
+          <div class="fi full"><label class="inp-label">Description</label><textarea class="inp" id="f-desc" rows="2" placeholder="Size, colour, connector type, identifying marks..."></textarea></div>
           <div class="fi full">
             <label class="inp-label">Photo</label>
             <div style="display:flex;gap:12px;align-items:center;">
@@ -1031,12 +1031,12 @@
       </div>
       <div class="fg">
         <div class="fi full">
-          <label class="inp-label">Purana Naam</label>
+          <label class="inp-label">Old Name</label>
           <input class="inp" id="rn-old" readonly style="background:var(--s2);color:var(--muted);">
         </div>
         <div class="fi full">
-          <label class="inp-label">Naya Naam *</label>
-          <input class="inp" id="rn-new" placeholder="Naya item naam">
+          <label class="inp-label">New Name *</label>
+          <input class="inp" id="rn-new" placeholder="New item name">
         </div>
       </div>
     </div>
