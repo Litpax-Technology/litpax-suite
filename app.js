@@ -244,6 +244,18 @@
     if (svcRole() === 'replace' && !S.rep) svcClear();
     if (!svcRole() && S.rep) svcSave({ role: 'replace', token: 'replace-only' }, S.rep.name || '');
   }
+  /* ---------- LINKED RECORDS: kisi bhi app se "ye record kholo" → sahi app + record ----------
+   * customer / order / lead → ERP · ticket / case (Advance Replacement) → Service Hub */
+  var REC_APP = { customer: 'erp', order: 'erp', lead: 'erp', ticket: 'service', 'case': 'service' };
+  function openRecordX(rtype, id) {
+    var mod = REC_APP[rtype];
+    if (!mod || !id) return;
+    if (!navItems().some(function (x) { return x.id === 'm-' + mod; })) return toast('Ye record dekhne ka access nahi hai', 'bad');
+    var had = !!S.frames[mod];
+    try { sessionStorage.setItem('suite_open', JSON.stringify({ app: mod, rtype: rtype, id: String(id), t: Date.now() })); } catch (e) {}
+    go('m-' + mod);   // frame pehli baar bana to app khud suite_open padh ke record kholega
+    if (had) try { S.frames[mod].contentWindow.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: rtype, id: String(id) }, location.origin); } catch (e) {}
+  }
   /** ERP "Advance Battery Replacement" → Service Hub → Advance Replacement tab */
   function openReplace() {
     if (!S.rep || !svcRole()) return toast('No access to Advance Replacement — ask the Admin', 'bad');
@@ -328,6 +340,7 @@
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
+    try { sessionStorage.setItem('suite_can', items.map(function (x) { return x.id; }).join(',')); } catch (e) {}   // apps ko pata ho kaunse link khulenge
     return items;
   }
   /* ---------------- SIDEBAR (N2) ----------------
@@ -1145,6 +1158,7 @@
       if (e.data.type === 'logout') signOut();
       if (e.data.type === 'agent') openAgent();   // kisi app me Ctrl+K
       if (e.data.type === 'open-replace') openReplace();   // ERP → Service Hub → Advance Replacement
+      if (e.data.type === 'open-record') openRecordX(e.data.rtype, e.data.id);   // kisi bhi app ka linked record
       if (e.data.type === 'nav') onAppNav(e);     // app ke pages → common sidebar
       // Service Hub ka session (idle) khatam → Suite ke token se chupchaap naya, warna poora sign out
       if (e.data.type === 'svc-relogin') {
