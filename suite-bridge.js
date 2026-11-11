@@ -20,6 +20,16 @@
   }
   document.documentElement.classList.add('in-suite');
 
+  /* ---- global animations (motion.css + motion.js, Suite root se) ---- */
+  (function () {
+    var me = document.currentScript && document.currentScript.src;
+    if (!me || document.getElementById('lxMotionCss')) return;
+    var base = me.replace(/suite-bridge\.js.*$/, ''), V = '?v=mo1';
+    var l = document.createElement('link'); l.id = 'lxMotionCss'; l.rel = 'stylesheet'; l.href = base + 'motion.css' + V;
+    document.head.appendChild(l);
+    var s = document.createElement('script'); s.src = base + 'motion.js' + V; document.head.appendChild(s);
+  })();
+
   var cfg = {};
   try { cfg = JSON.parse(sessionStorage.getItem('suite_bridge') || '{}'); } catch (e) {}
   // 'inward' ab nahi chhupta — IMS Inward khud approval (SOMS) ke through jaata hai
