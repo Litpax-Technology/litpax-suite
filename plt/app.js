@@ -263,8 +263,8 @@ function commitScan(code, station, emp) {
     if (/^NOT_BATTERY/.test(err.message)) {   // server ne mana kiya: ye battery ka barcode hi nahi
       undoLocalScan(code, entry, ck);
       flash('flash-error'); beep(false); render();
-      alert('Ye battery ka barcode nahi hai: ' + code +
-            '\n\nShayad Cell / BMS ka barcode scan ho gaya. Battery ka label scan karo.');
+      alert('This is not a battery barcode: ' + code +
+            '\n\nYou may have scanned a Cell / BMS barcode. Scan the battery label.');
       return;
     }
     entry.failed = true; render();
@@ -347,7 +347,7 @@ function setMode(m) { state.mode = m; render(); }
 function dspLogin() {
   var el = document.getElementById('dspPin');
   var pin = el ? el.value.trim() : '';
-  if (!pin) { alert('Supervisor PIN daalo'); return; }
+  if (!pin) { alert('Enter the Supervisor PIN'); return; }
   call('supLogin', { pin: pin }).then(function (res) {
     state.dsp.token = res.token;
     try { sessionStorage.setItem('plt_sup', res.token); } catch (e) {}
@@ -366,14 +366,14 @@ function dspScan(raw) {
   var badge = /^STAFF:/i.test(serial) ? serial.replace(/^STAFF:/i, '').trim() : serial;
   var emp = matchStaff(badge);
   if (emp) { d.emp = emp; d.last = { ok: 'Employee: ' + emp.name + ' (' + emp.id + ')' }; flash('flash-context'); beep(true); render(); return; }
-  if (!d.emp) { flash('flash-error'); beep(false); alert('Pehle apna employee badge scan karo.'); return; }
+  if (!d.emp) { flash('flash-error'); beep(false); alert('Scan your employee badge first.'); return; }
   if (!d.transport.trim() || !d.lr.trim()) {
     flash('flash-error'); beep(false);
-    alert('Pehle Transport aur LR / Bilty No bharo, phir battery scan karo.');
+    alert('Fill in Transport and LR / Bilty No first, then scan batteries.');
     return;
   }
   if (d.list.some(function (x) { return x.serial.toUpperCase() === serial.toUpperCase(); })) {
-    flash('flash-error'); beep(false); d.last = { err: serial + ' pehle hi scan ho chuki' }; render(); return;
+    flash('flash-error'); beep(false); d.last = { err: serial + ' is already scanned' }; render(); return;
   }
   d.checking++; render();
   call('dispatchCheck', { token: d.token, serial: serial }).then(function (r) {
@@ -392,14 +392,14 @@ function dspRemove(i) { state.dsp.list.splice(i, 1); render(); }
 
 function dspSubmit() {
   var d = state.dsp;
-  if (!d.list.length) { alert('Koi battery scan nahi hui'); return; }
-  if (!d.transport.trim() || !d.lr.trim()) { alert('Transport aur LR / Bilty No zaroori hai'); return; }
+  if (!d.list.length) { alert('No batteries scanned'); return; }
+  if (!d.transport.trim() || !d.lr.trim()) { alert('Transport and LR / Bilty No are required'); return; }
   var groups = {};
   d.list.forEach(function (x) { (groups[x.itemId] = groups[x.itemId] || []).push(x); });
   var over = Object.keys(groups).filter(function (k) { var g = groups[k]; return g[0].qty && g[0].dispatched + g.length > g[0].qty; });
-  var msg = d.list.length + ' battery dispatch karein?\n\n' + Object.keys(groups).map(function (k) {
+  var msg = 'Dispatch ' + d.list.length + ' batteries?\n\n' + Object.keys(groups).map(function (k) {
     var g = groups[k]; return g[0].customer + ' · ' + k + ' · ' + g.length;
-  }).join('\n') + (over.length ? '\n\n⚠ Order qty se zyada: ' + over.join(', ') : '');
+  }).join('\n') + (over.length ? '\n\n⚠ Above order qty: ' + over.join(', ') : '');
   if (!confirm(msg)) return;
   d.busy = true; render();
   call('dispatchBatch', { token: d.token, serials: d.list.map(function (x) { return x.serial; }).join(','),
@@ -414,7 +414,7 @@ function dspSubmit() {
     alert((good.length ? good.map(function (g) { return '✓ ' + g.itemId + ': ' + g.count + ' dispatched (' + g.erp + ')'; }).join('\n') : '') +
           (bad.length ? '\n\n✗ ' + bad.map(function (b) { return b.itemId + ': ' + b.error; }).join('\n✗ ') : ''));
     render();
-  }, function (err) { d.busy = false; alert('Dispatch nahi hua: ' + err.message); render(); });
+  }, function (err) { d.busy = false; alert('Dispatch failed: ' + err.message); render(); });
 }
 
 function renderDispatch() {
@@ -438,15 +438,15 @@ function renderDispatch() {
       ? '<div style="margin-top:10px;color:var(--bad);font-weight:600;">✗ ' + esc(d.last.err) + '</div>'
       : '<div style="margin-top:10px;color:var(--ok);font-weight:600;">✓ ' + esc(d.last.ok) + '</div>') : '';
   return '<div class="panel"><div class="panel-title">Dispatch details · ' +
-      (d.emp ? 'Employee: ' + esc(d.emp.name) + ' (' + esc(d.emp.id) + ')' : '<span style="color:var(--bad);">⚠ Pehle employee badge scan karo</span>') + '</div>' +
+      (d.emp ? 'Employee: ' + esc(d.emp.name) + ' (' + esc(d.emp.id) + ')' : '<span style="color:var(--bad);">⚠ Scan the employee badge first</span>') + '</div>' +
       '<div class="row">' + inp('transport', 'Transport', true) + inp('lr', 'LR / Bilty No', true) + inp('vehicle', 'Vehicle No') + inp('driver', 'Driver No') + '</div></div>' +
     '<div class="panel scan-panel"><div class="scan-box" id="scanBox">' +
-      '<input id="dispatchScan" type="text" placeholder="Dispatch: battery scan karo" autocomplete="off" ' +
+      '<input id="dispatchScan" type="text" placeholder="Dispatch: scan a battery" autocomplete="off" ' +
       'onkeydown="if(event.key===\'Enter\'){dspScan(this.value); this.value=\'\';}">' +
-      '<div class="scan-hint">Har battery scan karo. Sab scan ho jaaye to neeche Dispatch dabao — ERP aur IMS dono update honge.</div>' +
+      '<div class="scan-hint">Scan every battery. When all are scanned, click Dispatch below — both ERP and IMS will be updated.</div>' +
       '<div class="scan-readout">' + d.list.length + ' scanned' + (d.checking ? ' · checking...' : '') + '</div>' +
     '</div>' + last + '</div>' +
-    (order.length ? grpHtml : '<div class="panel"><div class="empty">Abhi koi battery scan nahi hui.</div></div>') +
+    (order.length ? grpHtml : '<div class="panel"><div class="empty">No batteries scanned yet.</div></div>') +
     '<div style="margin:6px 0 30px;"><button class="btn" onclick="dspSubmit()"' + (d.busy || !d.list.length ? ' disabled' : '') + '>' +
       (d.busy ? 'Dispatching...' : 'Dispatch ' + d.list.length + ' batteries') + '</button></div>';
 }
