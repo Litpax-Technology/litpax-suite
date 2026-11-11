@@ -943,7 +943,7 @@ function enterApp(r) {
     R.nav = ['replace']; navRender(R.nav);
     const gs = document.querySelector('.gsearch'); if (gs) gs.style.display = 'none';
     if ($('hdrDate')) $('hdrDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    return go('replace');
+    go('replace'); setTimeout(recPending, 700); return;
   }
   R.nav = navList(R.nav);
   navRender(R.nav);
@@ -952,6 +952,7 @@ function enterApp(r) {
   ensureSettings().then(applySettings);   // SLA, lists, WhatsApp text, screens — from the Settings tab
   tkFilter = defaultTkFilter(); BRD_MINE = r === 'repair';
   staffBoot(wantRep && repOk() ? 'replace' : R.nav[0]);   // v13 — team ke log hain to pehle naam + PIN
+  setTimeout(recPending, 700);   // Suite se aaya "ye ticket / case kholo"
   idleStart(); weakPinBanner();
 }
 
@@ -2663,7 +2664,7 @@ function renderTicket() {
   const cu = CUR.customer, rpl = CUR.replacements || [];
 
   let h = recHead('ticket', t['Ticket ID'], pill(s), [
-    ['Customer', t['Customer ID'] ? lk('customer', t['Customer ID'], '', t['Company Name']) : tv(t['Company Name'])],
+    ['Customer', (t['Customer ID'] ? lk('customer', t['Customer ID'], '', t['Company Name']) : tv(t['Company Name'])) + erpCustLink(t['Phone'] || t['Company Name'])],
     ['Contact', tv([t['Contact Person'], t['Phone']].filter(Boolean).join(' · '))],
     ['Complaint', tv(t['Complaint'])],
     ['Items', items.length ? esc(items.filter(isDisp).length + ' / ' + items.length + ' dispatched') : '—'],
@@ -2761,9 +2762,11 @@ function renderTicket() {
       0, ['replacement', x['Replacement ID'], t['Ticket ID']])).join('')
     : '<div class="empty sm">No replacements. Use <b>🔁 Advance Replacement</b> to send a new battery before the old one arrives, or choose "Replace" in an item\'s Repair Report.</div>';
   if (DR_TAB === 'history') body += histList(hist);
+  if (DR_TAB === 'overview' || DR_TAB === 'replacements') body += '<div id="tkAr"></div>';   // Advance Replacement cases (alag GAS)
   h += '<div class="dr-tab-body">' + body + '</div>';
   if (!cancelled) h += waSection();
   $('drBody').innerHTML = h;
+  if ($('tkAr')) arTicketCases(t['Ticket ID']);
 }
 
 /* ---------- CHILD RECORDS (pages) ---------- */
@@ -2916,7 +2919,7 @@ function renderCustomer() {
   const c = CUST.customer, T = CUST.tickets || [], I = CUST.items || [], F = CUST.feedback || [];
   const bats = I.filter(i => i['Item Type'] !== 'Charger').length, open = T.filter(t => !isEnded(t['Status'])).length;
   let h = recHead('customer', c['Customer ID'], open ? '<span class="pill pill-blue">' + open + ' open</span>' : '',
-    [['Phone', c['Phone'] ? '<a href="tel:' + esc(c['Phone']) + '">' + esc(c['Phone']) + '</a>' : tv('')], ['City', tv([c['City'], c['State']].filter(Boolean).join(', '))],
+    [['Phone', (c['Phone'] ? '<a href="tel:' + esc(c['Phone']) + '">' + esc(c['Phone']) + '</a>' : tv('')) + erpCustLink(c['Phone'] || c['Company Name'])], ['City', tv([c['City'], c['State']].filter(Boolean).join(', '))],
      ['Tickets', esc(T.length)], ['Items serviced', esc(I.length + ' (' + bats + ' batteries)')]], esc(c['Company Name'] + (c['Contact Person'] ? ' · ' + c['Contact Person'] : '')));
   h += tabsHtml([['details', 'Details'], ['tickets', 'Tickets', T.length], ['items', 'Items', I.length], ['feedback', 'Feedback', F.length]]);
   let body = '';
@@ -3356,7 +3359,7 @@ function arFromTicket() {
 function repOk() { try { return sessionStorage.getItem('rep_ok') || ''; } catch (e) { return ''; } }
 function openReplace() {
   const f = $('arFrame');
-  if (!f.getAttribute('src')) { f.src = 'replace/index.html?v=ar2'; return; }   // pehli baar — load hote hi prefill khud uthata hai
+  if (!f.getAttribute('src')) { f.src = 'replace/index.html?v=lk1'; return; }   // pehli baar — load hote hi prefill khud uthata hai
   try { f.contentWindow.postMessage({ source: 'litpax-suite', type: 'rep-new' }, location.origin); } catch (e) {}   // ticket se aaya to form
 }
 function replOpen() {   // advance replacement from the ticket (before the old battery arrives)
@@ -3724,3 +3727,60 @@ function newAssignFill() {
   const keep = sel.value;
   sel.innerHTML = staffOptions('service', keep, '— Assign later —');
 }
+
+/* ============================================================
+   LINKED RECORDS — Suite ke dusre records se jode
+   · Customer → ERP Customer page (orders, payments, leads, tickets, replacement)
+   · Ticket me uske Advance Replacement cases (alag GAS se)
+   · Suite se aaya "ye ticket / case kholo" (open-record)
+   ============================================================ */
+function suiteCan(mod) { try { return (sessionStorage.getItem('suite_can') || '').split(',').indexOf(mod) !== -1; } catch (e) { return false; } }
+function suiteOpen(type, id) { try { window.parent.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: type, id: String(id) }, location.origin); } catch (e) {} }
+function erpCustLink(key) {
+  key = String(key || '').trim();
+  if (!key || window.parent === window || !suiteCan('m-erp')) return '';
+  return ' <button type="button" class="lk xlink" data-k="' + esc(key) + '" onclick="event.stopPropagation();suiteOpen(\'customer\', this.dataset.k)" title="ERP me customer ke orders, payments, leads">ERP 360 ↗</button>';
+}
+// ticket ke Advance Replacement cases
+let _arCache = { t: 0, rows: null };
+function arFetchAll() {
+  if (_arCache.rows && Date.now() - _arCache.t < 60000) return Promise.resolve(_arCache.rows);
+  return new Promise(res => {
+    if (!CONFIG.REPLACE_URL || /^PASTE_/.test(CONFIG.REPLACE_URL) || !repOk()) return res([]);
+    let tk = ''; try { tk = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
+    const cb = '__tkar' + Date.now(), s = document.createElement('script');
+    const done = rows => { delete window[cb]; if (s.parentNode) s.parentNode.removeChild(s); res(rows); };
+    const to = setTimeout(() => done([]), 20000);
+    window[cb] = d => { clearTimeout(to); const rows = d && d.ok ? d.rows || [] : []; if (d && d.ok) _arCache = { t: Date.now(), rows }; done(rows); };
+    s.onerror = () => { clearTimeout(to); done([]); };
+    s.src = CONFIG.REPLACE_URL + '?action=repList&st=' + encodeURIComponent(tk) + '&callback=' + cb + '&t=' + Date.now();
+    document.body.appendChild(s);
+  });
+}
+async function arTicketCases(tid) {
+  const rows = (await arFetchAll()).filter(r => String(r['Ticket ID']).trim() === String(tid).trim());
+  const el = $('tkAr'); if (!el || !CUR || CUR.ticket['Ticket ID'] !== tid) return;
+  el.innerHTML = rows.length ? sec('🔁 Advance Replacement (' + rows.length + ')', rows.map(r => recCard(r['Case ID'], esc([r['Battery Model'], r['Old Serial'] && 'SN ' + r['Old Serial']].filter(Boolean).join(' · ') || '—'),
+    pill(r['Status']), '<div class="rec-meta">' + esc([niceDate(r['Created At']), r['Created By'], r['New Serial'] && 'New SN ' + r['New Serial']].filter(Boolean).join(' · ')) +
+    ' · <button type="button" class="lk" data-id="' + esc(r['Case ID']) + '" onclick="repOpenCase(this.dataset.id)">Open case ›</button></div>', 0)).join('')) : '';
+}
+function repOpenCase(id) {
+  try { sessionStorage.setItem('rep_open', id); } catch (e) {}
+  if ($('drawer').classList.contains('open')) drawerClose();
+  go('replace');
+}
+// Suite se aaya record
+function recOpen(rtype, id) {
+  try { sessionStorage.removeItem('suite_open'); } catch (e) {}
+  if (!id) return;
+  if (rtype === 'ticket' && role() !== 'replace') openRecord('ticket', id, id, { fresh: true });
+  else if (rtype === 'case') repOpenCase(id);
+}
+function recPending() {
+  let p = null; try { p = JSON.parse(sessionStorage.getItem('suite_open') || 'null'); } catch (e) {}
+  if (p && p.app === 'service' && Date.now() - (p.t || 0) < 60000) recOpen(p.rtype, p.id);
+}
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite' || e.data.type !== 'open-record') return;
+  recOpen(e.data.rtype, e.data.id);
+});
