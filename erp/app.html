@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-   <link rel="stylesheet" href="app.css?v=lk1">
+   <link rel="stylesheet" href="app.css?v=ac1">
 </head>
 <body>
 
@@ -540,7 +540,8 @@
             <option>Mohit</option><option>Vijay</option><option>Sahil</option><option>Sneha</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Customer Name</label><input class="form-control" id="o-cust" placeholder="Customer name" list="custSuggestions" oninput="onCustNameInput()" autocomplete="off"><datalist id="custSuggestions"></datalist></div>
+        <div class="form-group"><label class="form-label">Customer Name</label><div class="acc-pick"><input class="form-control" id="o-cust" placeholder="Search customer" list="custSuggestions" oninput="onCustNameInput()" autocomplete="off"><button type="button" class="btn btn-sm" onclick="accOrderNew()" title="New customer account">+ New</button></div><datalist id="custSuggestions"></datalist><input type="hidden" id="o-custid"><div class="acc-note" id="o-acct-note"></div></div>
+        <div class="form-group" id="o-contact-wrap" style="display:none;"><label class="form-label">Contact (who ordered)</label><select class="form-control" id="o-contact" onchange="accContactChange()"></select></div>
         <div class="form-group"><label class="form-label">Customer Phone</label><input class="form-control" id="o-phone" placeholder="Phone number"></div>
         <div class="form-group"><label class="form-label">City</label><input class="form-control" id="o-city" placeholder="City"></div>
         <div class="form-group"><label class="form-label">Corridor</label>
@@ -1489,7 +1490,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=lk2"></script>
+<script src="app.js?v=ac1"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
