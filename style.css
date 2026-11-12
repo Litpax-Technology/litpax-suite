@@ -1078,3 +1078,62 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .lc-x:focus-visible { outline: 2px solid #ec4f55; outline-offset: 2px; }
 @media (max-width: 640px) { .litu-chat { right: 8px; left: 8px; width: auto; bottom: 100px; height: calc(100vh - 120px); } }
 @media (prefers-reduced-motion: reduce) { .litu-chat { transition: none; } }
+
+/* ---- Litu v3: battery mood · neend · gudgudi · reactions · confetti · kaam ki khabar ---- */
+.litu .lt-bars rect { fill: #fff; opacity: .9; transition: opacity .4s, fill .4s; }
+.litu.lv2 .lt-b3, .litu.lv1 .lt-b2, .litu.lv1 .lt-b3, .litu.night .lt-b2, .litu.night .lt-b3 { opacity: .18; }
+.litu.lv1 .lt-b1 { fill: #ffd166; }
+.litu.night .lt-b1 { fill: #ff9f43; }
+.litu .lt-lids { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); transition: transform .4s ease; }
+.litu.lv1 .lt-lids, .litu.night .lt-lids { transform: scaleY(.42); }          /* thaka hua */
+.litu.tickle .lt-lids { transform: scaleY(.6); }
+.litu .lt-shut, .litu .lt-brows, .litu .lt-sweat { opacity: 0; transition: opacity .25s; }
+/* neend */
+.litu.sleep .lt-eyes, .litu.sleep .lt-lids { opacity: 0; }
+.litu.sleep .lt-shut { opacity: 1; }
+.litu.sleep .lt-body { animation: ltBreathe 3.4s ease-in-out infinite; }
+.litu.sleep .lt-mouth { d: path('M55 67 q5 3 10 0'); }
+.litu.sleep .lt-bars rect { opacity: .25; }
+@keyframes ltBreathe { 0%, 100% { transform: translateY(6px); } 50% { transform: translateY(10px); } }
+.litu-z { position: absolute; right: -10px; bottom: 76px; width: 44px; height: 60px; pointer-events: none; display: none; }
+.litu.sleep .litu-z { display: block; }
+.litu-z i { position: absolute; left: 4px; bottom: 0; font: 800 16px 'Geist', 'Inter', sans-serif; font-style: normal; color: #3b3b44; opacity: 0; animation: ltZ 3s ease-in-out infinite; }
+.litu-z i:nth-child(2) { animation-delay: 1s; font-size: 19px; }
+.litu-z i:nth-child(3) { animation-delay: 2s; font-size: 23px; }
+@keyframes ltZ { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(22px, -46px) rotate(12deg); } }
+.litu.startle .lt-body { animation: ltStartle .6s cubic-bezier(.3,1.6,.5,1); }
+@keyframes ltStartle { 0% { transform: translateY(6px); } 35% { transform: translateY(-30px); } 100% { transform: translateY(0); } }
+/* gudgudi */
+.litu.tickle .lt-body { animation: ltTickle 1.3s ease-in-out; transform-origin: 60px 120px; transform-box: view-box; }
+.litu.tickle .lt-mouth { d: path('M49 63 q11 13 22 0'); }
+@keyframes ltTickle { 0% { transform: translateY(-14px) rotate(0); } 12% { transform: translateY(-18px) rotate(-11deg); } 25% { transform: translateY(-14px) rotate(10deg); } 38% { transform: translateY(-18px) rotate(-9deg); }
+  52% { transform: translateY(-14px) rotate(8deg); } 66% { transform: translateY(-16px) rotate(-5deg); } 80% { transform: translateY(-12px) rotate(3deg); } 100% { transform: translateY(0) rotate(0); } }
+/* soch raha hai */
+.litu.think .lt-body { animation: ltThink 1.6s ease-in-out infinite; transform-origin: 60px 120px; transform-box: view-box; }
+.litu.think .lt-mouth { d: path('M55 67 q5 0 10 -2'); }
+@keyframes ltThink { 0%, 100% { transform: translateY(-8px) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+/* khush / pareshan / celebration */
+.litu.happy .lt-body { animation: ltHop .55s cubic-bezier(.3,1.5,.5,1) 2; }
+.litu.happy .lt-mouth, .litu.cheer .lt-mouth { d: path('M49 63 q11 13 22 0'); }
+@keyframes ltHop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-22px); } }
+.litu.worry .lt-brows, .litu.worry .lt-sweat { opacity: 1; }
+.litu.worry .lt-mouth { d: path('M54 70 q6 -5 12 0'); }
+.litu.worry .lt-sweat { animation: ltSweat 1.2s ease-in 2; }
+.litu.worry .lt-body { animation: ltShake .5s ease-in-out 2; }
+@keyframes ltSweat { 0% { transform: translateY(0); } 100% { transform: translateY(8px); opacity: 0; } }
+@keyframes ltShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+.litu.cheer .lt-body { animation: ltHop .45s cubic-bezier(.3,1.5,.5,1) 3; }
+.litu.cheer .lt-hl { animation: ltWaveL .45s ease-in-out 3; }
+.litu.cheer .lt-hr, .litu.wave .lt-hr { animation: ltWave .5s ease-in-out infinite; }
+.litu.cheer .lt-hr { animation-iteration-count: 3; }
+@keyframes ltWaveL { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(28deg) translateY(-4px); } }
+.litu-confetti { position: fixed; z-index: 70; width: 0; height: 0; pointer-events: none; }
+.litu-confetti i { position: absolute; left: -4px; top: -5px; width: 8px; height: 10px; border-radius: 2px; animation: ltConf 1.3s cubic-bezier(.15,.7,.3,1) forwards; }
+@keyframes ltConf { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 60% { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 1; }
+  100% { transform: translate(var(--x), calc(var(--y) + 90px)) rotate(var(--r)); opacity: 0; } }
+/* kaam ki khabar (bubble pe click → chat) */
+.litu.nudge .litu-say { pointer-events: auto; cursor: pointer; padding: 10px 14px 9px; background: #121212; border: 1px solid rgba(255,255,255,.08); }
+.litu.nudge .litu-say:hover { background: #1f1f22; }
+.litu-say .ln-i { margin-right: 6px; }
+.litu-say small { display: block; margin-top: 2px; color: #ff8a8f; font-size: 11px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .litu .lt-body, .litu-z i, .litu .lt-hand, .litu .lt-sweat { animation: none !important; } }
