@@ -280,6 +280,7 @@
     try { SESSION_KEYS.concat(['suite_token'], STAFF_KEYS).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
     svcClear();
     try { sessionStorage.removeItem('rep_ok'); sessionStorage.removeItem('rep_prefill'); } catch (e) {}
+    promoStop();
     S.token = ''; S.user = null; S.rep = null;
     Object.keys(S.frames).forEach(function (k) { S.frames[k].remove(); });
     S.frames = {}; S.appNav = {}; S.open = {}; S.apr = 0;
@@ -321,6 +322,85 @@
     var first = navItems().filter(function (n) { return n.id !== 'accounts'; })[0] || {};   // Accounts upar hai, par login pe apna app khule
     go(navItems().some(function (n) { return n.id === want; }) ? want : first.id);
     refreshBadge();
+    promoStart();
+  }
+
+  /* ---------------- SYSTEM SHOWCASE — floating card (sirf Admin), aata hai · kuch der rukta hai · chala jaata hai ----------------
+   * Click → Slide-Show Suite ke upar bade player me (Fullscreen chalta hai). "Not today" → aaj dobara nahi. Settings: config.js → SHOWCASE */
+  var PR = { t: null, hideT: null, on: false };
+  function promoCfg() { return SUITE.SHOWCASE || null; }
+  function promoToday() { return new Date().toISOString().slice(0, 10); }
+  function promoMuted() { try { return localStorage.getItem('promo_off') === promoToday(); } catch (e) { return false; } }
+  function promoStart() {
+    promoStop();
+    var c = promoCfg();
+    if (!c || !c.URL || !S.user || (S.user.roles || []).indexOf('Admin') === -1 || promoMuted()) return;
+    promoLater((+c.FIRST_AFTER_SEC || 25) * 1000);
+  }
+  function promoStop() {
+    clearTimeout(PR.t); clearTimeout(PR.hideT); PR.t = PR.hideT = null;
+    var el = $('#promo'); if (el) el.remove();
+    var v = $('#promoView'); if (v) v.remove();
+    document.removeEventListener('keydown', promoKey);
+  }
+  function promoLater(ms) { clearTimeout(PR.t); PR.t = setTimeout(promoShow, ms); }
+  function promoShow() {
+    var c = promoCfg();
+    if (!S.user || promoMuted()) return;
+    // tab chhupa hai / player khula hai / koi popup khula hai → thodi der baad
+    if (document.hidden || $('#promoView') || $('#promo')) return promoLater(30000);
+    var el = document.createElement('aside');
+    el.id = 'promo'; el.className = 'promo'; el.setAttribute('role', 'complementary'); el.setAttribute('aria-label', 'System Showcase');
+    el.innerHTML =
+      '<button type="button" class="promo-x" aria-label="Hide">×</button>' +
+      '<div class="promo-art" aria-hidden="true"><img src="' + esc(c.URL.replace(/\/?$/, '/')) + 'assets/battery.png" alt="" onerror="this.remove()"><i class="promo-glow"></i></div>' +
+      '<div class="promo-body"><span class="promo-tag">System Showcase</span>' +
+      '<b>How Litpax runs — enquiry to service</b><small>The full chain in 2 minutes. Show it to a client.</small>' +
+      '<div class="promo-act"><button type="button" class="promo-go">▶ Watch</button><button type="button" class="promo-mute">Not today</button></div></div>' +
+      '<i class="promo-bar" style="animation-duration:' + ((+c.SHOW_SEC || 14)) + 's"></i>';
+    document.body.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('in'); });
+    var hideIn = function () { clearTimeout(PR.hideT); PR.hideT = setTimeout(function () { promoHide(true); }, (+c.SHOW_SEC || 14) * 1000); };
+    hideIn();
+    el.addEventListener('mouseenter', function () { clearTimeout(PR.hideT); el.classList.add('hold'); });   // mouse upar ho to ruke
+    el.addEventListener('mouseleave', function () { el.classList.remove('hold'); hideIn(); });
+    el.querySelector('.promo-x').onclick = function () { promoHide(true); };
+    el.querySelector('.promo-mute').onclick = function () {
+      try { localStorage.setItem('promo_off', promoToday()); } catch (e) {}
+      promoHide(false); toast('Showcase hidden for today');
+    };
+    el.querySelector('.promo-go').onclick = function () { promoHide(false); promoOpen(); };
+  }
+  function promoHide(again) {
+    clearTimeout(PR.hideT);
+    var el = $('#promo');
+    if (el) { el.classList.remove('in'); el.classList.add('out'); setTimeout(function () { el.remove(); }, 380); }
+    var c = promoCfg();
+    if (again && c) promoLater((+c.EVERY_MIN || 5) * 60000);
+  }
+  function promoKey(e) { if (e.key === 'Escape' && $('#promoView') && !document.fullscreenElement) promoClose(); }
+  function promoOpen() {
+    var c = promoCfg(); if (!c) return;
+    var v = document.createElement('div');
+    v.id = 'promoView'; v.className = 'promo-view'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true'); v.setAttribute('aria-label', 'System Showcase');
+    v.innerHTML = '<div class="pv-box"><div class="pv-head"><b>System Showcase</b><span>' +
+      '<button type="button" class="pv-btn pv-fs">⛶ Full screen</button>' +
+      '<a class="pv-btn" href="' + esc(c.URL) + '" target="_blank" rel="noopener">Open in new tab ↗</a>' +
+      '<button type="button" class="pv-btn pv-x" aria-label="Close">×</button></span></div>' +
+      '<iframe src="' + esc(c.URL) + '" title="System Showcase" allow="fullscreen; autoplay" allowfullscreen></iframe></div>';
+    document.body.appendChild(v);
+    requestAnimationFrame(function () { v.classList.add('in'); });
+    v.querySelector('.pv-x').onclick = promoClose;
+    v.addEventListener('click', function (e) { if (e.target === v) promoClose(); });
+    v.querySelector('.pv-fs').onclick = function () { var f = v.querySelector('iframe'); (f.requestFullscreen || f.webkitRequestFullscreen || function () {}).call(f); };
+    document.addEventListener('keydown', promoKey);
+    v.querySelector('.pv-x').focus();
+  }
+  function promoClose() {
+    var v = $('#promoView'); if (!v) return;
+    document.removeEventListener('keydown', promoKey);
+    v.classList.remove('in'); setTimeout(function () { v.remove(); }, 250);
+    var c = promoCfg(); if (c) promoLater((+c.EVERY_MIN || 5) * 60000);
   }
 
   /* ---------------- NAV ---------------- */
