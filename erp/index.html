@@ -1,88 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LitpaxERP — Login</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="index.css?v=cl1">
-</head>
-<body>
+const API = window.GAS_URL;
+document.getElementById('pword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('uname').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('pword').focus();
+});
+function toggleEye() {
+  const i = document.getElementById('pword');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+function setLoad(on) {
+  document.getElementById('loginBtn').disabled = on;
+  document.getElementById('spin').style.display = on ? 'block' : 'none';
+  document.getElementById('btnTxt').textContent = on ? 'Signing in...' : 'Sign In →';
+}
+function showErr(m) {
+  document.getElementById('errTxt').textContent = m;
+  document.getElementById('errBox').classList.add('show');
+}
+function hideErr() {
+  document.getElementById('errBox').classList.remove('show');
+}
+function doLogin(attempt) {
+  attempt = attempt || 1;
+  const u = document.getElementById('uname').value.trim();
+  const p = document.getElementById('pword').value.trim();
+  if (!u || !p) { showErr('Enter both username and password'); return; }
+  hideErr(); setLoad(true); window._done = false;
 
-<div class="wrap">
+  const cbName = 'onLogin_' + Date.now();
+  window[cbName] = function(res) {
+    if (window._done) return;
+    window._done = true;
+    setLoad(false);
+    delete window[cbName];
+    if (res.success) {
+      sessionStorage.setItem('erp_user', JSON.stringify(res.user));
+      sessionStorage.setItem('erp_token', res.token || '');
+      window.location.href = 'app.html';
+    } else {
+      showErr(res.message || 'Login failed');
+    }
+  };
 
-  <!-- LEFT -->
-  <div class="left">
-    <div class="brand">
-      <div class="brand-mark">L</div>
-      <div>
-        <div class="brand-name">LitpaxERP</div>
-        <div class="brand-tag">Manufacturing Suite</div>
-      </div>
-    </div>
+  const s = document.createElement('script');
+  s.src = `${API}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&callback=${cbName}`;
+  s.onerror = () => {
+    if (window._done) return;
+    if (attempt < 2) { s.remove(); doLogin(attempt + 1); return; }
+    window._done = true; setLoad(false); delete window[cbName];
+    showErr('Network error — please try again');
+  };
+  document.body.appendChild(s);
 
-    <div class="left-mid">
-      <div class="left-title">Order to Delivery,<br>fully connected.</div>
-      <div class="left-desc">Ek jagah se manage karo — orders, CRM tracking, production aur dispatch.</div>
-      <div class="flow-list">
-        <div class="flow-item"><div class="flow-num">1</div><div class="flow-text">Sales Order Create</div></div>
-        <div class="flow-item"><div class="flow-num">2</div><div class="flow-text">CRM Tracker Update</div></div>
-        <div class="flow-item"><div class="flow-num">3</div><div class="flow-text">Production Start</div></div>
-        <div class="flow-item"><div class="flow-num">4</div><div class="flow-text">Billing & Dispatch</div></div>
-        <div class="flow-item"><div class="flow-num">5</div><div class="flow-text">Delivery Confirmed</div></div>
-      </div>
-    </div>
-
-    <div class="left-foot">
-      <div class="left-stat"><div class="left-stat-val">7</div><div class="left-stat-lbl">Users</div></div>
-      <div class="left-stat"><div class="left-stat-val">3</div><div class="left-stat-lbl">Sheets</div></div>
-      <div class="left-stat"><div class="left-stat-val">Live</div><div class="left-stat-lbl">Data Sync</div></div>
-    </div>
-  </div>
-
-  <!-- RIGHT -->
-  <div class="right">
-    <div class="form-head">
-      <div class="form-title">Welcome back</div>
-      <div class="form-sub">Sign in to access your ERP</div>
-    </div>
-
-    <div class="err-box" id="errBox">
-      <span>⚠</span><span id="errTxt">Invalid credentials</span>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Username</label>
-      <div class="input-wrap">
-        <span class="input-icon">👤</span>
-        <input type="text" id="uname" placeholder="Enter username" autocomplete="username">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <div class="input-wrap">
-        <span class="input-icon">🔒</span>
-        <input type="password" id="pword" placeholder="Enter password" autocomplete="current-password">
-        <button class="eye-btn" onclick="toggleEye()">👁</button>
-      </div>
-    </div>
-
-    <button class="btn-login" id="loginBtn" onclick="doLogin()">
-      <div class="spinner" id="spin"></div>
-      <span id="btnTxt">Sign In →</span>
-    </button>
-
-    <div class="bottom-bar">
-      <span>Role-based Access</span><div class="dot"></div>
-      <span>Google Sheets</span><div class="dot"></div>
-      <span>GitHub Hosted</span>
-    </div>
-  </div>
-
-</div>
-
-<script src="../config.js"></script>
-<script src="index.js"></script>
-</body>
-</html>
+  setTimeout(() => {
+    if (window._done) return;
+    if (attempt < 2) {
+      // Cold start — chupchaap ek baar aur try karo
+      s.remove();
+      doLogin(attempt + 1);
+    } else {
+      window._done = true; setLoad(false); delete window[cbName];
+      showErr('Timeout — please retry');
+    }
+  }, 15000);
+}
