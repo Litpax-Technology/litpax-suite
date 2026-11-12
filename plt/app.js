@@ -326,34 +326,9 @@ function retryFailed() {
   });
 }
 
-/* ---------------- Manual controls (single-scanner testing) ---------------- */
-
-// Pick the station a prefix-less scan belongs to.
-function setManualStation(v) { state.manualStation = v; render(); }
-
-// Manually sign an employee into the manual station (badge missing).
-function manualOperator(v) {
-  if (!v) return;
-  var st = state.manualStation;
-  if (!st) { alert('Pick a station first.'); return; }
-  var emp = matchStaff(v);
-  if (emp) { state.stationEmp[st] = emp; render(); }
-}
-
 /* ---------------- Dispatch station ---------------- */
 
 function setMode(m) { state.mode = m; render(); }
-
-function dspLogin() {
-  var el = document.getElementById('dspPin');
-  var pin = el ? el.value.trim() : '';
-  if (!pin) { alert('Enter the Supervisor PIN'); return; }
-  call('supLogin', { pin: pin }).then(function (res) {
-    state.dsp.token = res.token;
-    try { sessionStorage.setItem('plt_sup', res.token); } catch (e) {}
-    render();
-  }, function (err) { alert(err.message); });
-}
 
 function dspField(k, v) { state.dsp[k] = v; }
 
