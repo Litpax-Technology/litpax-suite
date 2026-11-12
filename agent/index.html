@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="../assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script>
   /* Sirf Suite ke andar khulta hai — seedha URL khole to Suite pe bhej do */
   (function () { var ok = false; try { ok = window.top !== window.self && window.top.location.origin === location.origin; } catch (e) {} if (!ok) { document.documentElement.style.display = 'none'; var u = new URL('../#m-agent', location.href).href; try { window.top.location = u; } catch (e) { location.replace(u); } } })();
@@ -36,7 +36,7 @@
   <main class="ag-main" id="agScroll">
     <section class="ag-hello" id="agHello">
       <h2>What would you like to know?</h2>
-      <p>Ask anything about orders, stock, production, purchase or service across the whole Suite. I can also update records, add new ones and draft emails — nothing is saved or sent until you press Confirm. English or Hinglish both work.</p>
+      <p>Ask anything about orders, stock, production, purchase or service across the whole Suite. I can also update records, add new ones and draft emails — nothing is saved or sent until you press Confirm. Type or tap 🎤 and speak, in English or Hinglish. Click any ID in an answer to open it.</p>
       <div class="ag-chips" id="agChips"></div>
     </section>
     <div class="ag-log" id="agLog" aria-live="polite"></div>
@@ -45,6 +45,10 @@
   <form class="ag-input" id="agForm" autocomplete="off">
     <label for="agQ" class="sr">Ask a question</label>
     <textarea id="agQ" rows="1" placeholder="e.g. Top customers this month · Which POs are late? · LTX-R-0049"></textarea>
+    <button type="button" class="ag-lang" id="agLang" hidden>EN</button>
+    <button type="button" class="ag-mic" id="agMic" aria-label="Ask by voice" aria-pressed="false" title="Ask by voice" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </button>
     <button type="submit" id="agSend" aria-label="Send">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </button>
@@ -56,7 +60,7 @@
 
 <script src="../config.js?v=ag2"></script>
 <script src="prompts.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
