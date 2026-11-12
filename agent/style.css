@@ -161,3 +161,38 @@ button, textarea { font: inherit; }
 .ag-card-a .st { font-size: 13px; color: var(--muted); }
 .ag-card-a .st.ok { color: #15803d; font-weight: 600; }
 .ag-card-a .st.bad { color: var(--bad); }
+
+/* ---- mini: Suite ke Litu mascot ka chhota chat panel ---- */
+body.mini { font-size: 14px; }
+body.mini .ag { max-width: none; padding: 0 16px; }
+body.mini .ag-top { padding: 14px 52px 12px 0; gap: 10px; flex-wrap: nowrap; }
+body.mini .ag-mark { width: 34px; height: 34px; border-radius: 10px; }
+body.mini .ag-mark svg { width: 18px; height: 18px; }
+body.mini .ag-title { flex: 1; min-width: 0; }
+body.mini .ag-title > div { min-width: 0; }
+body.mini .ag-actions { flex: none; }
+body.mini .ag-title h1 { font-size: 16px; letter-spacing: -.2px; }
+body.mini .ag-title p { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.mini #agSources { display: none; }
+body.mini .ag-btn { min-height: 32px; padding: 0 12px; font-size: 12.5px; white-space: nowrap; }
+body.mini .ag-main { padding: 14px 0 8px; }
+body.mini .ag-hello { padding: 18px 0 8px; }
+body.mini .ag-hello h2 { font-size: 24px; letter-spacing: -.6px; }
+body.mini .ag-hello p { display: none; }
+body.mini .ag-hello h2 + .ag-chips, body.mini .ag-chips { margin-top: 14px; }
+body.mini .ag-input textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.mini .ag-chips { gap: 6px; }
+body.mini .ag-chips button { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
+body.mini .ag-chips button:nth-child(n+7) { display: none; }
+body.mini .ag-log { gap: 14px; }
+body.mini .ag-msg { gap: 8px; }
+body.mini .ag-msg .av { width: 26px; height: 26px; border-radius: 8px; font-size: 13px; }
+body.mini .ag-msg.me .b { max-width: 88%; padding: 9px 13px; }
+body.mini .ag-tbl table { font-size: 12.5px; }
+body.mini .ag-tbl th, body.mini .ag-tbl td { padding: 7px 9px; }
+body.mini .ag-input { margin: 6px 0 12px; padding: 6px 6px 6px 14px; border-radius: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+body.mini .ag-input textarea { font-size: 14px; }
+body.mini .ag-input button { width: 38px; height: 38px; }
+body.mini .ag-input .ag-lang { height: 26px; margin-bottom: 6px; }
+body.mini .ag-foot { display: none; }
+body.mini .ag-card { padding: 12px 14px; }
