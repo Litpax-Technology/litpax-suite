@@ -76,13 +76,6 @@ function fmtTime(ts) {
          d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function badgeClassFor(v) {
-  if (v === 'pass') return 'pass';
-  if (v === 'fail') return 'fail';
-  if (v === 'rework') return 'pending';
-  return 'progress';
-}
-
 function updateConn() {
   var dot = document.getElementById('connDot');
   var txt = document.getElementById('connText');
