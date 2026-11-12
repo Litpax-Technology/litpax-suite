@@ -10,7 +10,7 @@ window.SUITE = {
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbzTBAQDtrUOlWvpFj_XCJQvHgm8w-N3INeWqLPYxWKrkIaNzBWl1DmWUjvtIvvGReS9xw/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbyayM6lxMUhOo_zvaGBsX0Er_bUnptQTzPRck1462FWrqvfpU3aDH01uzNEdBSN5ByMLw/exec',
   REPLACE_URL: 'https://script.google.com/macros/s/AKfycbxsa9Rzifq7xVw0-26KBhIUds6DaOVyiIRHuzX8vCNqJigA_V6AruC17m7TGZp0EnKLsQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
-  AGENT_URL: 'https://script.google.com/macros/s/AKfycbzYNrQJAxHJsM8N1IvWgANOLMm92TB3KI-8IsgxbVEveAd7zUCXjWNyaF8mQWxqkQQ-/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
+  AGENT_URL: 'https://script.google.com/macros/s/AKfycbw_mW1YOEZGYL3zA9__Prl0gMTUKVZRrVPSaeeJ3K87zfv_n3mWDcmp9Jfqz9j7D6HX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
