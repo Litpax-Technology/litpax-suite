@@ -25,7 +25,7 @@ function doLogin(attempt) {
   attempt = attempt || 1;
   const u = document.getElementById('uname').value.trim();
   const p = document.getElementById('pword').value.trim();
-  if (!u || !p) { showErr('Username aur password dono bharein'); return; }
+  if (!u || !p) { showErr('Enter both username and password'); return; }
   hideErr(); setLoad(true); window._done = false;
 
   const cbName = 'onLogin_' + Date.now();
@@ -49,7 +49,7 @@ function doLogin(attempt) {
     if (window._done) return;
     if (attempt < 2) { s.remove(); doLogin(attempt + 1); return; }
     window._done = true; setLoad(false); delete window[cbName];
-    showErr('Network error — dobara try karein');
+    showErr('Network error — please try again');
   };
   document.body.appendChild(s);
 
