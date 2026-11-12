@@ -6102,5 +6102,7 @@ function accListTools() {
   if (!head) return;
   const add = head.querySelector('.btn-primary');
   if (add) add.setAttribute('onclick', "ACC_CTX={from:'list'};accOpenForm(null)");
-  if (accIsAdmin()) head.insertAdjacentHTML('beforeend', `<span id="accTools" style="display:flex;gap:6px;"><button class="btn" onclick="accDupOpen()">🔀 Duplicates</button><button class="btn" onclick="accSettingsOpen()" title="Account types & contact roles">⚙</button></span>`);
+  // ek hi group me (card-head space-between hai — teen alag cheezein hon to button beech me aa jaata hai)
+  head.insertAdjacentHTML('beforeend', `<span id="accTools" class="acc-tools">${accIsAdmin() ? `<button class="btn" onclick="accDupOpen()">🔀 Duplicates</button><button class="btn" onclick="accSettingsOpen()" title="Account types & contact roles">⚙</button>` : ''}</span>`);
+  if (add) document.getElementById('accTools').appendChild(add);
 }
