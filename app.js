@@ -325,62 +325,24 @@
     promoStart();
   }
 
-  /* ---------------- SYSTEM SHOWCASE — floating card (sirf Admin), aata hai · kuch der rukta hai · chala jaata hai ----------------
-   * Click → Slide-Show Suite ke upar bade player me (Fullscreen chalta hai). "Not today" → aaj dobara nahi. Settings: config.js → SHOWCASE */
-  var PR = { t: null, hideT: null, on: false };
-  function promoCfg() { return SUITE.SHOWCASE || null; }
-  function promoToday() { return new Date().toISOString().slice(0, 10); }
-  function promoMuted() { try { return localStorage.getItem('promo_off') === promoToday(); } catch (e) { return false; } }
-  function promoStart() {
-    promoStop();
-    var c = promoCfg();
-    if (!c || !c.URL || !S.user || (S.user.roles || []).indexOf('Admin') === -1 || promoMuted()) return;
-    promoLater((+c.FIRST_AFTER_SEC || 25) * 1000);
+  /* ---------------- SYSTEM SHOWCASE — sidebar ke neeche ek button (sirf Admin) → Slide-Show bade player me ---------------- */
+  function promoStart() {   // naam purana hi rakha (start/signOut isi ko bulate hain)
+    var b = $('#showBtn'), c = SUITE.SHOWCASE;
+    if (!b) return;
+    var ok = !!(c && c.URL && S.user && (S.user.roles || []).indexOf('Admin') !== -1);
+    b.classList.toggle('hidden', !ok);
+    b.onclick = ok ? promoOpen : null;
+    mascotStart();
   }
   function promoStop() {
-    clearTimeout(PR.t); clearTimeout(PR.hideT); PR.t = PR.hideT = null;
-    var el = $('#promo'); if (el) el.remove();
     var v = $('#promoView'); if (v) v.remove();
     document.removeEventListener('keydown', promoKey);
-  }
-  function promoLater(ms) { clearTimeout(PR.t); PR.t = setTimeout(promoShow, ms); }
-  function promoShow() {
-    var c = promoCfg();
-    if (!S.user || promoMuted()) return;
-    // tab chhupa hai / player khula hai / koi popup khula hai → thodi der baad
-    if (document.hidden || $('#promoView') || $('#promo')) return promoLater(30000);
-    var el = document.createElement('aside');
-    el.id = 'promo'; el.className = 'promo'; el.setAttribute('role', 'complementary'); el.setAttribute('aria-label', 'System Showcase');
-    el.innerHTML =
-      '<button type="button" class="promo-x" aria-label="Hide">×</button>' +
-      '<div class="promo-art" aria-hidden="true"><img src="' + esc(c.URL.replace(/\/?$/, '/')) + 'assets/battery.png" alt="" onerror="this.remove()"><i class="promo-glow"></i></div>' +
-      '<div class="promo-body"><span class="promo-tag">System Showcase</span>' +
-      '<b>How Litpax runs — enquiry to service</b><small>The full chain in 2 minutes. Show it to a client.</small>' +
-      '<div class="promo-act"><button type="button" class="promo-go">▶ Watch</button><button type="button" class="promo-mute">Not today</button></div></div>' +
-      '<i class="promo-bar" style="animation-duration:' + ((+c.SHOW_SEC || 14)) + 's"></i>';
-    document.body.appendChild(el);
-    requestAnimationFrame(function () { el.classList.add('in'); });
-    var hideIn = function () { clearTimeout(PR.hideT); PR.hideT = setTimeout(function () { promoHide(true); }, (+c.SHOW_SEC || 14) * 1000); };
-    hideIn();
-    el.addEventListener('mouseenter', function () { clearTimeout(PR.hideT); el.classList.add('hold'); });   // mouse upar ho to ruke
-    el.addEventListener('mouseleave', function () { el.classList.remove('hold'); hideIn(); });
-    el.querySelector('.promo-x').onclick = function () { promoHide(true); };
-    el.querySelector('.promo-mute').onclick = function () {
-      try { localStorage.setItem('promo_off', promoToday()); } catch (e) {}
-      promoHide(false); toast('Showcase hidden for today');
-    };
-    el.querySelector('.promo-go').onclick = function () { promoHide(false); promoOpen(); };
-  }
-  function promoHide(again) {
-    clearTimeout(PR.hideT);
-    var el = $('#promo');
-    if (el) { el.classList.remove('in'); el.classList.add('out'); setTimeout(function () { el.remove(); }, 380); }
-    var c = promoCfg();
-    if (again && c) promoLater((+c.EVERY_MIN || 5) * 60000);
+    var b = $('#showBtn'); if (b) b.classList.add('hidden');
+    mascotStop();
   }
   function promoKey(e) { if (e.key === 'Escape' && $('#promoView') && !document.fullscreenElement) promoClose(); }
   function promoOpen() {
-    var c = promoCfg(); if (!c) return;
+    var c = SUITE.SHOWCASE; if (!c || $('#promoView')) return;
     var v = document.createElement('div');
     v.id = 'promoView'; v.className = 'promo-view'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-modal', 'true'); v.setAttribute('aria-label', 'System Showcase');
     v.innerHTML = '<div class="pv-box"><div class="pv-head"><b>System Showcase</b><span>' +
@@ -400,7 +362,82 @@
     var v = $('#promoView'); if (!v) return;
     document.removeEventListener('keydown', promoKey);
     v.classList.remove('in'); setTimeout(function () { v.remove(); }, 250);
-    var c = promoCfg(); if (c) promoLater((+c.EVERY_MIN || 5) * 60000);
+  }
+
+  /* ---------------- "LITU" — Ask Litpax ka mascot: screen ke kone se jhaank ke user ko dekhta hai ----------------
+   * Aankhen mouse ke peeche ghoomti hain · palak jhapakta hai · kabhi chhup ke wapas jhaankta hai · kabhi kuch bolta hai.
+   * Click → Ask Litpax. Sirf jinko Ask Litpax milta hai (Admin). Ask Litpax khula ho to chhup jaata hai. */
+  var MS = { el: null, t: null, sayT: null, move: null };
+  var LITU_LINES = ['Psst… kuch poochna hai? 👀', 'Main sab dekh raha hoon… data ko 😄', 'Ctrl + K dabao, main aa jaunga!', 'Aaj kitne orders aaye? Pooch ke dekho 😉',
+    'Battery ka serial do, poori kahani sunaunga 🔋', 'Low stock? Mujhse poochho!', 'Bore ho rahe ho? Mujhe click karo 😄', 'Main yahin hoon… chupke se 🙈'];
+  function lituSvg() {
+    return '<svg viewBox="0 0 120 130" aria-hidden="true">' +
+      '<g class="lt-body">' +
+        '<rect x="47" y="4" width="26" height="12" rx="4" fill="#2b2b30"/>' +
+        '<rect x="16" y="14" width="88" height="112" rx="30" fill="#ec4f55"/>' +
+        '<rect x="16" y="14" width="88" height="112" rx="30" fill="url(#ltShine)"/>' +
+        '<rect x="26" y="28" width="68" height="48" rx="22" fill="#fff"/>' +
+        '<g class="lt-eyes"><circle cx="45" cy="50" r="11" fill="#f4f4f6"/><circle cx="75" cy="50" r="11" fill="#f4f4f6"/>' +
+          '<g class="lt-pupils"><circle cx="45" cy="50" r="5.5" fill="#17171a"/><circle cx="75" cy="50" r="5.5" fill="#17171a"/>' +
+          '<circle cx="47" cy="47.5" r="1.8" fill="#fff"/><circle cx="77" cy="47.5" r="1.8" fill="#fff"/></g></g>' +
+        '<circle cx="34" cy="66" r="4.5" fill="#ffb3b6"/><circle cx="86" cy="66" r="4.5" fill="#ffb3b6"/>' +
+        '<path class="lt-mouth" d="M53 66 q7 6 14 0" fill="none" stroke="#17171a" stroke-width="3" stroke-linecap="round"/>' +
+        '<g fill="#fff" opacity=".85"><rect x="40" y="88" width="40" height="7" rx="3.5"/><rect x="40" y="99" width="28" height="7" rx="3.5" opacity=".7"/></g>' +
+      '</g>' +
+      '<g class="lt-hands"><g class="lt-hand lt-hl"><rect x="6" y="80" width="26" height="15" rx="7.5" fill="#ff7b80" stroke="#c9363d" stroke-width="2"/><path d="M14 80v6M20 80v6" stroke="#c9363d" stroke-width="2" stroke-linecap="round"/></g>' +
+        '<g class="lt-hand lt-hr"><rect x="88" y="80" width="26" height="15" rx="7.5" fill="#ff7b80" stroke="#c9363d" stroke-width="2"/><path d="M100 80v6M106 80v6" stroke="#c9363d" stroke-width="2" stroke-linecap="round"/></g></g>' +
+      '<defs><linearGradient id="ltShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>' +
+    '</svg>';
+  }
+  function mascotStart() {
+    mascotStop();
+    if (!navItems().some(function (x) { return x.id === 'm-agent'; })) return;
+    var el = document.createElement('button');
+    el.type = 'button'; el.id = 'litu'; el.className = 'litu';
+    el.setAttribute('aria-label', 'Ask Litpax'); el.title = 'Ask Litpax (Ctrl + K)';
+    el.innerHTML = '<span class="litu-say" aria-hidden="true"></span><span class="litu-fig">' + lituSvg() + '</span>';
+    document.body.appendChild(el);
+    MS.el = el;
+    el.onclick = function () { lituSay('Haan bolo! ✨', 1200); el.classList.add('jump'); setTimeout(function () { el.classList.remove('jump'); openAgent(); }, 260); };
+    el.addEventListener('mouseenter', function () { lituSay('Click karo, Ask Litpax kholta hoon 😄', 2500); });
+    MS.move = function (e) { lituLook(e.clientX, e.clientY); };
+    document.addEventListener('mousemove', MS.move);
+    mascotView();
+    setTimeout(function () { el.classList.add('in'); lituSay('Hi ' + ((S.user && S.user.name) || '').split(' ')[0] + '! 👋', 3000); }, 1500);
+    lituLoop();
+  }
+  function mascotStop() {
+    clearTimeout(MS.t); clearTimeout(MS.sayT);
+    if (MS.move) document.removeEventListener('mousemove', MS.move);
+    if (MS.el) MS.el.remove();
+    MS.el = null; MS.move = null;
+  }
+  function mascotView() { if (MS.el) MS.el.classList.toggle('away', S.view === 'm-agent'); }   // Ask Litpax khula → chhup jao
+  function lituLook(x, y) {
+    if (!MS.el) return;
+    var r = MS.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.35;
+    var dx = x - cx, dy = y - cy, d = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.min(1, d / 220);
+    var p = MS.el.querySelector('.lt-pupils');
+    if (p) p.setAttribute('transform', 'translate(' + (dx / d * 4.5 * k).toFixed(2) + ' ' + (dy / d * 4 * k).toFixed(2) + ')');
+  }
+  function lituSay(txt, ms) {
+    if (!MS.el) return;
+    var b = MS.el.querySelector('.litu-say');
+    b.textContent = txt; MS.el.classList.add('talk');
+    clearTimeout(MS.sayT); MS.sayT = setTimeout(function () { if (MS.el) MS.el.classList.remove('talk'); }, ms || 3000);
+  }
+  function lituLoop() {   // har 15–35 sec me kuch na kuch: chhupna-jhaankna / idhar-udhar dekhna / kuch bolna
+    clearTimeout(MS.t);
+    MS.t = setTimeout(function () {
+      var el = MS.el; if (!el) return;
+      if (!document.hidden && !el.classList.contains('away') && !el.matches(':hover')) {
+        var r = Math.random();
+        if (r < 0.35) { el.classList.add('duck'); setTimeout(function () { el.classList.remove('duck'); }, 2600); }
+        else if (r < 0.65) lituSay(LITU_LINES[Math.floor(Math.random() * LITU_LINES.length)], 3500);
+        else { el.classList.add('peek'); setTimeout(function () { el.classList.remove('peek'); }, 1800); }
+      }
+      lituLoop();
+    }, 15000 + Math.random() * 20000);
   }
 
   /* ---------------- NAV ---------------- */
@@ -464,10 +501,11 @@
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
     ticket: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/>',
     spark: '<path d="M12 3c.6 4.5 2.5 6.4 7 7-4.5.6-6.4 2.5-7 7-.6-4.5-2.5-6.4-7-7 4.5-.6 6.4-2.5 7-7z"/>',
-    tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>'
+    tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>',
+    bot: '<rect x="4.5" y="6" width="15" height="15" rx="5"/><path d="M10 3.5h4V6h-4z"/><circle cx="9.6" cy="12.3" r="1.4"/><circle cx="14.4" cy="12.3" r="1.4"/><path d="M10.3 16.4c1 .7 2.4.7 3.4 0"/>'
   };
   var APPICO = { accounts: 'users', overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
-                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'spark', settings: 'gear' };
+                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'bot', settings: 'gear' };
   var PAGEICO = [[/switch|staff/i, 'users'], [/replacement/i, 'battery'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
     [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],
@@ -546,6 +584,7 @@
     if (n.mod) { S.open = {}; S.open[n.mod] = true; }   // ek waqt me ek hi app khula
     buildNav();
     document.title = n.label + ' · Litpax';
+    mascotView();
     $$('.view').forEach(function (v) { v.classList.add('hidden'); });
     Object.keys(S.frames).forEach(function (k) { S.frames[k].classList.add('hidden'); });
     if (n.mod) {
