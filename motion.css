@@ -1,0 +1,73 @@
+/* =============================================================
+ * Litpax Suite — global motion (saare apps me same feel)
+ * Suite shell + ERP / IMS / SOMS / PLT / Service / Replacement / Agent.
+ * suite-bridge.js isko har app me khud jod deta hai.
+ * Dialog khulna: backdrop fade + box pop. Band hona: motion.js (.lx-out).
+ * ============================================================= */
+:root {
+  --lx-ease: cubic-bezier(.2, .8, .2, 1);
+  --lx-in: .26s;
+  --lx-out: .16s;
+}
+
+@keyframes lxFade    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lxFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes lxPop     { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes lxPopOut  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px) scale(.98); } }
+@keyframes lxUp      { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes lxDrop    { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes lxSlideR  { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes lxSlideROut { from { transform: none; } to { transform: translateX(100%); } }
+
+/* ---------- 1. Backdrop (kaala parda) ---------- */
+.modal-overlay.show, .ov.open, .iv-overlay.open, .stf-ov.show, .sp-ov.show, .rp-ov.show,
+.modal-backdrop:not(.hidden), .diary-wrap:not(.hidden) .diary-overlay, .overlay.show {
+  animation: lxFade var(--lx-in) ease both;
+}
+
+/* ---------- 2. Dialog box ---------- */
+.modal-overlay.show > .modal, .ov.open > .modal, .iv-overlay.open > *, .stf-ov.show > *, .sp-ov.show > *,
+.rp-ov.show > .rp-modal, .modal-ov.show .modal, .modal-backdrop:not(.hidden) > .modal, dialog[open] {
+  animation: lxPop var(--lx-in) var(--lx-ease) both;
+}
+dialog[open]::backdrop { animation: lxFade var(--lx-in) ease both; }
+
+/* side panel (SOMS diary) */
+.diary-wrap:not(.hidden) .diary-panel { animation: lxSlideR .3s var(--lx-ease) both; }
+/* Service drawer: pehle se transition hai — bas smooth curve */
+.drawer { transition-timing-function: var(--lx-ease) !important; }
+
+/* ---------- 3. Band hote waqt (motion.js .lx-out lagata hai) ---------- */
+.lx-out { animation: lxFadeOut var(--lx-out) ease forwards !important; pointer-events: none !important; }
+.lx-out > .modal, .lx-out > .rp-modal, .stf-ov.lx-out > *, .sp-ov.lx-out > *, .iv-overlay.lx-out > *,
+.modal-backdrop.lx-out > .modal { animation: lxPopOut var(--lx-out) ease forwards !important; }
+.diary-wrap.lx-out { animation: none !important; }
+.diary-wrap.lx-out .diary-overlay { animation: lxFadeOut var(--lx-out) ease forwards; }
+.diary-wrap.lx-out .diary-panel { animation: lxSlideROut .2s ease forwards; }
+
+/* ---------- 4. Page / tab badalna ---------- */
+.page.active, .screen.active { animation: lxUp .3s var(--lx-ease) both; }
+#frames > iframe:not(.hidden) { animation: lxFade .22s ease both; }
+
+/* ---------- 5. Dropdown / popover ---------- */
+.rp-pop, .dropdown.show, .dropdown-menu.show, .menu.open, .ac-list, .suggest-box {
+  animation: lxDrop .18s var(--lx-ease) both; transform-origin: top;
+}
+
+/* ---------- 6. Customer page (ERP) — cards ek ke baad ek ---------- */
+html .c360-kpis > .stat, html .c360-card, html .c360-rel { animation: lxUp .34s var(--lx-ease) both; }
+html .c360-kpis > .stat:nth-child(2) { animation-delay: .04s; }
+html .c360-kpis > .stat:nth-child(3) { animation-delay: .08s; }
+html .c360-kpis > .stat:nth-child(4) { animation-delay: .12s; }
+html .c360-main-col > .c360-rel:nth-child(2) { animation-delay: .06s; }
+html .c360-main-col > .c360-rel:nth-child(3) { animation-delay: .1s; }
+html .c360-main-col > .c360-rel:nth-child(4) { animation-delay: .14s; }
+html .c360-main-col > .c360-rel:nth-child(n+5) { animation-delay: .18s; }
+
+/* ---------- 7. Chhote touch ---------- */
+.rec-link, .lnk, .lk.xlink { transition: color .15s ease, background-color .15s ease, box-shadow .15s ease; }
+
+/* ---------- motion band (OS setting) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; transition-duration: .001ms !important; }
+}
