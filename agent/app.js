@@ -395,6 +395,10 @@
 
   /* ---------------- boot ---------------- */
   function boot() {
+    if (/[?&]mini=1/.test(location.search)) { document.body.classList.add('mini'); $('agQ').placeholder = 'Ask anything… or tap 🎤'; }   // Suite ke Litu ka chhota chat
+    if (/[?&]mini=1/.test(location.search)) document.addEventListener('keydown', function (e) {   // Esc → Suite chat band kare
+      if (e.key === 'Escape' && !document.querySelector('.ag-card input:focus, .ag-card textarea:focus')) toSuite('litu-close');
+    });
     $('agChips').innerHTML = (window.AGENT_PROMPTS || []).map(function (p, i) {
       return '<button type="button" data-i="' + i + '">' + esc(p.label) + '</button>';
     }).join('');
