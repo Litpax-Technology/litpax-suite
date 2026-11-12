@@ -1039,7 +1039,8 @@ async function ticketCreate() {
   afterChange();
   $('newForm').style.display = 'none'; $('newSuccess').style.display = 'block';
   $('newId').textContent = r.id; $('newOpenBtn').dataset.id = r.id;
-  $('newCust').innerHTML = r.customerId ? 'Customer ' + idChip(r.customerId) + (r.newCustomer ? ' <span class="tag">new customer</span>' : ' <span class="tag">existing customer</span>') : '';
+  $('newCust').innerHTML = (r.customerId ? 'Customer ' + idChip(r.customerId) + (r.newCustomer ? ' <span class="tag">new customer</span>' : ' <span class="tag">existing customer</span>') : '') +
+    (r.account && r.account.id ? ' · Account <b>' + esc(r.account.name) + '</b> ' + erpCustLink(d.phone, r.account.name) : '');
   const wa = $('newWa'), url = waUrl(d.phone, waFill((CONFIG.WA_TEMPLATES || {}).created,
     { name: d.person, id: r.id, link: trackLink({ 'Ticket ID': r.id, 'Track Code': r.code }) }));
   wa.dataset.t = r.id; wa.dataset.e = 'created';
@@ -1054,15 +1055,25 @@ async function phoneCheck() {
   const ph = $('n_phone').value.replace(/\D/g, ''), box = $('n_phoneInfo'), seq = ++_phoneSeq;
   if (ph.length !== 10) { box.style.display = 'none'; box.innerHTML = ''; return; }
   let r;
-  try { r = await api({ action: 'lookupPhone', phone: ph }); } catch (e) { return; }
+  try { r = await api({ action: 'lookupPhone', phone: ph, company: $('n_company').value.trim() }); } catch (e) { return; }
   if (seq !== _phoneSeq || !r || !r.ok) return;
-  if (!r.count) { box.style.display = 'none'; box.innerHTML = ''; return; }
   const L = r.last || {}, filled = [];
   const fill = (id, v) => { if (v && !$(id).value) { $(id).value = v; if ($(id).value === v) filled.push(id); } };
+  // ERP Account (phone → contact → account)
+  const A = r.account;
+  let accHtml = '';
+  if (A && A.id) {
+    fill('n_company', A.name); fill('n_person', A.contact); fill('n_city', A.city); fill('n_state', A.state);
+    accHtml = '<div class="note">🏢 <b>' + esc(A.name) + '</b>' + (A.type ? ' <span class="tag">' + esc(A.type) + '</span>' : '') +
+      (A.contact ? ' — ' + esc(A.contact) + (A.role ? ' (' + esc(A.role) + ')' : '') : '') + ' · ERP account <b>' + esc(A.id) + '</b>. The ticket will be linked to it.</div>';
+  } else if (A && A.many) {
+    accHtml = '<div class="note">🏢 This number is saved on more than one account (' + A.many.map(esc).join(', ') + '). Type the company name exactly to link the right one.</div>';
+  }
+  if (!r.count) { box.innerHTML = accHtml; box.style.display = accHtml ? 'block' : 'none'; return; }
   fill('n_company', L.company); fill('n_person', L.person); fill('n_city', L.city); fill('n_vehicle', L.vehicle);
   fill('n_state', L.state); fill('n_ctype', L.customerType);
   if (L.dealer && !$('n_brand').value && dealerSelect(L.dealer)) filled.push('n_brand');
-  box.innerHTML = '<div class="note">🔁 <b>Repeat customer</b>' + (r.customerId ? ' ' + idChip(r.customerId) : '') + ' — ' + r.count + ' earlier ticket' + (r.count > 1 ? 's' : '') +
+  box.innerHTML = accHtml + '<div class="note">🔁 <b>Repeat customer</b>' + (r.customerId ? ' ' + idChip(r.customerId) : '') + ' — ' + r.count + ' earlier ticket' + (r.count > 1 ? 's' : '') +
     '. Last: <b>' + esc(L.id) + '</b> (' + esc(L.status) + ', ' + esc(niceDate(L.created)) + ').' + (filled.length ? ' Empty fields filled from it — please check.' : '') + '</div>' +
     ((r.open || []).length ? '<div class="note note-red">⚠️ Open ticket already: ' + r.open.map(o => '<b>' + esc(o.id) + '</b> (' + esc(o.status) + (o.complaint ? ' · ' + esc(o.complaint) : '') + ')').join(', ') +
       ' — check it before creating a new one.</div>' : '');
