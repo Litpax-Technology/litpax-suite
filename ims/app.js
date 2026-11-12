@@ -6,7 +6,6 @@
 const API = (window.SUITE || {}).IMS_URL;   // repo root config.js
 
 function setEl(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
-function showEl(id, show) { const el = document.getElementById(id); if (el) el.style.display = show ? 'inline' : 'none'; }
 
 const DEPTS = ['Volt Wing','Ampere Wing','Volt x Ampere Wing','Mega Grid','Cathodic Wing','Future Cell','Phoenix Wing','Other'];
 
@@ -252,11 +251,6 @@ function fmtD(d) {
   if (!d) return '—';
   try { return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
   catch(e) { return d; }
-}
-function fmtDT(ts) {
-  if (!ts) return '—';
-  try { return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }
-  catch(e) { return ts; }
 }
 
 function newReqId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -1920,11 +1914,6 @@ function filterBom() {
   }).join('');
 }
 
-function openBomAddModal() {
-  ['bm-name','bm-alias','bm-produces','bm-remarks'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('bom-add-modal').classList.add('open');
-}
-
 async function saveBomModel() {
   const bomName = document.getElementById('bm-name').value.trim();
   if (!bomName) { toast('BOM name is required', 'err'); return; }
@@ -3005,10 +2994,6 @@ async function saveCreatePO() {
   previewPOBeforeSave(toCreate, supplier, expDate);
 }
 
-function openIndentModal() {
-  toast('Create the PO directly from the Reorder page now', 'warn');
-}
-
 // ── CREATE PO MODAL — openCreatePO (SELECT ALL TOGGLE ADDED) ──
 async function openCreatePO() {
   const btn = document.getElementById('po-btn');
@@ -3304,17 +3289,6 @@ async function loadSbActivity() {
     if (_sbInOpen)  renderSbIn();
     if (_sbOutOpen) renderSbOut();
   } catch(e) {}
-}
-
-function toggleSbPanel(listId, arrowId) {
-  const list  = document.getElementById(listId);
-  const arrow = document.getElementById(arrowId);
-  if (!list) return;
-  const isOpen = list.style.display !== 'none';
-  list.style.display  = isOpen ? 'none' : 'block';
-  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
-  if (listId === 'sb-in-list')  { _sbInOpen  = !isOpen; if (!isOpen) renderSbIn(); }
-  if (listId === 'sb-out-list') { _sbOutOpen = !isOpen; if (!isOpen) renderSbOut(); }
 }
 
 function renderSbIn() {
@@ -3694,12 +3668,6 @@ async function saveAddPOItem() {
     loadIndents();
   } catch(e) { toast(e.message, 'err'); }
   finally { btn.disabled = false; btn.textContent = 'Add Item'; }
-}
-
-function printSinglePO(id, itemName, qty, supplier, expDate) {
-  const s = _stocks.find(x => x.name === itemName);
-  const items = [{ itemName, qty, unit: s ? s.unit : 'Pcs' }];
-  printPO(items, supplier, expDate);
 }
 
 // ── MATERIAL REQUESTS ──
