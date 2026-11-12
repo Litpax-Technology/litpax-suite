@@ -84,15 +84,10 @@ function vendorTagFor(vendorId, material){
   const m = State.vendorMaterials.find(x=>x.VendorID==vendorId && x.Material==material);
   return m ? m.Tag : '';
 }
-function vendorsForMaterial(material){
-  return State.vendorMaterials.filter(x=>x.Material==material)
-    .map(x=>({ ...x, Name: vendorName(x.VendorID) }));
-}
 
 /* ---------- Order calculations ---------- */
 function orderItemsOf(po){ return State.orderItems.filter(i=>i.PO_No==po); }
 function receivingOf(po){ return State.receiving.filter(r=>r.PO_No==po); }
-function orderedQtyMaterial(po,mat){ return orderItemsOf(po).filter(i=>i.Material==mat).reduce((a,i)=>a+(Number(i.OrderedQty)||0),0); }
 function receivedQtyMaterial(po,mat){ return receivingOf(po).filter(r=>r.Material==mat).reduce((a,r)=>a+(Number(r.ReceivedQty)||0),0); }
 function orderProgress(po){
   const ord = orderItemsOf(po).reduce((a,i)=>a+(Number(i.OrderedQty)||0),0);
@@ -612,27 +607,6 @@ function selectVendor(id){
   if(bad.length){ toast('Vendor is blacklisted for: '+bad.join(', '),'error'); return; }
   selectedVendorId=id;
   updateVendorPicker();
-}
-async function saveOrder(){
-  const items=collectItems().filter(i=>i.Material);
-  if(!items.length) return toast('Add at least one item','error');
-  if(!selectedVendorId) return toast('Select a vendor','error');
-  for(const it of items){
-    if(!(Number(it.OrderedQty)>0)) return toast('Quantity must be greater than 0 ('+it.Material+')','error');
-    if(String(vendorTagFor(selectedVendorId,it.Material)).toLowerCase()==='blacklisted')
-      return toast('Vendor is blacklisted for '+it.Material,'error');
-  }
-  const date=$('#noDate').value, exp=$('#noExp').value;
-  if(exp && exp<date) return toast('Expected date cannot be before order date','error');
-  const btn=$('#noSave'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
-  try{
-    const res=await api({action:'addOrder',VendorID:selectedVendorId,Date:date,ExpectedDate:exp,
-      Priority:$('#noPriority').value,CreatedBy:State.user.Name,Remarks:$('#noRemarks').value,
-      LeadTime:$('#noLeadTime').value,
-      items:JSON.stringify(items)});
-    toast('Order '+res.PO_No+' created','success');
-    closeModal(); await loadAll(); render();
-  }catch(e){ toast(e.message,'error'); btn.disabled=false; btn.textContent='Create Order'; }
 }
 
 /* ----- Edit Order (full) ----- */
