@@ -101,11 +101,11 @@ const pageMeta = {
   dispatch:{title:'Dispatch',sub:'Dispatch queue & delivery tracking'},
   deliverychallan:{title:'Delivery Challan',sub:'Generate & track delivery challans'},
   mydashboard:{title:'My Dashboard',sub:'Your orders & production updates'},
-  customers:{title:'Customers',sub:'Customer master data'},
+  customers:{title:'Accounts',sub:'All customers — with their contacts'},
   products:{title:'Products',sub:'Product master data'},
   suppliers:{title:'Suppliers',sub:'Supplier master data'},
   users:{title:'Users & Access',sub:'Manage users and roles'},
-  accounts:{title:'Accounts',sub:'Order accounts & finance tracking'},
+  accounts:{title:'Finance',sub:'Order-wise payment, balance and billing'},
   customer:{title:'Customer',sub:'All orders, payments, leads, service and replacements for this customer'}
 };
 
@@ -5671,6 +5671,7 @@ function recFromSuite(rtype, id) {
     const [ph, nm] = String(id).split('|');
     return openCustomer(ph || nm, '', ph ? nm : '');
   }
+  if (rtype === 'page' && id && document.getElementById('page-' + id)) return nav(id, document.getElementById('nav-' + id));   // Suite ka "Accounts" → ERP ka page
   if (['customer', 'order', 'lead'].indexOf(rtype) !== -1 && id) openRec(rtype, id);
 }
 window.addEventListener('message', e => {
