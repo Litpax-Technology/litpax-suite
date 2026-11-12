@@ -246,7 +246,7 @@
   }
   /* ---------- LINKED RECORDS: kisi bhi app se "ye record kholo" → sahi app + record ----------
    * customer / order / lead → ERP · ticket / case (Advance Replacement) → Service Hub */
-  var REC_APP = { customer: 'erp', order: 'erp', lead: 'erp', ticket: 'service', 'case': 'service' };
+  var REC_APP = { customer: 'erp', order: 'erp', lead: 'erp', page: 'erp', ticket: 'service', 'case': 'service' };
   function openRecordX(rtype, id) {
     var mod = REC_APP[rtype];
     if (!mod || !id) return;
@@ -318,18 +318,20 @@
       '<small>' + esc(me ? (me.team === 'System Incharge' ? 'Store' : me.team) + ' · ' + me.id : (S.user.roles || []).slice(0, 2).join(' · ') || S.user.username) + '</small></span>';
     buildNav();
     var want = location.hash.replace('#', '');
-    go(navItems().some(function (n) { return n.id === want; }) ? want : (navItems()[0] || {}).id);
+    var first = navItems().filter(function (n) { return n.id !== 'accounts'; })[0] || {};   // Accounts upar hai, par login pe apna app khule
+    go(navItems().some(function (n) { return n.id === want; }) ? want : first.id);
     refreshBadge();
   }
 
   /* ---------------- NAV ---------------- */
   function navItems() {
     var u = S.user, s = S.sessions, M = APPNAMES, items = [];
-    if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });
+    // Accounts (ERP ka customers page) — sabse upar
+    var erpRole = s.erp_user && s.erp_user.role;
+    if (erpRole === 'Admin' || erpRole === 'Sales') items.push({ id: 'accounts', sec: 'Apps', label: 'Accounts', ic: '◫' });
     // Inward Entry ab IMS ke Inward page me hai (SOMS approval ke saath)
     var isAdmin = S.user.roles.indexOf('Admin') !== -1;
     // Admin ke top bar me Approvals, Dispatch (manual), 2 Wheeler Line nahi dikhte
-    if (has('Approver') && !isAdmin) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
     if (s.erp_user && s.erp_user.role) items.push({ id: 'm-erp', sec: 'Apps', label: M.erp.label, ic: '▤', mod: 'erp' });
     if (s.ims) items.push({ id: 'm-ims', sec: 'Apps', label: M.ims.label, ic: '▦', mod: 'ims' });
     if ((has('Production') || u.pltSup) && !isAdmin) items.push({ id: 'm-plt2W', sec: 'Apps', label: SUITE.MODULES.plt2W.label, ic: '⚡', mod: 'plt2W' });
@@ -340,6 +342,8 @@
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
+    if (has('Approver') && !isAdmin) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
+    if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });   // sabse neeche
     try { sessionStorage.setItem('suite_can', items.map(function (x) { return x.id; }).join(',')); } catch (e) {}   // apps ko pata ho kaunse link khulenge
     return items;
   }
@@ -382,7 +386,7 @@
     spark: '<path d="M12 3c.6 4.5 2.5 6.4 7 7-4.5.6-6.4 2.5-7 7-.6-4.5-2.5-6.4-7-7 4.5-.6 6.4-2.5 7-7z"/>',
     tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>'
   };
-  var APPICO = { overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
+  var APPICO = { accounts: 'users', overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
                                   'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'spark', settings: 'gear' };
   var PAGEICO = [[/switch|staff/i, 'users'], [/replacement/i, 'battery'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
@@ -404,7 +408,7 @@
       var sub = n.mod ? (S.appNav[n.mod] || []) : [], appHit = !q || n.label.toLowerCase().indexOf(q) !== -1;
       var subs = sub.filter(function (p) { return appHit || (p.label + ' ' + p.sec).toLowerCase().indexOf(q) !== -1; });
       if (!appHit && !subs.length) return;
-      var cur = S.view === n.id, open = sub.length && (q ? true : !!S.open[n.mod]);
+      var cur = S.view === n.id || (n.id === 'accounts' && S.view === 'm-erp' && (S.appNav.erp || []).some(function (p) { return p.k === 'nav-customers' && p.active; })), open = sub.length && (q ? true : !!S.open[n.mod]);
       if (!q && n.sec !== sec) { sec = n.sec; html += '<div class="sn-grp">' + esc(sec) + '</div>'; }
       html += '<div class="nav-item' + (cur ? ' cur' : '') + (cur && !sub.length ? ' active' : '') + (open ? ' open' : '') + '" data-id="' + n.id + '" title="' + esc(n.label) + '">' +
         ico(APPICO[n.id]) + '<span class="sn-lbl">' + esc(n.label) + '</span>' +
@@ -426,6 +430,7 @@
     $('#appShell').classList.toggle('solo', items.length === 1 && !!items[0].mod);
   }
   function navClick(id) {
+    if (id === 'accounts') { openRecordX('page', 'customers'); snClose(); return; }   // ERP ka Accounts page
     var n = navItems().filter(function (x) { return x.id === id; })[0];
     if (!n) return;
     if (n.mod && S.view === id && (S.appNav[n.mod] || []).length && !$('#appShell').classList.contains('sn-mini')) {
@@ -453,6 +458,7 @@
   }
   function go(id) {
     if (!id) return;
+    if (id === 'accounts') return openRecordX('page', 'customers');
     var n = navItems().filter(function (x) { return x.id === id; })[0];
     if (!n) return;
     S.view = id;
