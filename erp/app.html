@@ -73,11 +73,11 @@
   <div class="nav-item" onclick="nav('deliverychallan',this)" id="nav-deliverychallan"><span class="nav-icon">📄</span>Delivery Challan</div>
     <div class="nav-item" onclick="window.open('MaterialProd/','_blank')" id="nav-materialprod"><span class="nav-icon">📦</span>Material vs Production</div>
   <div class="nav-sec" id="sec-master">Master Data</div>
-  <div class="nav-item" onclick="nav('customers',this)" id="nav-customers"><span class="nav-icon">👥</span>Customers</div>
+  <div class="nav-item" onclick="nav('customers',this)" id="nav-customers"><span class="nav-icon">👥</span>Accounts</div>
   <div class="nav-item" onclick="nav('products',this)" id="nav-products"><span class="nav-icon">⚡</span>Products</div>
   <div class="nav-item" onclick="nav('suppliers',this)" id="nav-suppliers"><span class="nav-icon">🏭</span>Suppliers</div>
   <div class="nav-sec" id="sec-finance">Finance</div>
-  <div class="nav-item" onclick="nav('accounts',this)" id="nav-accounts"><span class="nav-icon">💰</span>Accounts</div>
+  <div class="nav-item" onclick="nav('accounts',this)" id="nav-accounts"><span class="nav-icon">💰</span>Finance</div>
   <div class="nav-sec" id="sec-admin">Admin</div>
   <div class="nav-item" onclick="nav('users',this)" id="nav-users"><span class="nav-icon">🔐</span>Users</div>
   <div class="sidebar-foot">
@@ -392,7 +392,7 @@
 <!-- ===== CUSTOMERS PAGE ===== -->
 <div class="page" id="page-customers">
   <div class="card">
-    <div class="card-head"><div class="card-title">Customers</div><button class="btn btn-primary" onclick="openModal('custModal')">+ Add Customer</button></div>
+    <div class="card-head"><div class="card-title">Accounts</div><button class="btn btn-primary" onclick="openModal('custModal')">+ Add Account</button></div>
     <div class="table-wrap">
       <table id="custTableEl">
         <thead id="custTableHead"><tr><th>ID</th><th>Company</th><th>Contact</th><th>Phone</th><th>GSTIN</th><th>City</th><th>Credit Days</th><th>Docs</th></tr></thead>
@@ -1490,7 +1490,7 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="app.js?v=ac2"></script>
+<script src="app.js?v=ac3"></script>
 <script src="../suite-bridge.js"></script>
 </body>
 </html>
