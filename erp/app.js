@@ -735,9 +735,6 @@ function onModelPick(prefix, id) {
 // ========== ORDER ITEMS LOGIC ==========
 let itemRowCount = 1;
 
-function isPerWattMode() { return false; }
-function isVAMode() { return true; }
-
 // ========== VALIDATION ==========
 function markErr(el) { if (el) el.classList.add('field-error'); }
 function clearErr(el) { if (el) el.classList.remove('field-error'); }
@@ -1086,21 +1083,6 @@ function addItemRow() {
     </div>`;
 
   body.appendChild(div);
-}
-
-function removeItemRow(id) {
-  const row = document.getElementById(`item-row-${id}`);
-  if (row) row.remove();
-  updateOrderTotals();
-}
-
-function calcItemTotal(id) {
-  const qty = parseFloat(document.getElementById(`im-qty-${id}`)?.value) || 0;
-  const price = parseFloat(document.getElementById(`im-price-${id}`)?.value) || 0;
-  const total = qty * price;
-  const totalEl = document.getElementById(`im-total-${id}`);
-  if (totalEl) totalEl.value = total ? total.toFixed(2) : '';
-  updateOrderTotals();
 }
 
 // ========== CHARGER ==========
@@ -3860,40 +3842,6 @@ function submitBilling() {
   });
 }
 
-function viewOrderPayments(orderID, custName, orderVal) {
-  document.getElementById('vp-orderid').textContent  = orderID;
-  document.getElementById('vp-custname').textContent = custName;
-  document.getElementById('vp-orderval').textContent = '₹' + fmt(orderVal||0);
-  document.getElementById('vp-list').innerHTML = '<div class="loading"><div class="spin"></div></div>';
-  document.getElementById('vp-total').textContent   = '₹0';
-  document.getElementById('vp-balance').textContent = '—';
-  openModal('viewPaymentsModal');
-  api({ action: 'getPayments', 'Order ID': orderID }, r => {
-    if (!r.success || !r.data.length) {
-      document.getElementById('vp-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px;">No payment entries yet</div>';
-      document.getElementById('vp-total').textContent   = '₹0';
-      document.getElementById('vp-balance').textContent = '₹' + fmt(orderVal||0);
-      return;
-    }
-    const total   = r.totalReceived || 0;
-    const balance = (parseFloat(orderVal)||0) - total;
-    document.getElementById('vp-total').textContent   = '₹' + fmt(total);
-    document.getElementById('vp-balance').textContent = '₹' + fmt(balance);
-    document.getElementById('vp-list').innerHTML = r.data.map(p => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:18px;">💵</span>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--success);">₹${fmt(p['Amount']||0)}</div>
-            <div style="font-size:11px;color:var(--text3);">${p['Date']||''} · ${p['Mode']||''} ${p['Reference']?'· '+p['Reference']:''}</div>
-            ${p['Remarks']?`<div style="font-size:11px;color:var(--text3);">${p['Remarks']}</div>`:''}
-          </div>
-        </div>
-        <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);">${p['Payment ID']||''}</span>
-      </div>`).join('');
-  });
-}
-
 function searchAccounts() {
   const q = (document.getElementById('accSearch').value||'').toLowerCase();
   if (!q) { loadAccounts(); return; }
@@ -4721,10 +4669,6 @@ function calcEditItemAuto(id) {
   }
   const totalEl = document.getElementById(`eim-total-${id}`);
   if (totalEl) totalEl.value = total ? total.toFixed(2) : '';
-}
-
-function calcEditItemTotal(id) {
-  calcEditItemAuto(id);
 }
 
 // ========== EDIT ORDER — CHARGER SECTION (dynamically injected) ==========
