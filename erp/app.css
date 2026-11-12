@@ -1267,3 +1267,7 @@ html.in-suite .btn-logout { display: none; }
 .acc-grp-foot { display: flex; gap: 8px; margin-top: 8px; }
 .form-group.full { grid-column: 1 / -1; }
 @media (max-width: 640px) { .acc-grp-row { flex-wrap: wrap; } .acc-grp-stats { text-align: left; width: 100%; padding-left: 24px; } }
+.acc-tools { display: flex; gap: 6px; align-items: center; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+.acc-pick { align-items: stretch !important; }
+.acc-pick .btn { height: auto !important; min-height: 0; padding-top: 0; padding-bottom: 0; flex: none; display: inline-flex; align-items: center; }
+.acc-note:empty { display: none; }
