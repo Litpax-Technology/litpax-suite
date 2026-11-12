@@ -38,6 +38,14 @@ window.SUITE = {
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
 
+  // System Showcase — sirf Admin ko, screen ke kone me "ad" jaisa aata-jaata card (nav me tab nahi)
+  SHOWCASE: {
+    URL: 'https://litpax-technology.github.io/Slide-Show/',
+    FIRST_AFTER_SEC: 25,   // login ke kitni der baad pehli baar aaye
+    SHOW_SEC: 14,          // kitni der dikhe, phir khud chala jaye
+    EVERY_MIN: 5           // phir har kitne minute me wapas aaye
+  },
+
   // Service Hub settings (service/ ke saare pages yahi padhte hain)
   SERVICE: {
     JSONP_TIMEOUT_MS: 25000,
