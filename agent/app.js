@@ -45,21 +45,108 @@
 
   /* ---------------- markdown (chhota, safe) ---------------- */
   function inline(s) {
-    return s
+    return linkIds(s
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
       .replace(/(^|[\s(])_([^_]+)_(?=[\s).,!?]|$)/g, '$1<i>$2</i>')
-      .replace(/(^|[\s(])\*([^*]+)\*(?=[\s).,!?]|$)/g, '$1<i>$2</i>');
+      .replace(/(^|[\s(])\*([^*]+)\*(?=[\s).,!?]|$)/g, '$1<i>$2</i>'));
+  }
+
+  /* ---------------- clickable IDs → us app me record khulta hai ---------------- */
+  var ID_RE = /\b(LTX-R-\d{3,}|ORD-\d{3,}|LD-\d{3,}|ACC-\d{3,}|C\d{3,4}|AR-\d{3,}|PO-[A-Z0-9-]*\d|LP\d{3,5}-\d{3,})\b/g;
+  function idType(id) {
+    if (/^LTX-R-/.test(id)) return 'ticket';
+    if (/^ORD-/.test(id)) return 'order';
+    if (/^LD-/.test(id)) return 'lead';
+    if (/^(ACC-|C\d)/.test(id)) return 'customer';
+    if (/^AR-/.test(id)) return 'case';
+    if (/^PO-/.test(id)) return 'po';
+    return 'serial';
+  }
+  var ID_TIP = { ticket: 'Open ticket in Service Hub', order: 'Open order in ERP', lead: 'Open lead in ERP', customer: 'Open account in ERP',
+    'case': 'Open case in Advance Replacement', po: 'Ask about this purchase order', serial: 'Show the full history of this battery' };
+  function linkIds(html) {
+    return html.split(/(<[^>]+>)/).map(function (part, i, all) {
+      if (part.charAt(0) === '<') return part;
+      if (i > 0 && /^<code/.test(all[i - 1])) return part;   // code ke andar link nahi
+      return part.replace(ID_RE, function (id) {
+        var t = idType(id);
+        return '<a href="#" class="ag-id ag-id-' + t + '" data-rt="' + t + '" data-id="' + id + '" title="' + ID_TIP[t] + '">' + id + '</a>';
+      });
+    }).join('');
+  }
+  function openId(rt, id) {
+    if (rt === 'po') return ask('Show purchase order ' + id + ': vendor, items, ordered vs received, expected date and status.');
+    if (rt === 'serial') return ask('Battery 360 for serial ' + id + ': line history, dispatch, customer, service and replacement.');
+    if (window.parent === window) return toast('This opens inside Litpax Suite');
+    try { window.parent.postMessage({ source: 'litpax-suite', type: 'open-record', rtype: rt, id: id }, location.origin); } catch (e) {}
   }
   function isNumCell(s) { return /^[-₹\s]*[\d,]+(\.\d+)?\s*%?$/.test(s.trim()); }
   function table(lines) {
     var rows = lines.map(function (l) { return l.trim().replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); }); });
     var head = rows[0], body = rows.slice(2);
     var num = head.map(function (_, i) { return body.length && body.every(function (r) { return !r[i] || isNumCell(r[i]); }); });
-    return '<div class="ag-tbl"><table><thead><tr>' + head.map(function (h, i) { return '<th' + (num[i] ? ' class="num"' : '') + '>' + inline(h) + '</th>'; }).join('') +
+    return '<div class="ag-tblw"><div class="ag-tbl"><table><thead><tr>' + head.map(function (h, i) { return '<th' + (num[i] ? ' class="num"' : '') + '>' + inline(h) + '</th>'; }).join('') +
       '</tr></thead><tbody>' + body.map(function (r) {
         return '<tr>' + head.map(function (_, i) { return '<td' + (num[i] ? ' class="num"' : '') + '>' + inline(r[i] || '') + '</td>'; }).join('') + '</tr>';
-      }).join('') + '</tbody></table></div>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="ag-tbl-x"><button type="button" data-x="sheet" title="Open this table as a new Google Sheet">Google Sheet ↗</button>' +
+      '<button type="button" data-x="wa" title="Copy as WhatsApp text and open WhatsApp">WhatsApp text</button></div></div>';
+  }
+
+  /* ---------------- export: table → Google Sheet / WhatsApp ---------------- */
+  function tblData(wrap) {
+    var t = wrap.querySelector('table');
+    return {
+      columns: Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) { return th.textContent.trim(); }),
+      rows: Array.prototype.map.call(t.querySelectorAll('tbody tr'), function (tr) {
+        return Array.prototype.map.call(tr.children, function (td) { return td.textContent.trim(); });
+      })
+    };
+  }
+  function askOf(el) {   // ye jawab kis sawaal ka tha
+    var m = el.closest('.ag-msg');
+    while (m && !m.classList.contains('me')) m = m.previousElementSibling;
+    return m ? m.textContent.trim() : 'Ask Litpax';
+  }
+  function waText(title, d) {
+    var lines = ['*' + title.slice(0, 120) + '*', ''];
+    d.rows.forEach(function (r, i) {
+      var first = r[0] || '', rest = [];
+      for (var k = 1; k < d.columns.length; k++) if (r[k]) rest.push(d.columns[k] + ': ' + r[k]);
+      lines.push((i + 1) + '. *' + first + '*' + (rest.length ? '\n   ' + rest.join(' · ') : ''));
+    });
+    lines.push('', '— Litpax Suite');
+    return lines.join('\n');
+  }
+  function copyText(t) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+    return new Promise(function (ok, no) {
+      var x = document.createElement('textarea'); x.value = t; x.style.position = 'fixed'; x.style.opacity = '0';
+      document.body.appendChild(x); x.select();
+      try { document.execCommand('copy') ? ok() : no(); } catch (e) { no(e); } x.remove();
+    });
+  }
+  function exportTbl(btn) {
+    var wrap = btn.closest('.ag-tblw'), d = tblData(wrap), title = askOf(btn);
+    if (btn.dataset.x === 'wa') {
+      var txt = waText(title, d);
+      copyText(txt).then(function () { toast('Copied — paste it in WhatsApp'); }, function () { toast('Could not copy'); });
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt.slice(0, 3500)), '_blank', 'noopener');
+      return;
+    }
+    if (btn.disabled) return;
+    var label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Creating…';
+    var tab = window.open('', '_blank');   // popup blocker se bachne ke liye abhi khol lo
+    api('export', { title: title, columns: d.columns, rows: d.rows }).then(function (r) {
+      btn.textContent = 'Opened ✓';
+      if (tab) tab.location = r.url; else window.open(r.url, '_blank', 'noopener');
+      toast('Sheet created in Drive › Ask Litpax Exports');
+    }, function (e) {
+      if (tab) tab.close();
+      toast(e.message); btn.textContent = label;
+    }).then(function () { setTimeout(function () { btn.disabled = false; if (btn.textContent === 'Opened ✓') btn.textContent = label; }, 4000); });
   }
   function chart(json) {
     var c;
@@ -127,12 +214,16 @@
     var st = (steps && steps.length) ? '<details class="ag-steps"><summary>How I found this · ' + steps.length + ' step' + (steps.length > 1 ? 's' : '') + '</summary><ol>' +
       steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol></details>' : '';
     d.innerHTML = '<div class="av" aria-hidden="true">✦</div><div class="b">' + (isErr ? '<p>' + esc(text) + '</p>' : md(text)) + st +
-      (isErr ? '' : '<div class="ag-tools"><button type="button" class="ag-copy">Copy</button></div>') + '</div>';
+      (isErr ? '' : '<div class="ag-tools"><button type="button" class="ag-copy">Copy</button>' +
+        (VOICE.tts ? '<button type="button" class="ag-copy ag-say" aria-label="Read this answer aloud">🔊 Listen</button>' : '') + '</div>') + '</div>';
     var cp = d.querySelector('.ag-copy');
     if (cp) cp.onclick = function () {
-      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { toast('Copied'); }, function () { toast('Could not copy'); });
+      copyText(text).then(function () { toast('Copied'); }, function () { toast('Could not copy'); });
     };
+    var say = d.querySelector('.ag-say');
+    if (say) say.onclick = function () { speak(text, say); };
     $('agLog').appendChild(d); scrollEnd();
+    return d;
   }
   /* ---------------- action cards (badlav / naya record / mail) ---------------- */
   function addAction(a) {
@@ -146,12 +237,13 @@
         '<label>Subject<input class="f-sub" value="' + esc(a.subject) + '"></label>' +
         '<label>Message<textarea class="f-body" rows="9">' + esc(a.body) + '</textarea></label>';
     } else {
-      body = '<div class="ag-card' + (a.risk ? ' risk' : '') + '"><div class="ag-card-h">' + (a.type === 'create' ? '＋ ' : '✎ ') + esc(a.title) + '</div>' +
+      body = '<div class="ag-card' + (a.risk ? ' risk' : '') + '"><div class="ag-card-h">' + (a.type === 'create' ? '＋ ' : '✎ ') + esc(a.title) +
+        (a.via ? ' <span class="ag-via" title="Saved through the app with its normal checks">via ' + esc(a.via) + '</span>' : '') + '</div>' +
         (a.reason ? '<div class="ag-card-r">' + esc(a.reason) + '</div>' : '') +
         '<table>' + a.rows.map(function (r) {
           return '<tr><th>' + esc(r.col) + '</th>' + (a.type === 'update' ? '<td class="old">' + esc(r.old) + '</td><td class="arr">→</td>' : '') + '<td class="nw">' + esc(r.nw) + '</td></tr>';
         }).join('') + '</table>' +
-        (a.risk ? '<div class="ag-card-w">Quantity / amount change. Related totals in other sheets will not update by themselves.</div>' : '');
+        (a.warn ? '<div class="ag-card-w">' + esc(a.warn) + '</div>' : a.risk && !a.via ? '<div class="ag-card-w">Quantity / amount change. Related totals in other sheets will not update by themselves.</div>' : '');
     }
     body += '<div class="ag-card-a"><button type="button" class="go">' + (a.type === 'email' ? 'Send' : 'Confirm') + '</button>' +
       '<button type="button" class="no">Cancel</button><span class="st"></span></div></div>';
@@ -193,7 +285,7 @@
     return d;
   }
 
-  function ask(q) {
+  function ask(q, byVoice) {
     q = String(q || '').trim();
     if (!q || A.busy) return;
     A.busy = true; $('agSend').disabled = true;
@@ -204,8 +296,9 @@
     var t = addTyping();
     api('ask', { q: q, history: prior }).then(function (r) {
       A.history.push({ role: 'model', text: r.answer, steps: r.steps || [] }); save();
-      addBot(r.answer, r.steps);
+      var bm = addBot(r.answer, r.steps);
       (r.actions || []).forEach(addAction);
+      if (byVoice && bm) { var sb = bm.querySelector('.ag-say'); if (sb) speak(r.answer, sb); }
     }).catch(function (e) {
       addBot(e.message, e.steps, true);
     }).then(function () {
@@ -236,6 +329,70 @@
       .then(function () { clearInterval(t._t); t.remove(); });
   }
 
+  /* ---------------- voice: 🎤 bolo → sawaal · 🔊 jawab suno (browser ka free feature) ---------------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var VOICE = { stt: !!SR, tts: !!window.speechSynthesis, rec: null, on: false, lang: 'en-IN' };
+  try { VOICE.lang = localStorage.getItem('ag_lang') || 'en-IN'; } catch (e) {}
+  function setLang(l) {
+    VOICE.lang = l; try { localStorage.setItem('ag_lang', l); } catch (e) {}
+    var b = $('agLang'); if (b) { b.textContent = l === 'hi-IN' ? 'हि' : 'EN'; b.title = 'Voice language: ' + (l === 'hi-IN' ? 'Hindi' : 'English (India)') + ' — click to switch'; }
+  }
+  function micStop() { if (VOICE.rec) try { VOICE.rec.stop(); } catch (e) {} }
+  function micStart() {
+    if (VOICE.on) return micStop();
+    if (A.busy) return;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    var rec = new SR(), q = $('agQ'), base = q.value ? q.value.replace(/\s*$/, ' ') : '', fin = '', err = '';
+    rec.lang = VOICE.lang; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = function (e) {
+      var interim = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) fin += e.results[i][0].transcript; else interim += e.results[i][0].transcript;
+      }
+      q.value = base + fin + interim; q.dispatchEvent(new Event('input'));
+    };
+    rec.onerror = function (e) { err = e.error || 'error'; };
+    rec.onend = function () {
+      VOICE.on = false; VOICE.rec = null; $('agMic').classList.remove('rec'); $('agMic').setAttribute('aria-pressed', 'false');
+      if (err === 'not-allowed' || err === 'service-not-allowed') return toast('Microphone is blocked. Allow it from the 🔒 icon in the address bar.');
+      if (err === 'no-speech') return toast('Did not hear anything. Try again.');
+      if (err && err !== 'aborted') return toast('Voice error: ' + err);
+      var v = q.value.trim();
+      if (fin.trim() && v) { q.value = ''; q.style.height = ''; ask(v, true); }
+    };
+    try { rec.start(); } catch (e) { return toast('Could not start the microphone'); }
+    VOICE.rec = rec; VOICE.on = true;
+    $('agMic').classList.add('rec'); $('agMic').setAttribute('aria-pressed', 'true');
+  }
+  function plainForSpeech(md) {
+    return String(md || '')
+      .replace(/```chart[\s\S]*?```/g, ' ')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/((?:^\s*\|.*\|\s*$\n?)+)/gm, function (t) { var n = t.trim().split('\n').length - 2; return n > 0 ? ' A table with ' + n + ' row' + (n > 1 ? 's' : '') + ' is shown on screen. ' : ' '; })
+      .replace(/^\s*_.*_\s*$/gm, ' ')                 // Source: line
+      .replace(/[*_`#>|]/g, ' ')
+      .replace(/₹\s?/g, 'rupees ')
+      .replace(/\s+/g, ' ').trim();
+  }
+  function speak(text, btn) {
+    var ss = window.speechSynthesis;
+    if (!ss) return;
+    if (ss.speaking && VOICE.btn === btn) { ss.cancel(); return; }
+    ss.cancel();
+    var t = plainForSpeech(text);
+    if (!t) return;
+    var lang = /[\u0900-\u097F]/.test(t) ? 'hi-IN' : (VOICE.lang === 'hi-IN' ? 'hi-IN' : 'en-IN');
+    var u = new SpeechSynthesisUtterance(t.slice(0, 3000));
+    u.lang = lang; u.rate = 1;
+    var vs = ss.getVoices().filter(function (v) { return v.lang === lang; });
+    if (!vs.length) vs = ss.getVoices().filter(function (v) { return v.lang && v.lang.indexOf(lang.slice(0, 2)) === 0; });
+    if (vs.length) u.voice = vs[0];
+    VOICE.btn = btn;
+    if (btn) { btn.textContent = '■ Stop'; btn.classList.add('on'); }
+    u.onend = u.onerror = function () { if (btn) { btn.textContent = '🔊 Listen'; btn.classList.remove('on'); } };
+    ss.speak(u);
+  }
+
   /* ---------------- boot ---------------- */
   function boot() {
     $('agChips').innerHTML = (window.AGENT_PROMPTS || []).map(function (p, i) {
@@ -249,7 +406,20 @@
     $('agForm').onsubmit = function (e) { e.preventDefault(); var v = q.value; q.value = ''; q.style.height = ''; ask(v); };
     q.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('agForm').requestSubmit ? $('agForm').requestSubmit() : $('agForm').onsubmit(e); } });
     q.addEventListener('input', function () { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 160) + 'px'; });
-    $('agClear').onclick = clearChat;
+    $('agClear').onclick = function () { if (window.speechSynthesis) speechSynthesis.cancel(); clearChat(); };
+    // IDs (record kholo) + table export — ek hi jagah se
+    $('agLog').addEventListener('click', function (e) {
+      var a = e.target.closest('a.ag-id');
+      if (a) { e.preventDefault(); return openId(a.dataset.rt, a.dataset.id); }
+      var x = e.target.closest('.ag-tbl-x button');
+      if (x) exportTbl(x);
+    });
+    if (VOICE.stt) {
+      $('agMic').hidden = false; $('agLang').hidden = false; setLang(VOICE.lang);
+      $('agMic').onclick = micStart;
+      $('agLang').onclick = function () { setLang(VOICE.lang === 'hi-IN' ? 'en-IN' : 'hi-IN'); };
+    }
+    if (VOICE.tts) { try { speechSynthesis.getVoices(); } catch (e) {} }
     $('agSources').onclick = showSources;
 
     // Suite se aaya sawaal (floating button / Ctrl+K): ?q=
