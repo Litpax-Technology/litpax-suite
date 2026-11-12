@@ -474,15 +474,14 @@ let custCache = [];
 function loadCustCache() {
   api({ action: 'getCustomers' }, r => {
     custCache = (r.success && r.data) ? r.data : [];
-    const dl = document.getElementById('custSuggestions');
-    if (dl) dl.innerHTML = custCache.map(c => `<option value="${(c.CompanyName||'').replace(/"/g,'&quot;')}">`).join('');
+    accFromCustomers(r); accFillDatalist();   // Accounts mode + types (neeche ACCOUNTS)
   });
 }
 
 function onCustNameInput() {
   const val = (document.getElementById('o-cust')?.value || '').trim().toLowerCase();
-  if (!val) return;
-  const match = custCache.find(c => (c.CompanyName||'').trim().toLowerCase() === val);
+  const match = val ? custCache.find(c => (c.CompanyName||'').trim().toLowerCase() === val) : null;
+  accOrderPick(match);   // Account ID + contacts (ACCOUNTS)
   if (!match) return;
   const phoneEl = document.getElementById('o-phone');
   const cityEl  = document.getElementById('o-city');
@@ -790,6 +789,7 @@ function validateOrderMeta() {
     if (!firstBad) firstBad = { el: transEl, msg: 'Transportation Charges cannot be negative' };
   }
   if (firstBad) { toast(firstBad.msg, 'e'); firstBad.el?.focus(); return false; }
+  if (!accOrderCheck()) return false;   // Accounts: customer list se chuna ho
   return true;
 }
 
@@ -974,6 +974,7 @@ function saveAndAddMore() {
       'Date': document.getElementById('o-date').value,
       'Sales Person Name': document.getElementById('o-sales').value,
       'Customer Name': cust, 'Lead ID': LD_ORDER_FOR || '',
+      'Customer ID': document.getElementById('o-custid')?.value || '', 'Contact ID': document.getElementById('o-contact')?.value || '',
       'Customer Phone': document.getElementById('o-phone').value,
       'City': document.getElementById('o-city').value,
       'Total Qty': totalQty,
@@ -1407,6 +1408,7 @@ function submitOrder() {
     'Date': document.getElementById('o-date').value,
     'Sales Person Name': document.getElementById('o-sales').value,
     'Customer Name': cust, 'Lead ID': LD_ORDER_FOR || '',
+    'Customer ID': document.getElementById('o-custid')?.value || '', 'Contact ID': document.getElementById('o-contact')?.value || '',
     'Customer Phone': document.getElementById('o-phone').value,
     'City': document.getElementById('o-city').value,
     'Total Qty': totalQty,
@@ -1456,6 +1458,7 @@ function submitOrder() {
 function resetOrderForm() {
   currentOrderID = null;
   LD_ORDER_FOR = ''; const ldn = document.getElementById('ldOrderNote'); if (ldn) ldn.remove();
+  accOrderPick(null);
   savedItemsData = [];
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
   const badge = document.getElementById('currentOrderBadge');
@@ -3460,6 +3463,7 @@ function ensureCustPipeline() {
 
 function loadCustomers() {
   ensureCustPipeline();
+  accEnsure(accListTools);   // Accounts: + Add → naya account, Admin: Duplicates
   const isSales = user.role === 'Sales' && user.salesName;
   document.getElementById('custTable').innerHTML = '<tr><td colspan="12"><div class="loading"><div class="spin"></div> Loading...</div></td></tr>';
   api({ action: 'getCustomerInsights', salesName: isSales ? user.salesName : '' }, r => {
@@ -3505,7 +3509,7 @@ function renderCustomers() {
     const dsCol = c.daysSince == null ? '—'
                 : `<span style="font-weight:600;color:${c.daysSince > 30 ? 'var(--error)' : 'var(--text)'};">${c.daysSince}d</span>`;
     return `<tr>
-      <td class="td-bold">${custLink(c.name, c.phone, c.cust && c.cust.CustomerID)}</td>
+      <td class="td-bold">${custLink(c.name, c.phone, c.cust && c.cust.CustomerID)}${ACC_MODE && c.cust ? '<div class="acc-types acc-types-sm">' + accTypeBadges(c.cust.Type) + '</div>' : ''}</td>
       <td>${esc(c.city) || '—'}</td>
       <td>${esc(c.phone) || '—'}</td>
       <td>${esc(c.salesPerson) || '—'}</td>
@@ -3517,7 +3521,7 @@ function renderCustomers() {
       <td>${c.nextExpected || '—'}</td>
       <td>${st}${inact}${noOrd}</td>
       <td style="white-space:nowrap;">
-        ${(user.role === 'Sales' && c.cust) ? `<button class="btn btn-sm btn-warning" onclick="openCustEdit(allCustInsights[${c._i}].cust)" title="Edit">📝</button>` : ''}
+        ${(user.role === 'Sales' && c.cust) ? `<button class="btn btn-sm btn-warning" onclick="${ACC_MODE ? `openCustomer(allCustInsights[${c._i}].cust.CustomerID)` : `openCustEdit(allCustInsights[${c._i}].cust)`}" title="Edit">📝</button>` : ''}
         <button class="btn btn-sm btn-info" onclick="openCustDocs(allCustInsights[${c._i}].name)" title="Docs">📎</button>
         <button class="btn btn-sm" onclick="openBatterySpec(allCustInsights[${c._i}].name)" style="background:var(--warning-dim);color:var(--warning);border-color:var(--warning-b);" title="Battery Spec">🔋</button>
       </td>
@@ -5563,6 +5567,8 @@ function openLeadRec(id) {
 }
 // ---- Lead → Order (lead ki details order form me) ----
 function ldToOrder(id) {
+  if (!ACC_MODE && !ldToOrder._chk) { ldToOrder._chk = 1; return accEnsure(() => ldToOrder(id)); }   // Accounts on? → convert flow
+  if (ACC_MODE) return accConvertLead(id);
   const l = ldAll.find(x => x['Lead ID'] === id); if (!l) return;
   resetOrderForm();
   LD_ORDER_FOR = id;
@@ -5581,7 +5587,7 @@ function openCustomer(key, nm, hint) {
   if (cur && cur.id !== 'page-customer') C360_BACK = { page: cur.id.replace('page-', ''), title: document.getElementById('pageTitle').textContent, sub: document.getElementById('pageSub').textContent };
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-customer').classList.add('active');
-  document.getElementById('pageTitle').textContent = 'Customer';
+  document.getElementById('pageTitle').textContent = ACC_MODE ? 'Account' : 'Customer';
   document.getElementById('pageSub').textContent = pageMeta.customer.sub;
   document.getElementById('c360').innerHTML = '<div class="loading"><div class="spin"></div></div>';
   api({ action: 'getCustomer360', key, name: String(nm || '').trim(), hint: String(hint || '').trim() }, r => {
@@ -5628,16 +5634,18 @@ function renderC360() {
     recEsc([k.complaint, k.model, k.items && +k.items ? k.items + ' items' : ''].filter(Boolean).join(' · ')), pill(k.status))).join('');
   const css = r.cases.map(k => c360Row(`${csLink(k.id)} <span class="c360-muted">· ${recEsc(k.date)}</span>`,
     recEsc([k.model, k.serial && 'SN ' + k.serial, k.warranty].filter(Boolean).join(' · ')), pill(k.status), k.ticket ? 'Ticket ' + tkLink(k.ticket) : '')).join('');
+  if (r.isAccount) { ACC_MODE = true; if (r.meta) ACC_META = r.meta; document.getElementById('pageTitle').textContent = 'Account'; }
+  const via = r.via && r.via.contact ? `<span class="c360-muted">Opened from phone → ${recEsc(r.via.contact.Name)}${r.via.contact.Role ? ' (' + recEsc(r.via.contact.Role) + ')' : ''}</span>` : '';
   document.getElementById('c360').innerHTML = `
-    <div class="c360-top"><button class="btn btn-sm" onclick="c360Back()">← Back</button>${r.found ? '' : '<span class="c360-warn">⚠ Not in the customer master — showing records matched by name / phone</span>'}</div>
+    <div class="c360-top"><button class="btn btn-sm" onclick="c360Back()">← Back</button>${r.found ? '' : '<span class="c360-warn">⚠ Not in the customer master — showing records matched by name / phone</span>'}${via}</div>
     <div class="c360-grid">
       <div class="c360-side">
-        <div class="card c360-card">
+        ${r.isAccount ? accSideHtml(r) : `<div class="card c360-card">
           <div class="c360-av">${recEsc(String(c.CompanyName || '?').trim().charAt(0).toUpperCase())}</div>
           <div class="c360-name">${recEsc(c.CompanyName)}</div>
           <div class="c360-id">${recEsc(c.CustomerID || 'No ID')}</div>
           <div class="c360-info">${info}</div>
-        </div>
+        </div>`}
         <div class="stats-row c360-kpis">
           <div class="stat c-blue"><div class="stat-lbl">Orders</div><div class="stat-val">${t.orders}</div></div>
           <div class="stat c-green"><div class="stat-lbl">Total business</div><div class="stat-val">${c360Rs(t.value)}</div></div>
@@ -5673,3 +5681,426 @@ setTimeout(() => {   // ERP pehli baar khula aur koi record kholna tha
   let p = null; try { p = JSON.parse(sessionStorage.getItem('suite_open') || 'null'); } catch (e) {}
   if (p && p.app === 'erp' && Date.now() - (p.t || 0) < 60000) recFromSuite(p.rtype, p.id);
 }, 400);
+
+/* =====================================================================
+   ACCOUNTS — Account (company) + Contacts (us company ke log)
+   · Customers list / Account page / naya order / lead convert sab isi se
+   · Backend: ERP GAS Accounts.gs (acct* actions). Setup se pehle purana Customers hi chalta hai
+   ===================================================================== */
+let ACC_MODE = false, ACC_META = { types: ['OEM', 'Dealer', 'Retail'], roles: ['Owner', 'Purchase', 'Accounts', 'Service', 'Sales'] };
+let ACC_CTX = null;       // naya account kis kaam ke liye: {from:'order'|'list'|'lead'|'page', lead, name…}
+const accEsc = recEsc;
+const accIsAdmin = () => user.role === 'Admin';
+
+// getCustomers ke saath hi mode + meta aata hai (loadCustCache ise use karta hai)
+function accFromCustomers(r) {
+  ACC_MODE = !!(r && r.accounts);
+  if (r && r.meta) ACC_META = r.meta;
+}
+function accEnsure(cb) {
+  if (custCache.length) return cb();
+  api({ action: 'getCustomers' }, r => { custCache = (r.success && r.data) ? r.data : []; accFromCustomers(r); accFillDatalist(); cb(); });
+}
+function accFillDatalist() {
+  document.querySelectorAll('.acc-pick .btn').forEach(b => { b.style.display = ACC_MODE ? '' : 'none'; });
+  const dl = document.getElementById('custSuggestions');
+  if (dl) dl.innerHTML = custCache.map(c => `<option value="${accEsc(c.CompanyName)}">${accEsc([c.Type, c.City, c.Phone].filter(Boolean).join(' · '))}</option>`).join('');
+}
+const accTypeBadges = t => String(t || '').split(',').map(x => x.trim()).filter(Boolean).map(x => `<span class="acc-type">${accEsc(x)}</span>`).join('') || '<span class="acc-type acc-type-none">Type not set</span>';
+
+/* ---------- Order form: customer list se ---------- */
+function accFindByName(v) { v = String(v || '').trim().toLowerCase(); return v ? custCache.find(c => String(c.CompanyName || '').trim().toLowerCase() === v) : null; }
+function accOrderPick(c, contactId) {
+  const idEl = document.getElementById('o-custid'), wrap = document.getElementById('o-contact-wrap'), sel = document.getElementById('o-contact'), note = document.getElementById('o-acct-note');
+  if (!idEl) return;
+  idEl.value = c ? c.CustomerID : '';
+  if (note) note.innerHTML = c ? `🏢 ${accTypeBadges(c.Type)} <span class="c360-muted">${accEsc(c.CustomerID)}</span>` : '';
+  const cs = c && Array.isArray(c.contacts) ? c.contacts.filter(x => x.Active !== 'No') : [];
+  if (wrap) wrap.style.display = ACC_MODE && c ? '' : 'none';
+  if (sel) {
+    sel.innerHTML = '<option value="">— Not specified —</option>' + cs.map(x => `<option value="${accEsc(x['Contact ID'])}" data-ph="${accEsc(x.Phone)}">${accEsc(x.Name)}${x.Role ? ' · ' + accEsc(x.Role) : ''}${x.Phone ? ' · ' + accEsc(x.Phone) : ''}${x.Primary === 'Yes' ? ' ⭐' : ''}</option>`).join('');
+    const pick = contactId || (cs.find(x => x.Primary === 'Yes') || cs[0] || {})['Contact ID'] || '';
+    sel.value = pick;
+  }
+}
+function accContactChange() {
+  const sel = document.getElementById('o-contact'), o = sel && sel.selectedOptions[0];
+  if (o && o.dataset.ph) { const ph = document.getElementById('o-phone'); ph.value = o.dataset.ph; clearErr(ph); }
+}
+function accOrderNew() {
+  ACC_CTX = { from: 'order' };
+  accOpenForm(null, { name: document.getElementById('o-cust').value.trim(), phone: document.getElementById('o-phone').value.trim(), city: document.getElementById('o-city').value.trim() });
+}
+// validateOrderMeta se: list ka customer chuna hai?
+function accOrderCheck() {
+  if (!ACC_MODE) return true;
+  const el = document.getElementById('o-cust'), id = document.getElementById('o-custid');
+  if (!el || !el.value.trim()) return true;           // khaali → purana "required" message
+  const c = accFindByName(el.value);
+  if (c && id && !id.value) accOrderPick(c);
+  if (id && id.value) return true;
+  markErr(el);
+  toast('Pick the customer from the list — or click "+ New" to create the account', 'e');
+  return false;
+}
+
+/* ---------- Account form (naya / edit) ---------- */
+function accModals() {
+  if (document.getElementById('acctModal')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+<div class="modal-overlay" id="acctModal"><div class="modal" style="max-width:640px;">
+  <div class="modal-head"><div class="modal-title" id="acctTitle">New Account</div><button class="modal-close" onclick="closeModal('acctModal')">✕</button></div>
+  <div class="modal-body">
+    <div id="acctDup"></div>
+    <input type="hidden" id="af-id">
+    <div class="form-grid">
+      <div class="form-group full"><label class="form-label">Account name *</label><input class="form-control" id="af-name" placeholder="Company / shop name (or person's name for retail)"></div>
+      <div class="form-group full"><label class="form-label">Type *</label><div class="acc-chips" id="af-types"></div></div>
+      <div class="form-group"><label class="form-label">City</label><input class="form-control" id="af-city"></div>
+      <div class="form-group"><label class="form-label">State</label><input class="form-control" id="af-state"></div>
+      <div class="form-group"><label class="form-label">GSTIN</label><input class="form-control" id="af-gst" maxlength="15" style="text-transform:uppercase"></div>
+      <div class="form-group"><label class="form-label">Credit days</label><input class="form-control" id="af-credit" inputmode="numeric"></div>
+      <div class="form-group acc-edit-only"><label class="form-label">PAN</label><input class="form-control" id="af-pan" maxlength="10" style="text-transform:uppercase"></div>
+      <div class="form-group acc-edit-only"><label class="form-label">Pincode</label><input class="form-control" id="af-pin" inputmode="numeric" maxlength="6"></div>
+      <div class="form-group full acc-edit-only"><label class="form-label">Address</label><input class="form-control" id="af-addr"></div>
+    </div>
+    <div class="acc-new-only">
+      <div class="acc-sub">First contact <span class="c360-muted">— the person you deal with</span></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Name</label><input class="form-control" id="af-cname"></div>
+        <div class="form-group"><label class="form-label">Role</label><select class="form-control" id="af-crole"></select></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="af-cphone" inputmode="numeric" maxlength="13"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="af-cemail"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal('acctModal')">Cancel</button><button class="btn btn-primary" id="af-save" onclick="accSave()">Save</button></div>
+</div></div>
+<div class="modal-overlay" id="conModal"><div class="modal" style="max-width:520px;">
+  <div class="modal-head"><div class="modal-title" id="conTitle">Add Contact</div><button class="modal-close" onclick="closeModal('conModal')">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="cf-id"><input type="hidden" id="cf-acc">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Name *</label><input class="form-control" id="cf-name"></div>
+      <div class="form-group"><label class="form-label">Role</label><select class="form-control" id="cf-role"></select></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="cf-phone" inputmode="numeric" maxlength="13"></div>
+      <div class="form-group"><label class="form-label">Alt phone</label><input class="form-control" id="cf-alt" inputmode="numeric" maxlength="13"></div>
+      <div class="form-group full"><label class="form-label">Email</label><input class="form-control" id="cf-email"></div>
+      <div class="form-group"><label class="acc-chk"><input type="checkbox" id="cf-primary"> Primary contact ⭐</label></div>
+      <div class="form-group" id="cf-active-wrap"><label class="acc-chk"><input type="checkbox" id="cf-active" checked> Active</label></div>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal('conModal')">Cancel</button><button class="btn btn-primary" id="cf-save" onclick="accContactSave()">Save</button></div>
+</div></div>
+<div class="modal-overlay" id="convModal"><div class="modal" style="max-width:600px;">
+  <div class="modal-head"><div class="modal-title" id="convTitle">Convert lead</div><button class="modal-close" onclick="closeModal('convModal')">✕</button></div>
+  <div class="modal-body" id="convBody"></div>
+</div></div>
+<div class="modal-overlay" id="dupModal"><div class="modal" style="max-width:980px;">
+  <div class="modal-head"><div class="modal-title">Duplicate accounts</div><button class="modal-close" onclick="closeModal('dupModal')">✕</button></div>
+  <div class="modal-body" id="dupBody"></div>
+</div></div>
+<div class="modal-overlay" id="accSetModal"><div class="modal" style="max-width:520px;">
+  <div class="modal-head"><div class="modal-title">Account types &amp; contact roles</div><button class="modal-close" onclick="closeModal('accSetModal')">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-group full"><label class="form-label">Account types (comma separated)</label><input class="form-control" id="as-types"></div>
+    <div class="form-group full"><label class="form-label">Contact roles (comma separated)</label><input class="form-control" id="as-roles"></div>
+  </div><div class="c360-muted" style="font-size:12px;">Removing a type does not change accounts that already use it.</div></div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal('accSetModal')">Cancel</button><button class="btn btn-primary" onclick="accSettingsSave(this)">Save</button></div>
+</div></div>`);
+}
+function accRoleOpts(sel, v) { sel.innerHTML = '<option value="">—</option>' + ACC_META.roles.map(r => `<option${r === v ? ' selected' : ''}>${accEsc(r)}</option>`).join(''); }
+function accTypeChips(cur) {
+  const on = String(cur || '').split(',').map(x => x.trim());
+  document.getElementById('af-types').innerHTML = ACC_META.types.map(t => `<label class="acc-chip"><input type="checkbox" value="${accEsc(t)}"${on.includes(t) ? ' checked' : ''}> ${accEsc(t)}</label>`).join('');
+}
+// a = existing account (edit) ya null (naya); pre = {name, phone, city, state, cname, email}
+function accOpenForm(a, pre) {
+  accModals();
+  if (a) ACC_CTX = null;
+  pre = pre || {};
+  const set = (id, v) => { document.getElementById(id).value = v == null ? '' : v; };
+  document.getElementById('acctDup').innerHTML = '';
+  document.getElementById('acctTitle').textContent = a ? 'Edit Account' : 'New Account';
+  document.querySelectorAll('#acctModal .acc-new-only').forEach(e => { e.style.display = a ? 'none' : ''; });
+  document.querySelectorAll('#acctModal .acc-edit-only').forEach(e => { e.style.display = a ? '' : 'none'; });
+  set('af-id', a ? a['Account ID'] : '');
+  set('af-name', a ? a['Account Name'] : pre.name); set('af-city', a ? a.City : pre.city); set('af-state', a ? a.State : pre.state);
+  set('af-gst', a ? a.GSTIN : ''); set('af-credit', a ? a['Credit Days'] : ''); set('af-pan', a ? a.PAN : ''); set('af-pin', a ? a.Pincode : ''); set('af-addr', a ? a.Address : '');
+  set('af-cname', pre.cname || ''); set('af-cphone', pre.phone || ''); set('af-cemail', pre.email || '');
+  accRoleOpts(document.getElementById('af-crole'), pre.role || '');
+  accTypeChips(a ? a.Type : pre.type || '');
+  const fin = !!(a && C360 && C360.can && C360.can.financeOnly);
+  ['af-name'].forEach(id => { document.getElementById(id).disabled = fin; });
+  document.querySelectorAll('#af-types input').forEach(i => { i.disabled = fin; });
+  const b = document.getElementById('af-save'); b.disabled = false; b.textContent = 'Save';
+  openModal('acctModal');
+  setTimeout(() => document.getElementById(a ? 'af-city' : 'af-name').focus(), 60);
+}
+function accSave(force) {
+  const g = id => document.getElementById(id).value.trim();
+  const id = g('af-id');
+  const types = [...document.querySelectorAll('#af-types input:checked')].map(i => i.value).join(', ');
+  const p = { action: 'acctSave', 'Account Name': g('af-name'), Type: types, City: g('af-city'), State: g('af-state'), GSTIN: g('af-gst').toUpperCase(), 'Credit Days': g('af-credit') };
+  if (id) Object.assign(p, { 'Account ID': id, PAN: g('af-pan').toUpperCase(), Pincode: g('af-pin'), Address: g('af-addr') });
+  else Object.assign(p, { contactName: g('af-cname'), contactRole: g('af-crole'), contactPhone: g('af-cphone'), contactEmail: g('af-cemail') });
+  if (!p['Account Name']) return toast('Enter the account name', 'e');
+  if (!id && !types) return toast('Choose at least one type', 'e');
+  const oldGst = id && C360 && C360.account ? String(C360.account.GSTIN || '').toUpperCase() : '';
+  if (p.GSTIN && p.GSTIN !== oldGst && p.GSTIN.length !== 15) return toast('GSTIN must be 15 characters', 'e');
+  if (!id && p.contactPhone && !isValidPhone(p.contactPhone.replace(/\D/g, '').slice(-10))) return toast('Enter a valid 10-digit phone number', 'e');
+  if (ACC_CTX && ACC_CTX.lead && !id) p.leadId = ACC_CTX.lead;
+  if (force) p.force = 'true';
+  if (id && C360 && C360.account && C360.account['Account Name'] !== p['Account Name'] && confirm('Rename it in old orders, challans and other records too?\n\nOK = rename everywhere · Cancel = only the account')) p.renameRecords = 'true';
+  const b = document.getElementById('af-save'); b.disabled = true; b.textContent = 'Saving…';
+  api(p, r => {
+    b.disabled = false; b.textContent = 'Save';
+    if (!r || !r.success) return toast((r && r.message) || 'Save failed', 'e');
+    if (r.duplicate) return accShowDup(r.matches, !!id);
+    toast(id ? 'Account updated' + (r.renamed ? ` · renamed in ${r.renamed} places` : '') : `Account ${r.id} created`, 's');
+    closeModal('acctModal');
+    custCache = []; accEnsure(() => accAfterSave(r.account, r.contactId));
+  });
+}
+// "pehle se hai" — use karo / kholo / phir bhi banao
+function accShowDup(list, isEdit) {
+  const box = document.getElementById('acctDup');
+  const useBtn = ACC_CTX && (ACC_CTX.from === 'order' || ACC_CTX.from === 'lead');
+  box.innerHTML = `<div class="acc-dup"><b>⚠ Looks like this account already exists:</b>${list.map(a => `
+    <div class="acc-dup-row"><div><b>${accEsc(a['Account Name'])}</b> <span class="c360-muted">${accEsc(a['Account ID'])}</span> ${accTypeBadges(a.Type)}
+      <div class="c360-sub">${accEsc([a.City, (a.why || []).join(', ')].filter(Boolean).join(' · '))}</div></div>
+      <div>${useBtn ? `<button class="btn btn-sm btn-primary" onclick="accUseExisting('${accEsc(a['Account ID'])}')">Use this</button>` : `<button class="btn btn-sm" onclick="closeModal('acctModal');openCustomer('${accEsc(a['Account ID'])}')">Open</button>`}</div></div>`).join('')}
+    <div style="margin-top:8px;"><button class="btn btn-sm" onclick="accSave(true)">${isEdit ? 'Save anyway' : 'It is different — create anyway'}</button></div></div>`;
+}
+function accUseExisting(id) {
+  closeModal('acctModal');
+  accEnsure(() => { const c = custCache.find(x => x.CustomerID === id); if (c) accAfterSave({ 'Account ID': id }, ''); });
+}
+// save ke baad: kahan se aaye the wahan wapas
+function accAfterSave(acc, contactId) {
+  const ctx = ACC_CTX || {}; ACC_CTX = null;
+  const id = acc && acc['Account ID'];
+  const c = custCache.find(x => x.CustomerID === id);
+  if (ctx.from === 'order' && c) {
+    const el = document.getElementById('o-cust'); el.value = c.CompanyName; clearErr(el);
+    onCustNameInput(); accOrderPick(c, contactId);
+    return;
+  }
+  if (ctx.from === 'lead' && c) return accLeadToOrder(ctx.lead, c, ctx);
+  if (ctx.from === 'list') { if (typeof loadCustomers === 'function') loadCustomers(); return openCustomer(id); }
+  if (C360 && document.getElementById('page-customer').classList.contains('active')) openCustomer(id, '', '', true);
+}
+
+/* ---------- Contact form ---------- */
+function accContactOpen(accId, conId) {
+  accModals();
+  const a = C360 && C360.account;
+  const c = conId && a ? a.contacts.find(x => x['Contact ID'] === conId) : null;
+  const set = (id, v) => { document.getElementById(id).value = v == null ? '' : v; };
+  document.getElementById('conTitle').textContent = c ? 'Edit Contact' : 'Add Contact';
+  set('cf-id', c ? c['Contact ID'] : ''); set('cf-acc', accId);
+  set('cf-name', c ? c.Name : ''); set('cf-phone', c ? c.Phone : ''); set('cf-alt', c ? c['Alt Phone'] : ''); set('cf-email', c ? c.Email : '');
+  accRoleOpts(document.getElementById('cf-role'), c ? c.Role : '');
+  document.getElementById('cf-primary').checked = !!(c && c.Primary === 'Yes');
+  document.getElementById('cf-active').checked = !c || c.Active !== 'No';
+  document.getElementById('cf-active-wrap').style.display = c ? '' : 'none';
+  openModal('conModal');
+  setTimeout(() => document.getElementById('cf-name').focus(), 60);
+}
+function accContactSave(force) {
+  const g = id => document.getElementById(id).value.trim();
+  const id = g('cf-id');
+  const p = { action: 'acctContactSave', 'Account ID': g('cf-acc'), Name: g('cf-name'), Role: g('cf-role'), Phone: g('cf-phone'), 'Alt Phone': g('cf-alt'), Email: g('cf-email'),
+    Primary: document.getElementById('cf-primary').checked ? 'Yes' : '' };
+  if (id) { p['Contact ID'] = id; p.Active = document.getElementById('cf-active').checked ? 'Yes' : 'No'; }
+  if (!p.Name) return toast('Enter the contact name', 'e');
+  if (force) p.force = 'true';
+  const b = document.getElementById('cf-save'); b.disabled = true; b.textContent = 'Saving…';
+  api(p, r => {
+    b.disabled = false; b.textContent = 'Save';
+    if (!r || !r.success) return toast((r && r.message) || 'Save failed', 'e');
+    if (r.duplicate) { if (confirm('⚠ ' + r.msg + '.\n\nSave anyway?')) accContactSave(true); return; }
+    toast(id ? 'Contact updated' : 'Contact added', 's');
+    closeModal('conModal'); custCache = [];
+    if (C360 && C360.account) { C360.account = r.account; renderC360(); }
+  });
+}
+
+/* ---------- Lead → Account → Order ---------- */
+function accConvertLead(id) {
+  const l = ldAll.find(x => x['Lead ID'] === id); if (!l) return;
+  accModals();
+  const name = l.Company || l['Customer Name'];
+  document.getElementById('convTitle').textContent = 'Convert lead ' + id;
+  document.getElementById('convBody').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+  openModal('convModal');
+  accEnsure(() => api({ action: 'acctMatch', name, phone: l.Phone || '' }, r => {
+    const list = (r && r.success && r.data) || [];
+    const pre = { name, phone: l.Phone, city: l.City, state: l.State, cname: l['Customer Name'], email: l.Email, role: l.Company ? '' : 'Owner', type: l.Company ? '' : 'Retail' };
+    ACC_CTX = { from: 'lead', lead: id, person: l['Customer Name'], phone: l.Phone, email: l.Email };
+    document.getElementById('convBody').innerHTML = `
+      <div class="rec-note">🎯 <b>${accEsc(name)}</b>${l['Customer Name'] && l.Company ? ' · ' + accEsc(l['Customer Name']) : ''}${l.Phone ? ' · ' + accEsc(l.Phone) : ''}${l.City ? ' · ' + accEsc(l.City) : ''}</div>
+      ${list.length ? `<div class="acc-sub">Existing account${list.length > 1 ? 's' : ''} that match</div>` + list.map(a => `
+        <div class="acc-dup-row"><div><b>${accEsc(a['Account Name'])}</b> <span class="c360-muted">${accEsc(a['Account ID'])}</span> ${accTypeBadges(a.Type)}
+          <div class="c360-sub">${accEsc([a.City, (a.why || []).join(', ')].filter(Boolean).join(' · '))}</div></div>
+          <div><button class="btn btn-sm btn-primary" onclick="accConvertUse('${accEsc(a['Account ID'])}')">Use this account</button></div></div>`).join('') : '<div class="c360-muted" style="margin:6px 0 10px;">No existing account matches this lead.</div>'}
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ${list.length ? '' : 'btn-primary'}" id="convNew">+ Create new account</button><button class="btn" onclick="closeModal('convModal')">Cancel</button></div>`;
+    document.getElementById('convNew').onclick = () => { closeModal('convModal'); accOpenForm(null, pre); };
+  }));
+}
+function accConvertUse(accId) {
+  const ctx = ACC_CTX; if (!ctx) return;
+  const c = custCache.find(x => x.CustomerID === accId);
+  api({ action: 'acctLinkLead', leadId: ctx.lead, 'Account ID': accId }, r => {
+    if (!r || !r.success) return toast((r && r.message) || 'Could not link the lead', 'e');
+    closeModal('convModal');
+    accLeadToOrder(ctx.lead, c || { CustomerID: accId, CompanyName: r.account['Account Name'], contacts: r.account.contacts, Type: r.account.Type }, ctx);
+  });
+}
+// lead ka insaan is account ka contact nahi hai to pooch ke jod do, phir order form
+function accLeadToOrder(leadId, c, ctx) {
+  ACC_CTX = null;
+  const ph = String(ctx.phone || '').replace(/\D/g, '').slice(-10);
+  const has = (c.contacts || []).some(x => String(x.Phone || '').slice(-10) === ph || String(x.Name || '').trim().toLowerCase() === String(ctx.person || '').trim().toLowerCase());
+  const open = contactId => {
+    const l = ldAll.find(x => x['Lead ID'] === leadId) || {};
+    resetOrderForm();
+    LD_ORDER_FOR = leadId;
+    openModal('orderModal');
+    const el = document.getElementById('o-cust'); el.value = c.CompanyName;
+    onCustNameInput(); accOrderPick(c, contactId);
+    if (l['Assigned To']) { const s = document.getElementById('o-sales'); if ([...s.options].some(o => o.value === l['Assigned To'])) s.value = l['Assigned To']; }
+    if (ph && !document.getElementById('o-phone').value) document.getElementById('o-phone').value = ph;
+    const body = document.querySelector('#orderModal .modal-body');
+    if (body) body.insertAdjacentHTML('afterbegin', `<div id="ldOrderNote" class="rec-note">📋 Order from lead <b>${recEsc(leadId)}</b> for <b>${recEsc(c.CompanyName)}</b> — it will be linked to the lead and the account</div>`);
+  };
+  if (!has && ctx.person && ph && confirm(`Add ${ctx.person} (${ph}) as a contact of ${c.CompanyName}?`)) {
+    api({ action: 'acctContactSave', 'Account ID': c.CustomerID, Name: ctx.person, Phone: ph, Email: ctx.email || '', force: 'true' }, r => {
+      if (r && r.success && r.account) { c.contacts = r.account.contacts; custCache = []; accEnsure(() => {}); }
+      open(r && r.id);
+    });
+  } else open('');
+}
+
+/* ---------- Duplicates (Admin) ---------- */
+let ACC_DUP = null;
+function accDupOpen(tab) {
+  accModals(); openModal('dupModal');
+  document.getElementById('dupBody').innerHTML = '<div class="loading"><div class="spin"></div></div>';
+  if (tab === 'history') return accMergeHistory();
+  api({ action: 'acctDupes' }, r => {
+    if (!r || !r.success) { document.getElementById('dupBody').innerHTML = `<div class="empty"><div class="empty-txt">${accEsc((r && r.message) || 'Could not load')}</div></div>`; return; }
+    ACC_DUP = r; accDupRender();
+  });
+}
+function accDupTabs(on) {
+  return `<div class="acc-tabs"><button class="btn btn-sm ${on === 'dup' ? 'btn-primary' : ''}" onclick="accDupOpen()">Duplicates</button><button class="btn btn-sm ${on === 'history' ? 'btn-primary' : ''}" onclick="accDupOpen('history')">Merge history</button>
+    ${ACC_DUP && ACC_DUP.noType ? `<span class="c360-muted" style="margin-left:auto;">${ACC_DUP.noType} account(s) have no type yet — open them from Customers to set it</span>` : ''}</div>`;
+}
+function accDupRender() {
+  const g = ACC_DUP.groups;
+  document.getElementById('dupBody').innerHTML = accDupTabs('dup') + (g.length ? g.map((grp, gi) => `
+    <div class="card acc-grp">
+      <div class="acc-grp-head"><b>${grp.accounts.length} accounts</b> <span class="c360-muted">· ${accEsc(grp.reasons.join(' · '))}</span></div>
+      ${grp.accounts.map((a, i) => `
+        <label class="acc-grp-row"><input type="radio" name="keep${gi}" value="${accEsc(a['Account ID'])}"${i === 0 ? ' checked' : ''}>
+          <div class="acc-grp-main"><b>${accEsc(a['Account Name'])}</b> <span class="c360-muted">${accEsc(a['Account ID'])}</span> ${accTypeBadges(a.Type)}
+            <div class="c360-sub">${accEsc([a.City, a.GSTIN && 'GST ' + a.GSTIN, (a.contacts || []).filter(c => c.Active !== 'No').map(c => c.Name + (c.Phone ? ' ' + c.Phone : '')).join(', ')].filter(Boolean).join(' · '))}</div></div>
+          <div class="acc-grp-stats">${a.stats.orders} order${a.stats.orders === 1 ? '' : 's'} · ${c360Rs(a.stats.value)}${a.stats.last ? `<div class="c360-sub">last ${accEsc(fmtDisplayDate(a.stats.last))}</div>` : ''}</div>
+        </label>`).join('')}
+      <div class="acc-grp-foot"><button class="btn btn-sm btn-primary" onclick="accMerge(${gi}, this)">Merge into selected</button><button class="btn btn-sm" onclick="accNotDup(${gi}, this)">Not duplicates</button></div>
+    </div>`).join('') : '<div class="empty"><div class="empty-ico">✅</div><div class="empty-txt">No duplicate accounts found</div></div>');
+}
+function accMerge(gi, btn) {
+  const grp = ACC_DUP.groups[gi];
+  const keep = (document.querySelector(`input[name="keep${gi}"]:checked`) || {}).value;
+  const k = grp.accounts.find(a => a['Account ID'] === keep), others = grp.accounts.filter(a => a['Account ID'] !== keep);
+  const n = others.reduce((s, a) => s + a.stats.orders, 0);
+  if (!confirm(`Merge into "${k['Account Name']}" (${keep})?\n\n${others.map(a => '• ' + a['Account Name'] + ' (' + a['Account ID'] + ') — ' + a.stats.orders + ' orders').join('\n')}\n\n${n} order(s) and all related records (production, accounts, challans, leads, service) will move to ${k['Account Name']}. Contacts move too.\nYou can undo this from Merge history.`)) return;
+  btn.disabled = true; btn.textContent = 'Merging…';
+  api({ action: 'acctMerge', keep, ids: others.map(a => a['Account ID']).join(',') }, r => {
+    if (!r || !r.success) { btn.disabled = false; btn.textContent = 'Merge into selected'; return toast((r && r.message) || 'Merge failed', 'e'); }
+    toast(`Merged · ${r.cells} cells updated` + (r.skipped && r.skipped.length ? ' · battery spec kept as is' : ''), 's');
+    custCache = []; accDupOpen();
+  });
+}
+function accNotDup(gi, btn) {
+  const grp = ACC_DUP.groups[gi];
+  if (!confirm('Mark these as different accounts? They will not show here again.')) return;
+  btn.disabled = true;
+  api({ action: 'acctNotDup', ids: grp.ids.join(',') }, r => {
+    if (!r || !r.success) { btn.disabled = false; return toast((r && r.message) || 'Failed', 'e'); }
+    ACC_DUP.groups.splice(gi, 1); accDupRender();
+  });
+}
+function accMergeHistory() {
+  api({ action: 'acctMerges' }, r => {
+    const rows = (r && r.success && r.data) || [];
+    document.getElementById('dupBody').innerHTML = accDupTabs('history') + (rows.length ? `<div class="table-wrap"><table><thead><tr><th>When</th><th>Kept</th><th>Merged</th><th>Cells</th><th>By</th><th></th></tr></thead><tbody>${rows.map(m => `
+      <tr><td>${accEsc(m.Time)}</td><td><b>${accEsc(m['Keep Name'])}</b> <span class="c360-muted">${accEsc(m['Keep ID'])}</span></td><td>${accEsc(m['Merged Names'] || m['Merged IDs'])}</td>
+      <td>${accEsc(m['Cells Changed'])}</td><td>${accEsc(m.By)}</td>
+      <td>${m.Undone === 'Yes' ? '<span class="c360-muted">Undone</span>' : `<button class="btn btn-sm" onclick="accUndo('${accEsc(m['Merge ID'])}', this)">Undo</button>`}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty"><div class="empty-txt">No merges yet</div></div>');
+  });
+}
+function accUndo(mid, btn) {
+  if (!confirm('Undo this merge? Names and IDs go back to how they were (cells changed since are left alone).')) return;
+  btn.disabled = true;
+  api({ action: 'acctUndo', mergeId: mid }, r => {
+    if (!r || !r.success) { btn.disabled = false; return toast((r && r.message) || 'Undo failed', 'e'); }
+    toast(`Undone · ${r.cells} cells restored` + (r.conflicts ? ` · ${r.conflicts} changed later, left as is` : ''), 's');
+    custCache = []; accMergeHistory();
+  });
+}
+function accSettingsOpen() {
+  accModals();
+  document.getElementById('as-types').value = ACC_META.types.join(', ');
+  document.getElementById('as-roles').value = ACC_META.roles.join(', ');
+  openModal('accSetModal');
+}
+function accSettingsSave(btn) {
+  btn.disabled = true;
+  api({ action: 'acctSettingsSave', types: document.getElementById('as-types').value, roles: document.getElementById('as-roles').value }, r => {
+    btn.disabled = false;
+    if (!r || !r.success) return toast((r && r.message) || 'Save failed', 'e');
+    ACC_META = r.meta; toast('Saved', 's'); closeModal('accSetModal');
+  });
+}
+
+/* ---------- Account page (renderC360 ka account wala hissa) ---------- */
+function accSideHtml(r) {
+  const a = r.account, can = r.can || {};
+  const kv = [['City', [a.City, a.State].filter(Boolean).join(', ')], ['GSTIN', a.GSTIN], ['PAN', a.PAN], ['Credit days', a['Credit Days']], ['Sales owner', a['Sales Owner']], ['Address', [a.Address, a.Pincode].filter(Boolean).join(' - ')]]
+    .map(([l, v]) => `<div class="c360-kv"><span>${l}</span><b>${v ? accEsc(v) : '—'}</b></div>`).join('');
+  const cons = (a.contacts || []).map(c => `
+    <div class="acc-con${c.Active === 'No' ? ' acc-con-off' : ''}">
+      <div class="acc-con-av">${accEsc(String(c.Name || '?').charAt(0).toUpperCase())}</div>
+      <div class="acc-con-main"><b>${accEsc(c.Name)}</b>${c.Primary === 'Yes' ? ' <span title="Primary contact">⭐</span>' : ''}${c.Role ? ` <span class="acc-role">${accEsc(c.Role)}</span>` : ''}${c.Active === 'No' ? ' <span class="c360-muted">(inactive)</span>' : ''}
+        <div class="c360-sub">${[c.Phone && `<a href="tel:${accEsc(c.Phone)}">${accEsc(c.Phone)}</a>`, c['Alt Phone'] && accEsc(c['Alt Phone']), c.Email && accEsc(c.Email)].filter(Boolean).join(' · ') || '—'}</div></div>
+      ${can.contacts ? `<button class="btn btn-sm acc-con-edit" onclick="accContactOpen('${accEsc(a['Account ID'])}','${accEsc(c['Contact ID'])}')" title="Edit">✎</button>` : ''}
+    </div>`).join('');
+  return `
+    <div class="card c360-card">
+      <div class="c360-av">${accEsc(String(a['Account Name'] || '?').trim().charAt(0).toUpperCase())}</div>
+      <div class="c360-name">${accEsc(a['Account Name'])}</div>
+      <div class="c360-id">${accEsc(a['Account ID'])}</div>
+      <div class="acc-types">${accTypeBadges(a.Type)}</div>
+      ${a['Old Names'] ? `<div class="c360-muted acc-aka">Also known as: ${accEsc(a['Old Names'].split('|').join(', '))}</div>` : ''}
+      <div class="c360-info">${kv}</div>
+      ${can.edit ? `<button class="btn btn-sm acc-edit-btn" onclick="accOpenForm(C360.account)">✎ Edit account</button>` : ''}
+    </div>
+    <div class="card c360-card acc-cons">
+      <div class="acc-cons-head"><b>👥 Contacts</b> <span class="c360-n">${(a.contacts || []).filter(c => c.Active !== 'No').length}</span>
+        ${can.contacts ? `<button class="btn btn-sm" onclick="accContactOpen('${accEsc(a['Account ID'])}')">+ Add</button>` : ''}</div>
+      ${cons || '<div class="c360-empty">No contacts yet</div>'}
+    </div>`;
+}
+
+/* ---------- Customers page: buttons ---------- */
+function accListTools() {
+  if (!ACC_MODE || document.getElementById('accTools')) return;
+  const head = document.querySelector('#page-customers .card-head');
+  if (!head) return;
+  const add = head.querySelector('.btn-primary');
+  if (add) add.setAttribute('onclick', "ACC_CTX={from:'list'};accOpenForm(null)");
+  if (accIsAdmin()) head.insertAdjacentHTML('beforeend', `<span id="accTools" style="display:flex;gap:6px;"><button class="btn" onclick="accDupOpen()">🔀 Duplicates</button><button class="btn" onclick="accSettingsOpen()" title="Account types & contact roles">⚙</button></span>`);
+}
