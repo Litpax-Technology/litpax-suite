@@ -365,11 +365,20 @@
   }
 
   /* ---------------- "LITU" — Ask Litpax ka mascot: screen ke kone se jhaank ke user ko dekhta hai ----------------
-   * Aankhen mouse ke peeche ghoomti hain · palak jhapakta hai · kabhi chhup ke wapas jhaankta hai · kabhi kuch bolta hai.
-   * Click → usi kone me chhota Ask Litpax chat khulta hai (nav page nahi). Har baar naya chat. Litu kabhi gaayab nahi hota. Sirf Admin. */
-  var MS = { el: null, t: null, sayT: null, move: null };
+   * Aankhen mouse ke peeche · palak jhapakta hai · chhupta-jhaankta hai · bolta hai (English).
+   * Battery mood (din ke time se charge) · 5 min kuch na karo to so jaata hai · 3 baar jaldi click = gudgudi
+   * Ask Litpax soch raha ho to "thinking", jawab pe khush / pareshan · Confirm pe confetti · kaam ki khabar (nudges).
+   * Click → usi kone me chhota Ask Litpax chat (har baar naya). Litu kabhi gaayab nahi hota. Sirf Admin. */
+  var MS = { el: null, t: null, sayT: null, move: null, act: null, idleT: null, nudgeT: null, clicks: 0, clickT: null, shown: {}, mood: '' };
   var LITU_LINES = ['Psst… need anything? 👀', 'I\'m watching… the data, I promise 😄', 'Press Ctrl + K and I\'ll pop up!', 'How many orders today? Ask me 😉',
     'Give me a battery serial, I\'ll tell its whole story 🔋', 'Low stock? Just ask me!', 'Bored? Click me 😄', 'Still here… hiding 🙈', 'I know where every PO is 📦'];
+  var LITU_MOOD = {
+    lv3: ['Fully charged and ready! ⚡', 'Good morning! Let\'s make some batteries 🔋', 'Feeling 100% today 💪'],
+    lv2: ['Running on 60%… still good 😄', 'Post-lunch mode… but I\'m awake! ☕', 'Need a quick report? Ask me!'],
+    lv1: ['Battery low… 20% left 🪫', 'Long day, huh? Almost done 😮‍💨', 'One more question and I need a charger 🔌'],
+    night: ['It\'s late… go home? 😴', 'Yaaawn… still working? 🌙', 'I should be charging right now 🔌']
+  };
+  function lituIdleMs() { return (+(SUITE.LITU_IDLE_SEC) || 300) * 1000; }   // itni der kuch na karo to Litu so jaata hai (config: LITU_IDLE_SEC)
   function lituSvg() {
     return '<svg viewBox="0 0 120 130" aria-hidden="true">' +
       '<g class="lt-body">' +
@@ -380,9 +389,13 @@
         '<g class="lt-eyes"><circle cx="45" cy="50" r="11" fill="#f4f4f6"/><circle cx="75" cy="50" r="11" fill="#f4f4f6"/>' +
           '<g class="lt-pupils"><circle cx="45" cy="50" r="5.5" fill="#17171a"/><circle cx="75" cy="50" r="5.5" fill="#17171a"/>' +
           '<circle cx="47" cy="47.5" r="1.8" fill="#fff"/><circle cx="77" cy="47.5" r="1.8" fill="#fff"/></g></g>' +
+        '<g class="lt-lids" fill="#fff"><rect x="32" y="37" width="26" height="14"/><rect x="62" y="37" width="26" height="14"/></g>' +   // thaki palkein
+        '<g class="lt-shut" fill="none" stroke="#17171a" stroke-width="3" stroke-linecap="round"><path d="M37 51 q8 6 16 0"/><path d="M67 51 q8 6 16 0"/></g>' +   // band aankhen
+        '<g class="lt-brows" fill="none" stroke="#17171a" stroke-width="3" stroke-linecap="round"><path d="M36 38 l13 -5"/><path d="M84 38 l-13 -5"/></g>' +   // pareshan bhaunhein
         '<circle cx="34" cy="66" r="4.5" fill="#ffb3b6"/><circle cx="86" cy="66" r="4.5" fill="#ffb3b6"/>' +
         '<path class="lt-mouth" d="M53 66 q7 6 14 0" fill="none" stroke="#17171a" stroke-width="3" stroke-linecap="round"/>' +
-        '<g fill="#fff" opacity=".85"><rect x="40" y="88" width="40" height="7" rx="3.5"/><rect x="40" y="99" width="28" height="7" rx="3.5" opacity=".7"/></g>' +
+        '<path class="lt-sweat" d="M95 30 q5 8 0 11 q-5 -3 0 -11z" fill="#8fd3ff"/>' +
+        '<g class="lt-bars"><rect class="lt-b1" x="34" y="104" width="16" height="9" rx="3"/><rect class="lt-b2" x="52" y="104" width="16" height="9" rx="3"/><rect class="lt-b3" x="70" y="104" width="16" height="9" rx="3"/></g>' +
       '</g>' +
       '<g class="lt-hands"><g class="lt-hand lt-hl"><rect x="6" y="80" width="26" height="15" rx="7.5" fill="#ff7b80" stroke="#c9363d" stroke-width="2"/><path d="M14 80v6M20 80v6" stroke="#c9363d" stroke-width="2" stroke-linecap="round"/></g>' +
         '<g class="lt-hand lt-hr"><rect x="88" y="80" width="26" height="15" rx="7.5" fill="#ff7b80" stroke="#c9363d" stroke-width="2"/><path d="M100 80v6M106 80v6" stroke="#c9363d" stroke-width="2" stroke-linecap="round"/></g></g>' +
@@ -395,71 +408,217 @@
     var el = document.createElement('button');
     el.type = 'button'; el.id = 'litu'; el.className = 'litu';
     el.setAttribute('aria-label', 'Ask Litpax'); el.title = 'Ask Litpax (Ctrl + K)';
-    el.innerHTML = '<span class="litu-say" aria-hidden="true"></span><span class="litu-fig">' + lituSvg() + '</span>';
+    el.innerHTML = '<span class="litu-say" aria-live="polite"></span><span class="litu-z" aria-hidden="true"><i>z</i><i>z</i><i>Z</i></span><span class="litu-fig">' + lituSvg() + '</span>';
     document.body.appendChild(el);
     MS.el = el;
-    el.onclick = function () { lituChat(); };
-    el.addEventListener('mouseenter', function () { if (!$('#lituChat')) lituSay('Click me to ask anything 😄', 2500); });
+    el.onclick = lituClick;
+    el.addEventListener('mouseenter', function () { if (!$('#lituChat') && !el.classList.contains('sleep') && !el.classList.contains('nudge')) lituSay('Click me to ask anything 😄', 2500); });
     MS.move = function (e) { lituLook(e.clientX, e.clientY); };
     document.addEventListener('mousemove', MS.move);
-    mascotView();
+    MS.act = function () { lituActive(); };
+    LITU_EVS.forEach(function (ev) { document.addEventListener(ev, MS.act, true); });
+    Object.keys(S.frames).forEach(function (k) { lituHookFrame(S.frames[k]); });
+    lituMood();
     setTimeout(function () { el.classList.add('in'); lituSay('Hi ' + ((S.user && S.user.name) || '').split(' ')[0] + '! 👋', 3000); }, 1500);
+    lituActive();
     lituLoop();
+    clearTimeout(MS.nudgeT); MS.nudgeT = setTimeout(lituNudges, (+(SUITE.LITU_NUDGE_FIRST_SEC) || 20) * 1000);
   }
   function mascotStop() {
-    clearTimeout(MS.t); clearTimeout(MS.sayT);
+    clearTimeout(MS.t); clearTimeout(MS.sayT); clearTimeout(MS.idleT); clearTimeout(MS.nudgeT); clearTimeout(MS.clickT);
     if (MS.move) document.removeEventListener('mousemove', MS.move);
+    if (MS.act) LITU_EVS.forEach(function (ev) { document.removeEventListener(ev, MS.act, true); });
     if (MS.el) MS.el.remove();
     var c = $('#lituChat'); if (c) c.remove();
     document.removeEventListener('keydown', lituKey);
-    MS.el = null; MS.move = null;
+    MS.el = null; MS.move = null; MS.act = null; MS.shown = {};
   }
   function mascotView() {}   // Litu hamesha dikhta hai (Ask Litpax page khula ho tab bhi)
+  /* Apps iframe me chalte hain — wahan ka mouse/keyboard bhi Litu tak pahunche (aankhen + neend) */
+  var LITU_EVS = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'wheel'];
+  function lituHookFrame(f) {
+    var hook = function () {
+      try {
+        var d = f.contentWindow.document;
+        if (d.__lituHooked) return; d.__lituHooked = true;
+        LITU_EVS.forEach(function (ev) { d.addEventListener(ev, function () { if (MS.act) MS.act(); }, true); });
+        d.addEventListener('mousemove', function (e) { if (!MS.move) return; var r = f.getBoundingClientRect(); MS.move({ clientX: r.left + e.clientX, clientY: r.top + e.clientY }); }, true);
+      } catch (e) {}   // dusre domain ka page — chhod do
+    };
+    f.addEventListener('load', hook); hook();
+  }
+
+  /* ---- click: 1 = chat · 3 jaldi = gudgudi · soya ho to pehle jaagta hai · bubble me kaam ki khabar ho to wahi poochta hai ---- */
+  function lituClick(e) {
+    var el = MS.el; if (!el) return;
+    if (el.classList.contains('nudge') && e && e.target.closest('.litu-say')) { var q = el.dataset.q; lituUnNudge(); return lituChat(q); }
+    MS.clicks++;
+    clearTimeout(MS.clickT);
+    if (MS.clicks >= 3) { MS.clicks = 0; return lituTickle(); }
+    MS.clickT = setTimeout(function () {
+      var n = MS.clicks; MS.clicks = 0;
+      if (n >= 3) return;
+      if (el.classList.contains('sleep')) { lituWake(); setTimeout(function () { lituChat(); }, 650); return; }
+      if (el.classList.contains('nudge')) { var q2 = el.dataset.q; lituUnNudge(); return lituChat(q2); }
+      lituChat();
+    }, 330);
+  }
+  function lituTickle() {
+    var el = MS.el; if (!el) return;
+    if ($('#lituChat')) lituChatClose(true);
+    lituWake(true);
+    el.classList.remove('tickle'); void el.offsetWidth; el.classList.add('tickle');
+    lituSay(['Hehe stop it! 😂', 'Hahaha that tickles! 🤭', 'Okay okay, I\'m awake! 😆'][Math.floor(Math.random() * 3)], 2200);
+    setTimeout(function () { if (MS.el) MS.el.classList.remove('tickle'); }, 1400);
+  }
+
+  /* ---- Battery mood — din ke time ke hisaab se charge ---- */
+  function lituMood() {
+    var el = MS.el; if (!el) return;
+    var h = new Date().getHours(), m = h >= 22 || h < 7 ? 'night' : h >= 19 ? 'lv1' : h >= 14 ? 'lv2' : 'lv3';
+    if (m === MS.mood) return;
+    el.classList.remove('lv1', 'lv2', 'lv3', 'night'); el.classList.add(m); MS.mood = m;
+  }
+
+  /* ---- Neend: 5 min (LITU_IDLE_SEC) tak kuch na ho to so jaata hai, kuch bhi karo to jaagta hai ---- */
+  function lituActive() {
+    var el = MS.el; if (!el) return;
+    if (el.classList.contains('sleep')) lituWake();
+    clearTimeout(MS.idleT);
+    MS.idleT = setTimeout(lituSleep, MS.mood === 'night' ? Math.min(lituIdleMs(), 120000) : lituIdleMs());
+  }
+  function lituSleep() {
+    var el = MS.el; if (!el || $('#lituChat')) return lituActive();
+    lituUnNudge(); el.classList.remove('talk'); el.classList.add('sleep');
+  }
+  function lituWake(quiet) {
+    var el = MS.el; if (!el || !el.classList.contains('sleep')) return;
+    el.classList.remove('sleep');
+    el.classList.remove('startle'); void el.offsetWidth; el.classList.add('startle');
+    setTimeout(function () { if (MS.el) MS.el.classList.remove('startle'); }, 700);
+    if (!quiet) lituSay(['Huh? Oh, hi! 😳', 'I wasn\'t sleeping! 😅', 'Whoa — you\'re back! 👋'][Math.floor(Math.random() * 3)], 2400);
+  }
+
+  /* ---- Ask Litpax ke saath reactions (agent page / chat se postMessage) ---- */
+  function lituThink(on) {
+    var el = MS.el; if (!el) return;
+    el.classList.toggle('think', !!on);
+    var p = el.querySelector('.lt-pupils');
+    if (on && p) p.setAttribute('transform', 'translate(2 -4)');   // upar dekh ke sochna
+  }
+  function lituReact(worried) {
+    var el = MS.el; if (!el) return;
+    lituThink(false);
+    var c = worried ? 'worry' : 'happy';
+    el.classList.remove('worry', 'happy'); void el.offsetWidth; el.classList.add(c);
+    setTimeout(function () { if (MS.el) MS.el.classList.remove(c); }, worried ? 2600 : 1200);
+    if (!$('#lituChat')) lituSay(worried ? 'Uh-oh… something needs attention 😬' : 'Got it! ✨', 2200);
+  }
+  function lituConfetti() {
+    var el = MS.el; if (!el) return;
+    lituThink(false);
+    el.classList.remove('happy', 'cheer', 'worry'); void el.offsetWidth; el.classList.add('cheer');
+    setTimeout(function () { if (MS.el) MS.el.classList.remove('cheer'); }, 1600);
+    if (!$('#lituChat')) lituSay('Saved! 🎉', 2000);
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var r = el.getBoundingClientRect(), box = document.createElement('div'), cols = ['#ec4f55', '#ffd166', '#06d6a0', '#118ab2', '#ff8fab', '#8338ec'];
+    box.className = 'litu-confetti'; box.style.left = (r.left + r.width / 2) + 'px'; box.style.top = (r.top + 30) + 'px';
+    for (var i = 0; i < 26; i++) {
+      var p = document.createElement('i'), ang = (-160 + Math.random() * 140) * Math.PI / 180, dist = 70 + Math.random() * 120;
+      p.style.background = cols[i % cols.length];
+      p.style.setProperty('--x', (Math.cos(ang) * dist).toFixed(0) + 'px');
+      p.style.setProperty('--y', (Math.sin(ang) * dist).toFixed(0) + 'px');
+      p.style.setProperty('--r', (Math.random() * 720 - 360).toFixed(0) + 'deg');
+      p.style.animationDelay = (Math.random() * 0.08).toFixed(2) + 's';
+      if (i % 3 === 0) p.style.borderRadius = '50%';
+      box.appendChild(p);
+    }
+    document.body.appendChild(box);
+    setTimeout(function () { box.remove(); }, 1500);
+  }
+
+  /* ---- Kaam ki khabar: Ask Litpax se ginti (late PO, overdue ticket…) + IMS approvals. Bubble pe click → wahi sawaal chat me ---- */
+  function lituNudges() {
+    clearTimeout(MS.nudgeT);
+    MS.nudgeT = setTimeout(lituNudges, 4 * 60000);
+    if (!MS.el || document.hidden) return;
+    var items = [];
+    var a = api('AGENT', 'nudges').then(function (r) { (r.items || []).forEach(function (x) { items.push(x); }); }).catch(function () {});
+    var b = api('IMS', 'suiteListApprovals', { status: 'Pending' }).then(function (r) {
+      var n = (r.list || []).length;
+      if (n) items.push({ key: 'apr', n: n, icon: '✅', text: n + ' approval' + (n > 1 ? 's' : '') + ' waiting', q: 'Which IMS inward approvals are pending?' });
+    }).catch(function () {});
+    Promise.all([a, b]).then(function () {
+      var now = Date.now();
+      var pick = items.filter(function (x) { var k = x.key + ':' + x.n, t = MS.shown[k]; return !t || now - t > 30 * 60000; })[0];   // ek hi khabar 30 min me ek baar
+      if (pick) lituNudge(pick);
+    });
+  }
+  function lituNudge(x) {
+    var el = MS.el;
+    if (!el || $('#lituChat') || el.classList.contains('sleep')) return;
+    MS.shown[x.key + ':' + x.n] = Date.now();
+    el.dataset.q = x.q || '';
+    var b = el.querySelector('.litu-say');
+    b.innerHTML = '<span class="ln-i">' + esc(x.icon || '👋') + '</span>' + esc(x.text) + '<small>Tap to see</small>';
+    el.classList.add('talk', 'nudge', 'wave');
+    clearTimeout(MS.sayT); MS.sayT = setTimeout(lituUnNudge, 12000);
+  }
+  function lituUnNudge() {
+    var el = MS.el; if (!el) return;
+    el.classList.remove('nudge', 'wave', 'talk'); delete el.dataset.q;
+  }
 
   /* Litu ka chat — Ask Litpax ka chhota version (agent/index.html?mini=1), Litu ke upar khulta hai. Har baar khaali chat. */
   function lituKey(e) { if (e.key === 'Escape' && $('#lituChat')) lituChatClose(); }
-  function lituChat() {
+  function lituChat(q) {
     if (!MS.el) return;
     if ($('#lituChat')) return lituChatClose();
     try { sessionStorage.removeItem('agent_chat'); } catch (e) {}   // purana chat mitao — naya shuru
+    lituUnNudge();
     MS.el.classList.add('jump', 'open'); MS.el.classList.remove('talk'); setTimeout(function () { if (MS.el) MS.el.classList.remove('jump'); }, 300);
     var p = document.createElement('div');
     p.id = 'lituChat'; p.className = 'litu-chat'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Ask Litpax');
     p.innerHTML = '<button type="button" class="lc-x" aria-label="Close chat" title="Close (Esc)">×</button>' +
-      '<iframe src="' + SUITE.MODULES.agent.path + '?mini=1&t=' + Date.now() + '" title="Ask Litpax" allow="microphone; clipboard-write"></iframe>';
+      '<iframe src="' + SUITE.MODULES.agent.path + '?mini=1&t=' + Date.now() + (q ? '&q=' + encodeURIComponent(q) : '') + '" title="Ask Litpax" allow="microphone; clipboard-write"></iframe>';
     document.body.appendChild(p);
+    lituHookFrame(p.querySelector('iframe'));
     requestAnimationFrame(function () { p.classList.add('in'); });
-    p.querySelector('.lc-x').onclick = lituChatClose;
+    p.querySelector('.lc-x').onclick = function () { lituChatClose(); };
     document.addEventListener('keydown', lituKey);
     setTimeout(function () { try { p.querySelector('iframe').contentWindow.focus(); } catch (e) {} }, 400);
   }
-  function lituChatClose() {
+  function lituChatClose(quiet) {
     var p = $('#lituChat'); if (!p) return;
     document.removeEventListener('keydown', lituKey);
     p.classList.remove('in'); setTimeout(function () { p.remove(); }, 220);
-    if (MS.el) { MS.el.classList.remove('open'); lituSay('Bye! Click me anytime 👋', 2000); }
+    lituThink(false);
+    if (MS.el) { MS.el.classList.remove('open'); if (!quiet) lituSay('Bye! Click me anytime 👋', 2000); }
   }
   function lituLook(x, y) {
-    if (!MS.el) return;
+    if (!MS.el || MS.el.classList.contains('think')) return;
     var r = MS.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.35;
     var dx = x - cx, dy = y - cy, d = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.min(1, d / 220);
     var p = MS.el.querySelector('.lt-pupils');
     if (p) p.setAttribute('transform', 'translate(' + (dx / d * 4.5 * k).toFixed(2) + ' ' + (dy / d * 4 * k).toFixed(2) + ')');
   }
   function lituSay(txt, ms) {
-    if (!MS.el) return;
-    var b = MS.el.querySelector('.litu-say');
-    b.textContent = txt; MS.el.classList.add('talk');
+    var el = MS.el; if (!el || el.classList.contains('sleep')) return;
+    if (el.classList.contains('nudge')) return;   // kaam ki khabar pehle
+    var b = el.querySelector('.litu-say');
+    b.textContent = txt; el.classList.add('talk');
     clearTimeout(MS.sayT); MS.sayT = setTimeout(function () { if (MS.el) MS.el.classList.remove('talk'); }, ms || 3000);
   }
-  function lituLoop() {   // har 15–35 sec me kuch na kuch: chhupna-jhaankna / idhar-udhar dekhna / kuch bolna
+  function lituLoop() {   // har 15–35 sec me kuch na kuch: chhupna-jhaankna / mood wali baat / koi line
     clearTimeout(MS.t);
     MS.t = setTimeout(function () {
       var el = MS.el; if (!el) return;
-      if (!document.hidden && !$('#lituChat') && !el.matches(':hover')) {
+      lituMood();
+      if (!document.hidden && !$('#lituChat') && !el.matches(':hover') && !el.classList.contains('sleep') && !el.classList.contains('nudge')) {
         var r = Math.random();
-        if (r < 0.35) { el.classList.add('duck'); setTimeout(function () { el.classList.remove('duck'); }, 2600); }
-        else if (r < 0.65) lituSay(LITU_LINES[Math.floor(Math.random() * LITU_LINES.length)], 3500);
+        if (r < 0.3) { el.classList.add('duck'); setTimeout(function () { el.classList.remove('duck'); }, 2600); }
+        else if (r < 0.5) { var ml = LITU_MOOD[MS.mood] || LITU_LINES; lituSay(ml[Math.floor(Math.random() * ml.length)], 3500); }
+        else if (r < 0.75) lituSay(LITU_LINES[Math.floor(Math.random() * LITU_LINES.length)], 3500);
         else { el.classList.add('peek'); setTimeout(function () { el.classList.remove('peek'); }, 1800); }
       }
       lituLoop();
@@ -623,6 +782,7 @@
         f.title = n.label;
         $('#frames').appendChild(f);
         S.frames[n.mod] = f;
+        lituHookFrame(f);
       }
       f.classList.remove('hidden');
     } else {
@@ -1310,6 +1470,9 @@
       if (e.data.type === 'logout') signOut();
       if (e.data.type === 'agent') openAgent();   // kisi app me Ctrl+K
       if (e.data.type === 'litu-close') lituChatClose();   // Litu chat ke andar Esc
+      if (e.data.type === 'agent-busy') lituThink(true);                    // Ask Litpax soch raha hai
+      if (e.data.type === 'agent-answer') lituReact(!!e.data.warn);         // jawab aaya — khush / pareshan
+      if (e.data.type === 'agent-done') lituConfetti();                     // Confirm se save hua — confetti
       if (e.data.type === 'open-replace') openReplace();   // ERP → Service Hub → Advance Replacement
       if (e.data.type === 'open-record') openRecordX(e.data.rtype, e.data.id);   // kisi bhi app ka linked record
       if (e.data.type === 'nav') onAppNav(e);     // app ke pages → common sidebar
