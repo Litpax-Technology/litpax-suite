@@ -35,7 +35,8 @@
         throw new Error(e && e.name === 'AbortError' ? 'This took too long. Please ask a shorter question.' : 'Network error. Check your connection.');
       });
   }
-  function toSuite(type) { try { window.parent.postMessage({ source: 'litpax-suite', type: type }, location.origin); } catch (e) {} }
+  function toSuite(type, extra) { try { window.parent.postMessage(Object.assign({ source: 'litpax-suite', type: type }, extra || {}), location.origin); } catch (e) {} }
+  var WARN_RE = /\b(short|shortage|warning|overdue|late|failed|not found|missing|expired|blocked|uh-oh)\b|⚠/i;   // Litu pareshan ho
   window.logout = function () { toSuite('logout'); };   // suite-bridge: alag Sign out button na aaye
 
   function toast(msg) {
@@ -260,6 +261,7 @@
       go.disabled = no.disabled = true; st.textContent = a.type === 'email' ? 'Sending…' : 'Saving…';
       api('execute', { id: a.id, edits: edits }).then(function (r) {
         done('✓ ' + r.done, true);
+        toSuite('agent-done');   // Litu confetti
         A.history.push({ role: 'model', text: '[Done] ' + r.done }); save();
         if (r.undo && r.logId) {
           var u = document.createElement('button'); u.type = 'button'; u.className = 'undo'; u.textContent = 'Undo';
@@ -294,12 +296,15 @@
     var prior = A.history.slice(-8);
     A.history.push({ role: 'user', text: q }); save();
     var t = addTyping();
+    toSuite('agent-busy');
     api('ask', { q: q, history: prior }).then(function (r) {
+      toSuite('agent-answer', { warn: WARN_RE.test(r.answer || '') });
       A.history.push({ role: 'model', text: r.answer, steps: r.steps || [] }); save();
       var bm = addBot(r.answer, r.steps);
       (r.actions || []).forEach(addAction);
       if (byVoice && bm) { var sb = bm.querySelector('.ag-say'); if (sb) speak(r.answer, sb); }
     }).catch(function (e) {
+      toSuite('agent-answer', { warn: true });
       addBot(e.message, e.steps, true);
     }).then(function () {
       clearInterval(t._t); t.remove();
