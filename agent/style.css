@@ -1,12 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
 /* =============================================================
  * Ask Litpax — Gallery White (baaki Suite jaisa)
  * ============================================================= */
 :root {
-  --bg: #ffffff; --tile: #fafafa; --tile-2: #f2f2f2;
-  --line: #ededed; --line-2: #e0e0e0;
-  --text: #0a0a0a; --text-2: #404040; --muted: #737373; --faint: #a3a3a3;
-  --accent: #1f3fff; --accent-dark: #1530c4; --accent-soft: #f0f3ff; --accent-line: #c7d0ff;
-  --ok: #15803d; --warn: #b45309; --bad: #dc2626; --bad-soft: #fef2f2;
+  --bg: #ffffff; --tile: #f8f8f7; --tile-2: #f2f2f2;
+  --line: #e9e9e7; --line-2: #dededb;
+  --text: #1b1d1a; --text-2: #3f423f; --muted: #6e716d; --faint: #a2a5a1;
+  --accent: #1f3d33; --accent-dark: #152c25; --accent-soft: #edf2ef; --accent-line: #c5d3cc;
+  --ok: #2f6b4f; --warn: #8f6417; --bad: #8a2f37; --bad-soft: #f7e8e7;
   --sans: 'Inter Tight', 'Inter', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
 }
@@ -48,7 +49,7 @@ button, textarea { font: inherit; }
 .ag-msg.me .b { max-width: 75%; padding: 11px 16px; border-radius: 18px 18px 4px 18px; background: var(--text); color: #fff; white-space: pre-wrap; }
 .ag-msg .av { width: 32px; height: 32px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 15px; }
 .ag-msg.bot .b { flex: 1; min-width: 0; padding: 4px 0 0; color: var(--text); }
-.ag-msg.bot.err .b { padding: 12px 16px; border: 1px solid #fecaca; border-radius: 14px; background: var(--bad-soft); color: var(--bad); }
+.ag-msg.bot.err .b { padding: 12px 16px; border: 1px solid #e5c3c1; border-radius: 14px; background: var(--bad-soft); color: var(--bad); }
 .ag-msg.bot.err .av { background: var(--bad-soft); color: var(--bad); }
 .b p { margin: 0 0 10px; }
 .b p:last-child { margin-bottom: 0; }
@@ -107,17 +108,17 @@ button, textarea { font: inherit; }
 
 /* ---- input ---- */
 .ag-input { display: flex; align-items: flex-end; gap: 10px; margin: 8px 0 6px; padding: 8px 8px 8px 18px; border: 1px solid #e5e5e5; border-radius: 22px; background: #fff; box-shadow: 0 8px 28px rgba(0,0,0,.06); }
-.ag-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,63,255,.12), 0 8px 28px rgba(0,0,0,.06); }
+.ag-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,61,51,.12), 0 8px 28px rgba(0,0,0,.06); }
 .ag-input textarea { flex: 1; min-height: 28px; max-height: 160px; padding: 8px 0; border: 0; outline: none; resize: none; background: transparent; color: var(--text); font-size: 15px; line-height: 1.45; }
 .ag-input textarea::placeholder { color: var(--faint); }
-.ag-input button { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 6px 16px rgba(31,63,255,.3); }
+.ag-input button { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; cursor: pointer; box-shadow: 0 6px 16px rgba(31,61,51,.3); }
 .ag-input button:hover { background: var(--accent-dark); }
 .ag-input button:disabled { opacity: .45; cursor: wait; }
 .ag-input button svg { width: 20px; height: 20px; }
 .ag-input .ag-mic { background: #fff; color: var(--text-2); border: 1px solid #e5e5e5; box-shadow: none; }
 .ag-input .ag-mic:hover { background: var(--tile); color: var(--text); }
 .ag-input .ag-mic.rec { background: var(--bad); border-color: var(--bad); color: #fff; animation: agPulse 1.2s infinite; }
-@keyframes agPulse { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,.45); } 100% { box-shadow: 0 0 0 12px rgba(220,38,38,0); } }
+@keyframes agPulse { 0% { box-shadow: 0 0 0 0 rgba(138,47,55,.45); } 100% { box-shadow: 0 0 0 12px rgba(138,47,55,0); } }
 .ag-input .ag-lang { width: auto; min-width: 36px; height: 30px; margin-bottom: 7px; padding: 0 8px; border-radius: 999px; background: var(--tile-2); color: var(--muted); font: 600 12px var(--sans); box-shadow: none; }
 .ag-input .ag-lang:hover { background: var(--line-2); color: var(--text); }
 .ag-input [hidden] { display: none; }
@@ -137,7 +138,7 @@ button, textarea { font: inherit; }
 
 /* ---- action cards ---- */
 .ag-card { margin: 2px 0 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.05); }
-.ag-card.risk { border-color: #fecaca; }
+.ag-card.risk { border-color: #e5c3c1; }
 .ag-card-h { font-weight: 600; margin-bottom: 10px; }
 .ag-via { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; vertical-align: 1px; }
 .ag-card-r { margin: -4px 0 10px; color: var(--muted); font-size: 13px; }
@@ -150,16 +151,16 @@ button, textarea { font: inherit; }
 .ag-card-w { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--bad-soft); color: var(--bad); font-size: 13px; }
 .ag-card label { display: block; margin-bottom: 10px; font-size: 12.5px; color: var(--muted); }
 .ag-card input, .ag-card textarea { display: block; width: 100%; margin-top: 4px; padding: 9px 12px; border: 1px solid #e5e5e5; border-radius: 10px; font: 400 14px/1.45 var(--sans); color: var(--text); background: #fff; }
-.ag-card input:focus, .ag-card textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,63,255,.12); }
+.ag-card input:focus, .ag-card textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31,61,51,.12); }
 .ag-card textarea { resize: vertical; }
 .ag-card-a { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
 .ag-card-a button { min-height: 40px; padding: 0 18px; border-radius: 999px; font: 600 14px var(--sans); cursor: pointer; }
-.ag-card-a .go { border: 0; background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(31,63,255,.25); }
+.ag-card-a .go { border: 0; background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(31,61,51,.25); }
 .ag-card-a .go.warn { background: var(--bad); box-shadow: none; }
 .ag-card-a .no, .ag-card-a .undo { border: 1px solid #e5e5e5; background: #fff; color: var(--text); }
 .ag-card-a button:disabled { opacity: .5; cursor: wait; }
 .ag-card-a .st { font-size: 13px; color: var(--muted); }
-.ag-card-a .st.ok { color: #15803d; font-weight: 600; }
+.ag-card-a .st.ok { color: #2f6b4f; font-weight: 600; }
 .ag-card-a .st.bad { color: var(--bad); }
 
 /* ---- mini: Suite ke Litu mascot ka chhota chat panel ---- */
@@ -196,3 +197,8 @@ body.mini .ag-input button { width: 38px; height: 38px; }
 body.mini .ag-input .ag-lang { height: 26px; margin-bottom: 6px; }
 body.mini .ag-foot { display: none; }
 body.mini .ag-card { padding: 12px 14px; }
+
+/* =========================================================
+   LX — Suite UI system ke rang + serif headings (suite-ui.css se mel)
+   ========================================================= */
+.ag-hello h2{font-family:'Fraunces','Iowan Old Style',Georgia,serif;font-weight:500;letter-spacing:-.02em}
