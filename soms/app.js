@@ -198,7 +198,7 @@ async function refresh(){
  * ========================================================= */
 const TITLES = {dashboard:'Dashboard',orders:'Orders',inward:'Inward Approvals',receiving:'Receiving',followups:'Follow-ups',vendors:'Vendors',masters:'Masters',imspo:'From IMS',transport:'Consignments',tracking:'Tracking',freight:'Freight'};
 const ROLE_VIEWS = {
-  Admin:     ['dashboard','orders','inward','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
+  Admin:     ['orders','inward','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
   Purchase:  ['dashboard','orders','inward','receiving','followups','vendors','masters','imspo','transport','tracking','freight'],
   Transport: ['transport','tracking','freight']
 };
