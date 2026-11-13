@@ -20,7 +20,7 @@ document.getElementById('userAv').textContent = (user.name || 'U')[0].toUpperCas
 
 // Role access
 const roleAccess = {
-    Admin:      ['admindashboard','leads','leaddash','ordertracking','orders','pendingorders','completedorders','crm','production','batteryexchange','dispatch','accounts','customers','products','suppliers','users','materialprod'],
+    Admin:      ['leads','ordertracking','orders','pendingorders','completedorders','crm','production','batteryexchange','dispatch','accounts','customers','products','suppliers','users','materialprod'],
   Sales:      ['orders','pendingorders','completedorders','customers','mydashboard','batteryexchange','leads','leaddash'],
   Accounts:   ['accounts'],
   Production: ['production','batteryexchange','deliverychallan'],
@@ -5658,7 +5658,7 @@ function accEnsure(cb) {
 function accFillDatalist() {
   document.querySelectorAll('.acc-pick .btn').forEach(b => { b.style.display = ACC_MODE ? '' : 'none'; });
   const dl = document.getElementById('custSuggestions');
-  if (dl) dl.innerHTML = custCache.map(c => `<option value="${accEsc(c.CompanyName)}">${accEsc([c.Type, c.City, c.Phone].filter(Boolean).join(' · '))}</option>`).join('');
+  if (dl) dl.innerHTML = custCache.filter(c => !accIsVendor(c.Type)).map(c => `<option value="${accEsc(c.CompanyName)}">${accEsc([c.Type, c.City, c.Phone].filter(Boolean).join(' · '))}</option>`).join('');
 }
 const accTypeBadges = t => String(t || '').split(',').map(x => x.trim()).filter(Boolean).map(x => `<span class="acc-type">${accEsc(x)}</span>`).join('') || '<span class="acc-type acc-type-none">Type not set</span>';
 
@@ -5705,18 +5705,24 @@ function accModals() {
 <div class="modal-overlay" id="acctModal"><div class="modal" style="max-width:640px;">
   <div class="modal-head"><div class="modal-title" id="acctTitle">New Account</div><button class="modal-close" onclick="closeModal('acctModal')">✕</button></div>
   <div class="modal-body">
+    <div id="af-pick" class="acc-kinds">
+      <button type="button" class="acc-kind" onclick="accSetKind('customer')"><span class="acc-kind-ic">🏢</span><b>Customer</b><span>OEM, dealer or retail buyer — someone we sell to</span></button>
+      <button type="button" class="acc-kind" onclick="accSetKind('vendor')"><span class="acc-kind-ic">🏭</span><b>Vendor</b><span>Supplier — someone we buy material or services from</span></button>
+    </div>
+    <div id="af-form">
+    <div class="acc-kind-bar" id="af-kindbar"><span id="af-kindname"></span><button type="button" class="btn btn-sm" onclick="accSetKind('')">← Change</button></div>
     <div id="acctDup"></div>
-    <input type="hidden" id="af-id">
+    <input type="hidden" id="af-id"><input type="hidden" id="af-kind">
     <div class="form-grid">
-      <div class="form-group full"><label class="form-label">Account name *</label><input class="form-control" id="af-name" placeholder="Company / shop name (or person's name for retail)"></div>
-      <div class="form-group full"><label class="form-label">Type *</label><div class="acc-chips" id="af-types"></div></div>
+      <div class="form-group full"><label class="form-label" id="af-name-l">Account name *</label><input class="form-control" id="af-name" placeholder="Company / shop name (or person's name for retail)"></div>
+      <div class="form-group full" id="af-types-wrap"><label class="form-label">Type *</label><div class="acc-chips" id="af-types"></div></div>
       <div class="form-group"><label class="form-label">City</label><input class="form-control" id="af-city"></div>
       <div class="form-group"><label class="form-label">State</label><input class="form-control" id="af-state"></div>
       <div class="form-group"><label class="form-label">GSTIN</label><input class="form-control" id="af-gst" maxlength="15" style="text-transform:uppercase"></div>
-      <div class="form-group"><label class="form-label">Credit days</label><input class="form-control" id="af-credit" inputmode="numeric"></div>
-      <div class="form-group acc-edit-only"><label class="form-label">PAN</label><input class="form-control" id="af-pan" maxlength="10" style="text-transform:uppercase"></div>
-      <div class="form-group acc-edit-only"><label class="form-label">Pincode</label><input class="form-control" id="af-pin" inputmode="numeric" maxlength="6"></div>
-      <div class="form-group full acc-edit-only"><label class="form-label">Address</label><input class="form-control" id="af-addr"></div>
+      <div class="form-group"><label class="form-label" id="af-credit-l">Credit days</label><input class="form-control" id="af-credit" inputmode="numeric"></div>
+      <div class="form-group acc-edit-only acc-vendor-new"><label class="form-label">PAN</label><input class="form-control" id="af-pan" maxlength="10" style="text-transform:uppercase"></div>
+      <div class="form-group acc-edit-only acc-vendor-new"><label class="form-label">Pincode</label><input class="form-control" id="af-pin" inputmode="numeric" maxlength="6"></div>
+      <div class="form-group full acc-edit-only acc-vendor-new"><label class="form-label">Address</label><input class="form-control" id="af-addr"></div>
     </div>
     <div class="acc-new-only">
       <div class="acc-sub">First contact <span class="c360-muted">— the person you deal with</span></div>
@@ -5726,6 +5732,7 @@ function accModals() {
         <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="af-cphone" inputmode="numeric" maxlength="13"></div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="af-cemail"></div>
       </div>
+    </div>
     </div>
   </div>
   <div class="modal-foot"><button class="btn" onclick="closeModal('acctModal')">Cancel</button><button class="btn btn-primary" id="af-save" onclick="accSave()">Save</button></div>
@@ -5763,10 +5770,30 @@ function accModals() {
   <div class="modal-foot"><button class="btn" onclick="closeModal('accSetModal')">Cancel</button><button class="btn btn-primary" onclick="accSettingsSave(this)">Save</button></div>
 </div></div>`);
 }
+// Customer ya Vendor — dono ka apna form. k: 'customer' | 'vendor' | '' (pehle poochho)
+const accIsVendor = t => String(t || '').split(',').some(x => x.trim().toLowerCase() === 'vendor');
+function accSetKind(k) {
+  const m = document.getElementById('acctModal'), isNew = !document.getElementById('af-id').value, v = k === 'vendor';
+  document.getElementById('af-kind').value = k;
+  document.getElementById('af-pick').style.display = k ? 'none' : '';
+  document.getElementById('af-form').style.display = k ? '' : 'none';
+  document.getElementById('af-save').style.display = k ? '' : 'none';
+  document.getElementById('af-kindbar').style.display = (k && isNew && m.dataset.pick === '1') ? '' : 'none';
+  document.getElementById('acctDup').innerHTML = '';
+  if (!k) { document.getElementById('acctTitle').textContent = 'New Account'; return; }
+  document.getElementById('acctTitle').textContent = (isNew ? 'New ' : 'Edit ') + (v ? 'Vendor' : (isNew ? 'Customer' : 'Account'));
+  document.getElementById('af-kindname').textContent = v ? '🏭 Vendor' : '🏢 Customer';
+  document.getElementById('af-name-l').textContent = v ? 'Vendor name *' : 'Account name *';
+  document.getElementById('af-name').placeholder = v ? 'Supplier / company name' : "Company / shop name (or person's name for retail)";
+  document.getElementById('af-credit-l').textContent = v ? 'Payment terms (days)' : 'Credit days';
+  document.getElementById('af-types-wrap').style.display = v ? 'none' : '';
+  m.querySelectorAll('.acc-edit-only').forEach(e => { e.style.display = (!isNew || (v && e.classList.contains('acc-vendor-new'))) ? '' : 'none'; });
+  setTimeout(() => document.getElementById(isNew ? 'af-name' : 'af-city').focus(), 60);
+}
 function accRoleOpts(sel, v) { sel.innerHTML = '<option value="">—</option>' + ACC_META.roles.map(r => `<option${r === v ? ' selected' : ''}>${accEsc(r)}</option>`).join(''); }
 function accTypeChips(cur) {
   const on = String(cur || '').split(',').map(x => x.trim());
-  document.getElementById('af-types').innerHTML = ACC_META.types.map(t => `<label class="acc-chip"><input type="checkbox" value="${accEsc(t)}"${on.includes(t) ? ' checked' : ''}> ${accEsc(t)}</label>`).join('');
+  document.getElementById('af-types').innerHTML = ACC_META.types.filter(t => !accIsVendor(t)).map(t => `<label class="acc-chip"><input type="checkbox" value="${accEsc(t)}"${on.includes(t) ? ' checked' : ''}> ${accEsc(t)}</label>`).join('');
 }
 // a = existing account (edit) ya null (naya); pre = {name, phone, city, state, cname, email}
 function accOpenForm(a, pre) {
@@ -5788,13 +5815,18 @@ function accOpenForm(a, pre) {
   ['af-name'].forEach(id => { document.getElementById(id).disabled = fin; });
   document.querySelectorAll('#af-types input').forEach(i => { i.disabled = fin; });
   const b = document.getElementById('af-save'); b.disabled = false; b.textContent = 'Save';
+  // Naya account list se → pehle Customer / Vendor poochho. Order / lead se → hamesha Customer.
+  const pick = !a && !pre.kind && !(ACC_CTX && (ACC_CTX.from === 'order' || ACC_CTX.from === 'lead')) && !pre.name;
+  document.getElementById('acctModal').dataset.pick = pick ? '1' : '';
   openModal('acctModal');
-  setTimeout(() => document.getElementById(a ? 'af-city' : 'af-name').focus(), 60);
+  accSetKind(a ? (accIsVendor(a.Type) ? 'vendor' : 'customer') : (pick ? '' : (pre.kind || 'customer')));
 }
 function accSave(force) {
   const g = id => document.getElementById(id).value.trim();
   const id = g('af-id');
-  const types = [...document.querySelectorAll('#af-types input:checked')].map(i => i.value).join(', ');
+  const vendor = document.getElementById('af-kind').value === 'vendor';
+  const types = vendor ? 'Vendor' : [...document.querySelectorAll('#af-types input:checked')].map(i => i.value).join(', ');
+  const vx = { PAN: g('af-pan').toUpperCase(), Pincode: g('af-pin'), Address: g('af-addr') };   // naye vendor ki extra jaankari
   const p = { action: 'acctSave', 'Account Name': g('af-name'), Type: types, City: g('af-city'), State: g('af-state'), GSTIN: g('af-gst').toUpperCase(), 'Credit Days': g('af-credit') };
   if (id) Object.assign(p, { 'Account ID': id, PAN: g('af-pan').toUpperCase(), Pincode: g('af-pin'), Address: g('af-addr') });
   else Object.assign(p, { contactName: g('af-cname'), contactRole: g('af-crole'), contactPhone: g('af-cphone'), contactEmail: g('af-cemail') });
@@ -5811,6 +5843,12 @@ function accSave(force) {
     b.disabled = false; b.textContent = 'Save';
     if (!r || !r.success) return toast((r && r.message) || 'Save failed', 'e');
     if (r.duplicate) return accShowDup(r.matches, !!id);
+    // Naya vendor: PAN / Pincode / Address sirf edit wale raaste se save hote hain → turant doosri call
+    if (!id && vendor && (vx.PAN || vx.Pincode || vx.Address) && (r.id || (r.account && r.account['Account ID'])))
+      api(Object.assign({ action: 'acctSave', 'Account ID': r.id || r.account['Account ID'], 'Account Name': p['Account Name'], Type: p.Type, City: p.City, State: p.State, GSTIN: p.GSTIN, 'Credit Days': p['Credit Days'], force: 'true' }, vx), x => {
+        if (!x || !x.success) toast('Vendor saved, but address / PAN could not be saved. Open it and edit.', 'e');
+        else if (C360 && document.getElementById('page-customer').classList.contains('active')) openCustomer(r.id || r.account['Account ID'], '', '', true);
+      });
     toast(id ? 'Account updated' + (r.renamed ? ` · renamed in ${r.renamed} places` : '') : `Account ${r.id} created`, 's');
     closeModal('acctModal');
     custCache = []; accEnsure(() => accAfterSave(r.account, r.contactId));
