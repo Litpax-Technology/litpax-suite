@@ -193,6 +193,7 @@
       closeList();
       if (!line.trim()) { i++; continue; }
       var tl2 = line.trim();
+      if (/^>\s?/.test(tl2)) { out.push('<blockquote class="ag-quote">' + inline(esc(tl2.replace(/^>\s?/, ''))) + '</blockquote>'); i++; continue; }
       if (/^_.+_$/.test(tl2)) { out.push('<p class="ag-src">' + inline(esc(tl2.slice(1, -1))) + '</p>'); i++; continue; }
       out.push('<p>' + inline(e) + '</p>'); i++;
     }
@@ -290,10 +291,20 @@
   function ask(q, byVoice) {
     q = String(q || '').trim();
     if (!q || A.busy) return;
+    var loc = localReply(q);   // naam / "kisne banaya" — backend tak nahi jaata
+    if (loc) {
+      $('agHello').classList.add('hidden');
+      addMe(q);
+      A.history.push({ role: 'user', text: q, local: 1 }, { role: 'model', text: loc, local: 1 }); save();
+      var lb = addBot(loc);
+      if (byVoice && lb) { var ls = lb.querySelector('.ag-say'); if (ls) speak(loc, ls); }
+      $('agQ').focus();
+      return;
+    }
     A.busy = true; $('agSend').disabled = true;
     $('agHello').classList.add('hidden');
     addMe(q);
-    var prior = A.history.slice(-8);
+    var prior = A.history.filter(function (h) { return !h.local; }).slice(-8);
     A.history.push({ role: 'user', text: q }); save();
     var t = addTyping();
     toSuite('agent-busy');
@@ -310,6 +321,29 @@
       clearInterval(t._t); t.remove();
       A.busy = false; $('agSend').disabled = false; $('agQ').focus();
     });
+  }
+
+  /* ---------------- persona: naam poochna + quote + creator (persona.js) ---------------- */
+  var WKEY = 'ag_who', HERO = null;
+  function getWho() {
+    try { var w = JSON.parse(sessionStorage.getItem(WKEY) || 'null'); return (w && w.t === token().slice(-12)) ? w.n : null; } catch (e) { return null; }
+  }
+  function setWho(n) { try { sessionStorage.setItem(WKEY, JSON.stringify({ t: token().slice(-12), n: n })); } catch (e) {} }
+  function hero() {
+    var h2 = $('agHello').querySelector('h2'), p = $('agHello').querySelector('p'), q = $('agQ'), P = window.AGENT_PERSONA;
+    if (!HERO) HERO = { h: h2.textContent, p: p.textContent, ph: q.placeholder };
+    $('agChips').classList.toggle('hidden', !!A.needName);
+    if (A.needName) { h2.textContent = 'Namaste! Aap kaun ho?'; p.textContent = 'Apna naam likhiye, phir jo poochna ho poochiye.'; q.placeholder = 'Apna naam likhiye…'; return; }
+    var w = getWho(), x = (P && w && w !== '-') ? P.hero(w) : null;
+    h2.textContent = x ? x.h : HERO.h; p.textContent = x ? x.p : HERO.p; q.placeholder = HERO.ph;
+  }
+  function localReply(q) {
+    var P = window.AGENT_PERSONA; if (!P) return null;
+    var c = P.creator(q); if (c) return c;
+    if (!A.needName) return null;
+    var n = P.parseName(q);
+    A.needName = false; setWho(n || '-'); hero();
+    return n ? P.greet(n) : null;   // naam nahi, sawaal tha → seedha jawaab
   }
 
   function restore() {
@@ -435,6 +469,8 @@
     var pre = new URLSearchParams(location.search).get('q');
 
     restore();
+    A.needName = !!window.AGENT_PERSONA && !pre && getWho() === null;
+    hero();
     api('ping').then(function (r) {
       $('agStatus').textContent = r.keySet ? 'Online · ' + r.model + ' · changes need your Confirm' : 'Key not set. Add GEMINI_KEY in GAS Script Properties';
       $('agStatus').className = r.keySet ? 'ok' : 'warn';
