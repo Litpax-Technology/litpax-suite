@@ -679,14 +679,14 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
  * Ye block style.css ke SABSE END me rahe. Font: Inter Tight.
  * ============================================================= */
 .shell {
-  --accent: #1f3fff; --accent-dark: #1530c4; --accent-soft: #f0f3ff;
-  --ink: #0a0a0a;
-  --bg: #ffffff; --card: #ffffff; --tile: #fafafa;
-  --text: #0a0a0a; --muted: #737373; --line: #ededed;
-  --ok: #15803d; --ok-soft: #f0fdf4;
-  --warn: #92400e; --warn-soft: #fffbeb;
-  --bad: #dc2626; --bad-soft: #fef2f2;
-  --radius: 20px;
+  --accent: #1f3d33; --accent-dark: #152c25; --accent-soft: #edf2ef;
+  --ink: #1b1d1a;
+  --bg: #ffffff; --card: #ffffff; --tile: #f8f8f7;
+  --text: #1b1d1a; --muted: #6e716d; --line: #e9e9e7;
+  --ok: #2f6b4f; --ok-soft: #e9f2ec;
+  --warn: #8f6417; --warn-soft: #f8f0dc;
+  --bad: #8a2f37; --bad-soft: #f7e8e7;
+  --radius: 16px;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
   font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
 }
@@ -730,7 +730,7 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 /* ---- buttons: blue primary, white secondary ---- */
 .shell .btn { min-height: 42px; padding: 0 18px; border: 1px solid #e5e5e5; border-radius: 999px; background: #fff; color: var(--text); font-weight: 500; font-size: 14px; }
 .shell .btn:hover { background: #fafafa; border-color: #d4d4d4; }
-.shell .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(31, 63, 255, .25); }
+.shell .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(31, 61, 51, .25); }
 .shell .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 .shell .btn-danger { background: #fff; border-color: #fecaca; color: var(--bad); }
 .shell .btn-danger:hover { background: var(--bad-soft); }
@@ -740,7 +740,7 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 /* ---- inputs: white + border ---- */
 .shell input:not([type=checkbox]):not([type=radio]):not([type=file]), .shell select, .shell textarea {
   background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; min-height: 42px; }
-.shell input:focus, .shell select:focus, .shell textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31, 63, 255, .12); }
+.shell input:focus, .shell select:focus, .shell textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(31, 61, 51, .12); }
 .shell .scan-box { border: 2px solid var(--accent); }
 
 /* ---- chips: soft pill + rangeen dot ---- */
@@ -882,7 +882,7 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .shell .topbar { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.86); -webkit-backdrop-filter: saturate(1.6) blur(14px); backdrop-filter: saturate(1.6) blur(14px);
   border-bottom: 1px solid rgba(15,23,42,.06); box-shadow: 0 1px 0 rgba(255,255,255,.6), 0 6px 24px rgba(15,23,42,.04); }
 .shell .tabs .nav-item { transition: background .15s, color .15s, box-shadow .15s; }
-.shell .tabs .nav-item.active { box-shadow: inset 0 0 0 1px rgba(31,63,255,.10), 0 2px 8px rgba(31,63,255,.08); }
+.shell .tabs .nav-item.active { box-shadow: inset 0 0 0 1px rgba(31,61,51,.10), 0 2px 8px rgba(31,61,51,.08); }
 /* user chip: avatar + naam + team */
 .shell .top-user { gap: 10px; padding: 3px 12px 3px 3px; min-height: 40px; border: 1px solid rgba(15,23,42,.07); border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
 .tu-av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11.5px; font-weight: 700; color: #fff; flex: 0 0 32px; }
@@ -903,9 +903,9 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 /* tables + notices */
 .shell .tbl tbody tr { transition: background .12s; }
 .shell .tbl tbody tr:hover td { background: #fafbfd; }
-.shell .notice { border: 1px solid rgba(31,63,255,.10); }
+.shell .notice { border: 1px solid rgba(31,61,51,.10); }
 /* keyboard focus */
-.shell .btn:focus-visible, .shell .nav-item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(31,63,255,.22); }
+.shell .btn:focus-visible, .shell .nav-item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(31,61,51,.22); }
 /* patla scrollbar */
 .shell ::-webkit-scrollbar { width: 10px; height: 10px; }
 .shell ::-webkit-scrollbar-thumb { background: #d9dbe4; border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
@@ -915,13 +915,13 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 
 /* =============================================================
  * N2 COMMON SIDEBAR — saare apps ek sidebar me (isi file ke END me rahe)
- * Rang: ink #121212 · laal #ec4f55 · amber #f5b82e
+ * Rang: ink #121212 · brass #a8843f · halka brass #c9a45a
  * ============================================================= */
-.shell { flex-direction: row; background: #f5f5f2; --n2-red: #ec4f55; --n2-amb: #f5b82e; --n2-line: rgba(16, 24, 40, .07); }
-.shell .main { flex: 1; min-width: 0; min-height: 0; background: #f5f5f2; }
+.shell { flex-direction: row; background: #ffffff; --n2-red: #a8843f; --n2-amb: #c9a45a; --n2-line: rgba(16, 24, 40, .07); }
+.shell .main { flex: 1; min-width: 0; min-height: 0; background: #ffffff; }
 .shell .topbar { display: none; }
 .shell .frames, .shell:not(.solo) .frames { margin: 12px 12px 12px 0; }
-.shell .frames iframe, .shell:not(.solo) .frames iframe { border-radius: 22px; background: #f5f5f2; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+.shell .frames iframe, .shell:not(.solo) .frames iframe { border-radius: 22px; background: #ffffff; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
 
 .sn { width: 268px; flex: none; display: flex; flex-direction: column; margin: 12px; padding: 14px 10px 10px; border-radius: 22px; position: relative; z-index: 30;
   background: linear-gradient(180deg, #ffffff 0%, #fbfbfa 100%); border: 1px solid var(--n2-line);
@@ -934,7 +934,7 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .sn-out:hover { background: #fff1f1; color: #c9363d; }
 
 .sn-search { display: flex; align-items: center; gap: 9px; height: 40px; margin: 0 4px 8px; padding: 0 10px 0 12px; border-radius: 13px; background: #f3f3f0; color: #8a8b91; cursor: text; transition: box-shadow .15s, background .15s; }
-.sn-search:focus-within { background: #fff; box-shadow: inset 0 0 0 1px rgba(236, 79, 85, .45), 0 0 0 4px rgba(236, 79, 85, .10); }
+.sn-search:focus-within { background: #fff; box-shadow: inset 0 0 0 1px rgba(168, 132, 63, .45), 0 0 0 4px rgba(168, 132, 63, .10); }
 .sn-search svg { width: 17px; height: 17px; }
 .sn-search input { flex: 1; min-width: 0; border: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0; height: 100%; font: inherit; font-size: 13.5px; color: #121212; outline: 0; }
 .sn-search kbd { font: 500 11px 'Geist Mono', ui-monospace, monospace; color: #8a8b91; background: #fff; border: 1px solid rgba(16, 24, 40, .1); border-radius: 6px; padding: 1px 6px; }
@@ -952,14 +952,14 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .sn-nav .nav-item.cur .sn-ic { color: #121212; }
 /* active = laal glow + amber→laal patti */
 .sn-nav .nav-item.active, .sn-page.active { color: #121212; font-weight: 600;
-  background: linear-gradient(90deg, rgba(236, 79, 85, .16) 0%, rgba(236, 79, 85, .05) 55%, rgba(236, 79, 85, 0) 100%); box-shadow: inset 1px 0 0 rgba(236, 79, 85, .30); }
+  background: linear-gradient(90deg, rgba(168, 132, 63, .16) 0%, rgba(168, 132, 63, .05) 55%, rgba(168, 132, 63, 0) 100%); box-shadow: inset 1px 0 0 rgba(168, 132, 63, .30); }
 .sn-nav .nav-item.active::before, .sn-page.active::before { content: ''; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3.5px; border-radius: 0 4px 4px 0;
-  background: linear-gradient(180deg, var(--n2-amb), var(--n2-red)); box-shadow: 0 0 12px 1px rgba(236, 79, 85, .6); }
-.sn-nav .nav-item.active .sn-ic, .sn-page.active .sn-ic { color: var(--n2-red); filter: drop-shadow(0 0 6px rgba(236, 79, 85, .5)); }
+  background: linear-gradient(180deg, var(--n2-amb), var(--n2-red)); box-shadow: 0 0 12px 1px rgba(168, 132, 63, .6); }
+.sn-nav .nav-item.active .sn-ic, .sn-page.active .sn-ic { color: var(--n2-red); filter: drop-shadow(0 0 6px rgba(168, 132, 63, .5)); }
 .sn-chev { width: 8px; height: 8px; flex: none; margin-right: 2px; border-right: 1.8px solid #9a9aa0; border-bottom: 1.8px solid #9a9aa0; transform: rotate(-45deg); transition: transform .2s; }
 .sn-nav .nav-item.open .sn-chev { transform: rotate(45deg); margin-top: -4px; }
 .sn-nav .badge, .sn-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; font-style: normal; color: #fff;
-  background: linear-gradient(135deg, var(--n2-red), var(--n2-amb)); box-shadow: 0 0 10px rgba(236, 79, 85, .35); }
+  background: linear-gradient(135deg, var(--n2-red), var(--n2-amb)); box-shadow: 0 0 10px rgba(168, 132, 63, .35); }
 
 /* app ke pages (andar wali list) */
 .sn-sub { display: none; position: relative; margin: 2px 0 6px 21px; padding-left: 8px; }
@@ -988,7 +988,7 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .shell.sn-mini .sn-search, .shell.sn-mini .sn-grp, .shell.sn-mini .sn-lbl, .shell.sn-mini .sn-chev, .shell.sn-mini .sn-sub, .shell.sn-mini .tu-t,
 .shell.sn-mini #reloadBtn, .shell.sn-mini .sn-foot .chip-warn { display: none !important; }
 .shell.sn-mini .sn-nav .nav-item { justify-content: center; padding: 0; margin: 2px 4px; }
-.shell.sn-mini .sn-nav .nav-item.cur:not(.active) { background: rgba(236, 79, 85, .08); }
+.shell.sn-mini .sn-nav .nav-item.cur:not(.active) { background: rgba(168, 132, 63, .08); }
 .shell.sn-mini .sn-nav .badge { position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; font-size: 9.5px; padding: 0 4px; }
 .shell.sn-mini .sn-me { flex-direction: column; gap: 6px; }
 .shell.sn-mini .sn-me .top-user { justify-content: center; padding: 0; }
