@@ -446,10 +446,10 @@
 <!-- ===== PRODUCTS PAGE ===== -->
 <div class="page" id="page-products">
   <div class="card">
-    <div class="card-head"><div class="card-title">Products</div><button class="btn btn-primary" onclick="openModal('prodModal')">+ Add Product</button></div>
+    <div class="card-head"><div class="card-title">Products <span id="productCount" style="font-weight:500;opacity:.6;"></span></div><input class="form-control" id="productSearch" placeholder="Search model / category" oninput="renderProducts()" style="max-width:240px;"></div>
     <div class="table-wrap">
-      <table><thead><tr><th>ID</th><th>Product Name</th><th>Category</th><th>Sale Price</th><th>HSN</th><th>GST%</th><th>Unit</th></tr></thead>
-      <tbody id="productTable"><tr><td colspan="7"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table>
+      <table><thead><tr><th>#</th><th>Model Code</th><th>Category</th><th>Chemistry</th><th>Voltage</th><th>Capacity</th></tr></thead>
+      <tbody id="productTable"><tr><td colspan="6"><div class="loading"><div class="spin"></div></div></td></tr></tbody></table>
     </div>
   </div>
 </div>
@@ -872,25 +872,6 @@
       <button class="btn" onclick="closeModal('leadModal')">Cancel</button>
       <button class="btn btn-primary" id="ldSaveBtn" onclick="saveLead()">Save Lead</button>
     </div>
-  </div>
-</div>
-
-<!-- PRODUCT MODAL -->
-<div class="modal-overlay" id="prodModal">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-head"><div class="modal-title">Add Product</div><button class="modal-close" onclick="closeModal('prodModal')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">Product ID</label><input class="form-control" id="p-id" placeholder="P-001"></div>
-        <div class="form-group"><label class="form-label">Product Name</label><input class="form-control" id="p-name" placeholder="Product name"></div>
-        <div class="form-group"><label class="form-label">Category</label><input class="form-control" id="p-cat" placeholder="Cell / Pack / Module"></div>
-        <div class="form-group"><label class="form-label">Sale Price (₹)</label><input class="form-control" type="number" id="p-price" placeholder="0"></div>
-        <div class="form-group"><label class="form-label">HSN Code</label><input class="form-control" id="p-hsn" placeholder="HSN"></div>
-        <div class="form-group"><label class="form-label">GST %</label><input class="form-control" type="number" id="p-gst" placeholder="18"></div>
-        <div class="form-group"><label class="form-label">Unit</label><input class="form-control" id="p-unit" placeholder="pcs / kg"></div>
-      </div>
-    </div>
-    <div class="modal-foot"><button class="btn" onclick="closeModal('prodModal')">Cancel</button><button class="btn btn-primary" onclick="submitProduct()">Add</button></div>
   </div>
 </div>
 
