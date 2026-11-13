@@ -15,13 +15,13 @@
     '|(तुम्हें|तुम्हे|आपको|तुमको|तुझे).*किसने\\s+बनाया', 'i');
   function creator(q) {
     if (!CREATOR_RE.test(String(q || ''))) return null;
-    return '**Mujhe Darpan ne banaya hai.** ✨\n\n' +
+    return '**Koi to hai Muje Bhi Bnane Wala** ✨\n\n' +
       'Har line of code ke peeche unki soch hai, aur har jawaab ke peeche unki mehnat. ' +
       'Unhone mujhe sirf data padhna nahi sikhaya — yeh bhi sikhaya ki sahi jawaab seedhe, saaf aur imaandaari se diya jaaye.\n\n' +
       'Par yeh akele ka kaam nahi tha. **Sneha ji** aur **Sahil ji** ki mehnat, soch aur bharosa bhi isme utna hi shaamil hai. ' +
-      'Litpax ke orders, stock, production aur service ko ek jagah samajhne ka sapna unhi ka tha, aur Darpan ne use **Ask Litpax** ki shakal di.\n\n' +
+      'Litpax ke orders, stock, production aur service ko ek jagah samajhne ka sapna unhi ka tha, aur jise Owners MIS kehte hai usne isi sapne ko **Ask Litpax** ki shakal di.\n\n' +
       'Isliye main unhi dono ko samarpit hoon — ek chhota sa saathi, jo aapka waqt bachane ke liye hamesha yahin hai.\n\n' +
-      '_Crafted with care by Darpan · Dedicated to Sneha ji & Sahil ji · Litpax Technology_';
+      '_Crafted with care · Dedicated to Sneha & Sahil Litpax Technology_';
   }
 
   window.AGENT_PERSONA = { creator: creator };
