@@ -66,7 +66,7 @@
 
   /* ---------------- AUTH ---------------- */
   /* Screen pe dikhne wale naam (ERP / IMS / PLT / SOMS jaise short forms nahi) */
-  var APPNAMES = { erp: { label: 'Sales & Orders' }, ims: { label: 'Inventory' }, pltScan: { label: 'Line Scan' }, pltAdmin: { label: 'Line Admin' }, soms: { label: 'Purchase' } };
+  var APPNAMES = { erp: { label: 'Opportunities' }, ims: { label: 'Inventory' }, pltScan: { label: 'Line Scan' }, pltAdmin: { label: 'Battery Production' }, soms: { label: 'Purchase' } };
   function showLogin() {
     $('#appShell').classList.add('hidden');
     $('#loginScreen').classList.remove('hidden');
@@ -707,9 +707,10 @@
       return;
     }
     var q = ($('#snSearch') ? $('#snSearch').value : '').trim().toLowerCase(), html = '', sec = '';
+    var hasAcc = items.some(function (x) { return x.id === 'accounts'; });   // Accounts upar alag hai → ERP ki list me dobara nahi
     items.forEach(function (n) {
       var sub = n.mod ? (S.appNav[n.mod] || []) : [], appHit = !q || n.label.toLowerCase().indexOf(q) !== -1;
-      var subs = sub.filter(function (p) { return appHit || (p.label + ' ' + p.sec).toLowerCase().indexOf(q) !== -1; });
+      var subs = sub.filter(function (p) { if (hasAcc && n.mod === 'erp' && p.k === 'nav-customers') return false; return appHit || (p.label + ' ' + p.sec).toLowerCase().indexOf(q) !== -1; });
       if (!appHit && !subs.length) return;
       var cur = S.view === n.id || (n.id === 'accounts' && S.view === 'm-erp' && (S.appNav.erp || []).some(function (p) { return p.k === 'nav-customers' && p.active; })), open = sub.length && (q ? true : !!S.open[n.mod]);
       if (!q && n.sec !== sec) { sec = n.sec; html += '<div class="sn-grp">' + esc(sec) + '</div>'; }
@@ -1174,7 +1175,7 @@
         }).join('') + '</tbody></table></div></div>' +
         '<div class="card"><div class="card-h"><div><div class="card-t">Team logins</div><div class="card-s">' +
           (U.central ? 'One login per team (sales, store, purchase…). People inside a team pick their own name + PIN (Staff below).'
-                     : 'Users still come from the Sales &amp; Orders sheet. Run <b>suiteCentralSetup</b> once in the ERP script to move them here.') +
+                     : 'Users still come from the Opportunities (ERP) sheet. Run <b>suiteCentralSetup</b> once in the ERP script to move them here.') +
           '</div></div>' + (U.central ? '<button class="btn btn-sm btn-primary" id="userAdd">+ Add login</button>' : '') + '</div>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Active</th><th>Job</th><th></th></tr></thead><tbody>' +
         U.users.map(function (u) {
@@ -1204,9 +1205,9 @@
     Admin:      { label: 'Admin',              hint: 'Everything + Settings' },
     Store:      { label: 'Store',              hint: 'Inventory: Inward, Outward, Indent / PO' },
     Purchase:   { label: 'Purchase',           hint: 'Purchase: Orders, Receiving, Inward Approvals' },
-    Production: { label: 'Production',         hint: 'Line Scan, Line Admin, Overview, Inventory' },
+    Production: { label: 'Production',         hint: 'Line Scan, Battery Production, Overview, Inventory' },
     Dispatch:   { label: 'Dispatch',           hint: 'ERP: Dispatch page (Role column = Dispatch)' },
-    ErpOnly:    { label: 'Sales & Orders only', hint: 'Sales / Accounts / CRM (page set by the Role column)' },
+    ErpOnly:    { label: 'Opportunities only', hint: 'Sales / Accounts / CRM (page set by the Role column)' },
     Attendant:  { label: 'Call Attendant',     hint: 'Service Hub: New Ticket, Tracker' },
     Service:    { label: 'Service Team',       hint: 'Service Hub: Tickets, calls, pickup, receiving' },
     Repair:     { label: 'Repair Team',        hint: 'Service Hub: Repair Board, Dispatch' }
@@ -1250,7 +1251,7 @@
     var acct = !central ? '' : '<div class="grid g3" style="margin-bottom:12px">' +
       (isNew ? '<div class="field"><label class="lbl" for="ufUser">Username</label><input id="ufUser" autocomplete="off" placeholder="e.g. crm"></div>' : '') +
       '<div class="field"><label class="lbl" for="ufName">Name</label><input id="ufName" value="' + esc(u.name) + '" placeholder="e.g. CRM Team"></div>' +
-      '<div class="field"><label class="lbl" for="ufErp">Sales &amp; Orders role</label><select id="ufErp"><option value="">—</option>' +
+      '<div class="field"><label class="lbl" for="ufErp">Opportunities role</label><select id="ufErp"><option value="">—</option>' +
         ERP_ROLES.map(function (r) { return '<option' + (r === u.erpRole ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>' +
       '<div class="field"><label class="lbl" for="ufSales">Sales Name <span class="hint">(only a personal sales login)</span></label><input id="ufSales" value="' + esc(u.salesName) + '"></div>' +
       '<div class="field"><label class="lbl" for="ufPw">' + (u.username === 'admin' ? 'New admin PIN <span class="hint">(4 digits · blank = no change)</span>' : isNew ? 'Password' : 'New password <span class="hint">(blank = no change)</span>') + '</label><input id="ufPw" type="password" autocomplete="new-password"' + (u.username === 'admin' ? ' inputmode="numeric" maxlength="4"' : '') + '></div></div>';
@@ -1290,7 +1291,7 @@
 
   /* ---------- Staff: har insaan ek baar (Emp ID), apps me team, ek PIN — Links → Staff ---------- */
   var SET = { U: null, ST: null };
-  var APP_TXT = { ERP: 'Sales & Orders', IMS: 'Inventory', SOMS: 'Purchase', SERVICE: 'Service Hub' };
+  var APP_TXT = { ERP: 'Opportunities', IMS: 'Inventory', SOMS: 'Purchase', SERVICE: 'Service Hub' };
   var APP_ORDER = ['ERP', 'IMS', 'SOMS', 'SERVICE'];
   function staffCard(ST) {
     if (!ST || !ST.success) return '<div class="card"><div class="card-h"><div class="card-t">Staff</div></div><div class="card-b"><div class="notice">' +
