@@ -12,7 +12,7 @@ const DEPTS = ['Volt Wing','Ampere Wing','Volt x Ampere Wing','Mega Grid','Catho
 // ── ROLES & PINS ──
 // PINs ab yahan NAHI hain — backend verify karta hai (source me kuch nahi dikhta)
 const ROLES = {
-admin:   { name: 'Admin',   homePage: 'dashboard', pages: ['inward','outward','dispatch','wip','items','opening','bom','indent','stock','reorder','closing','adc','ledger','settings'] },
+admin:   { name: 'Admin',   homePage: 'stock', pages: ['inward','outward','dispatch','wip','items','opening','bom','indent','stock','reorder','closing','adc','ledger','settings'] },
   ajay:    { name: 'Store',    homePage: 'inward',    pages: ['inward','outward','items','opening','bom','indent','stock','reorder'] },
   sandeep: { name: 'Production', homePage: 'dispatch',  pages: ['dispatch','received','wip','stock','items','bom'] },
   purchase:  { name: 'Purchase',  redirect: '../soms/index.html' },
