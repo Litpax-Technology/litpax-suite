@@ -1137,3 +1137,69 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 .litu-say .ln-i { margin-right: 6px; }
 .litu-say small { display: block; margin-top: 2px; color: #ff8a8f; font-size: 11px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .litu .lt-body, .litu-z i, .litu .lt-hand, .litu .lt-sweat { animation: none !important; } }
+
+
+/* =============================================================
+ * LX SIDEBAR — deep racing green nav (safed content ke saath)
+ * Isi file ke SABSE END me rahe. Poora block hata do to safed sidebar wapas.
+ * Rang: green #1f3d33 → #14271f · brass #c9a45a · text halka cream
+ * ============================================================= */
+.sn {
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(201, 164, 90, .16) 0%, rgba(201, 164, 90, 0) 60%),
+    linear-gradient(180deg, #1f3d33 0%, #183128 55%, #14271f 100%);
+  border: 1px solid rgba(255, 255, 255, .06);
+  box-shadow: 0 30px 60px -24px rgba(20, 39, 31, .55), 0 1px 2px rgba(20, 39, 31, .2);
+  transition: width .32s cubic-bezier(.22, 1, .36, 1);
+}
+.sn-logo { content: url('assets/logo-white.png'); }
+.sn-btn { color: rgba(246, 241, 229, .6); transition: background .22s, color .22s, transform .22s cubic-bezier(.22, 1, .36, 1); }
+.sn-btn:hover { background: rgba(255, 255, 255, .09); color: #fff; transform: translateY(-1px); }
+.sn-out:hover { background: rgba(217, 138, 143, .18); color: #f0b9bc; }
+
+.sn-search { background: rgba(255, 255, 255, .07); color: rgba(246, 241, 229, .55); transition: box-shadow .25s, background .25s; }
+.sn-search:hover { background: rgba(255, 255, 255, .1); }
+.sn-search:focus-within { background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px rgba(201, 164, 90, .6), 0 0 0 4px rgba(201, 164, 90, .14); }
+.sn-search input { color: #fff; }
+.sn-search input::placeholder { color: rgba(246, 241, 229, .5); }
+.sn-search kbd { color: rgba(246, 241, 229, .6); background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .12); }
+
+.sn-grp { color: rgba(246, 241, 229, .42); letter-spacing: .08em; text-transform: uppercase; font-size: 11px; font-weight: 600; }
+.sn-sec { color: rgba(246, 241, 229, .38); }
+.sn-nav .nav-item, .sn-page {
+  color: rgba(246, 241, 229, .74);
+  transition: background .25s, color .25s, transform .32s cubic-bezier(.22, 1, .36, 1);
+}
+.sn-nav .nav-item .sn-ic, .sn-page .sn-ic { color: rgba(246, 241, 229, .5); transition: color .25s, filter .25s, transform .32s cubic-bezier(.22, 1, .36, 1); }
+.sn-nav .nav-item:hover, .sn-page:hover { background: rgba(255, 255, 255, .07); color: #fff; transform: translateX(3px); }
+.sn-nav .nav-item:hover .sn-ic, .sn-page:hover .sn-ic { color: #e3c98f; transform: scale(1.08); }
+.sn-nav .nav-item.cur { color: #fff; }
+.sn-nav .nav-item.cur .sn-ic { color: #e3c98f; }
+.sn-nav .nav-item.active, .sn-page.active {
+  color: #fff; transform: none;
+  background: linear-gradient(90deg, rgba(201, 164, 90, .30) 0%, rgba(201, 164, 90, .10) 55%, rgba(201, 164, 90, 0) 100%);
+  box-shadow: inset 1px 0 0 rgba(201, 164, 90, .45);
+}
+.sn-nav .nav-item.active::before, .sn-page.active::before {
+  background: linear-gradient(180deg, #e3c98f, #a8843f); box-shadow: 0 0 14px 1px rgba(201, 164, 90, .7);
+  animation: snBar .45s cubic-bezier(.22, 1, .36, 1) both;
+}
+.sn-nav .nav-item.active .sn-ic, .sn-page.active .sn-ic { color: #e3c98f; filter: drop-shadow(0 0 6px rgba(201, 164, 90, .55)); }
+@keyframes snBar { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+.sn-chev { border-color: rgba(246, 241, 229, .45); }
+.sn-nav .badge, .sn-badge { color: #1b1d1a; background: linear-gradient(135deg, #e3c98f, #c9a45a); box-shadow: 0 0 10px rgba(201, 164, 90, .45); }
+.sn-sub::before { background: rgba(255, 255, 255, .1); }
+.sn-sub.open { animation: snOpen .32s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes snOpen { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.nav-empty { color: rgba(246, 241, 229, .6); }
+
+.sn-foot { border-top-color: rgba(255, 255, 255, .1); }
+.sn-me .tu-t b { color: #fff; }
+.sn-me .tu-t small { color: rgba(246, 241, 229, .55); }
+.shell.sn-mini .sn-nav .nav-item.cur:not(.active) { background: rgba(201, 164, 90, .18); }
+.shell.sn-mini .sn-nav .nav-item:hover { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .sn-nav .nav-item, .sn-page, .sn-btn, .sn-ic { transition: none !important; }
+  .sn-nav .nav-item.active::before, .sn-page.active::before, .sn-sub.open { animation: none !important; }
+  .sn-nav .nav-item:hover, .sn-page:hover { transform: none; }
+}
