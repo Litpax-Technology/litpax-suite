@@ -1281,3 +1281,14 @@ html.in-suite .btn-logout { display: none; }
 .stat{transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s cubic-bezier(.22,1,.36,1),border-color .32s}
 .stat:hover{transform:translateY(-4px);border-color:rgba(168,132,63,.4);box-shadow:0 34px 70px -28px rgba(20,22,20,.3)}
 tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 #a8843f}
+
+/* ---- New Account: Customer / Vendor chooser ---- */
+.acc-kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 6px 0 4px; }
+.acc-kind { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 22px 20px; text-align: left; font: inherit; color: inherit; background: var(--card, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: 14px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.acc-kind:hover, .acc-kind:focus-visible { transform: translateY(-2px); border-color: var(--accent, #4f46e5); box-shadow: 0 10px 24px rgba(15, 23, 42, .08); outline: none; }
+.acc-kind-ic { font-size: 28px; line-height: 1; }
+.acc-kind b { font-size: 16px; }
+.acc-kind span:last-child { font-size: 12.5px; color: var(--text2, #64748b); line-height: 1.4; }
+.acc-kind-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; padding: 8px 12px; border-radius: 10px; background: var(--accent-dim, #eef2ff); font-weight: 600; font-size: 13.5px; }
+@media (max-width: 560px) { .acc-kinds { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .acc-kind { transition: none; } }
