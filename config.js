@@ -29,7 +29,7 @@ window.SUITE = {
     ims:      { label: 'Inventory (IMS)', path: 'ims/index.html' },
     pltScan:  { label: 'Line Scan',       path: 'plt/index.html' },
     plt2W:    { label: '2 Wheeler Line',  path: 'plt/index.html?hall=2%20Wheeler' },
-    pltAdmin: { label: 'Line Admin',      path: 'plt/admin.html' },
+    pltAdmin: { label: 'Battery Production', path: 'plt/admin.html' },
     soms:     { label: 'Store Orders',    path: 'soms/index.html' },
     pltPack:  { label: 'Battery Packing', path: 'plt/index.html?mode=packing' },
     cash:     { label: 'Cash Ledger',     path: 'https://litpax-technology.github.io/Cash-Ledger-/' },
