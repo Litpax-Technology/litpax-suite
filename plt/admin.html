@@ -3,36 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - Pack Line Tracker</title>
-<link rel="stylesheet" href="style.css?v=cl1">
+<title>Battery Production - Litpax</title>
+<link rel="stylesheet" href="style.css?v=lx2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
 </head>
 <body>
 
-<div class="shell">
-
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">L</div>
-      <div>
-        <h1>Pack Line Tracker</h1>
-        <p>Admin &amp; reporting</p>
-      </div>
-    </div>
-    <div class="side-label">Menu</div>
-    <nav class="tabs" id="tabs"></nav>
-    <div class="side-foot">
-      <div class="context-bar" id="contextBar"></div>
-      <div class="footer-note">
-        <span class="conn-dot" id="connDot"></span>
-        <span id="connText">Connecting...</span>
-      </div>
-    </div>
-  </aside>
+<div class="shell adm">
 
   <main class="main">
     <div class="app" id="app">
-      <div class="page-head"><h2 id="pageTitle">Dashboard</h2></div>
+      <div class="adm-top">
+        <nav class="tabs" id="tabs"></nav>
+      </div>
+      <div class="page-head adm-head">
+        <h2 id="pageTitle">Dashboard</h2>
+        <div class="adm-status">
+          <div class="context-bar" id="contextBar"></div>
+          <div class="footer-note">
+            <span class="conn-dot" id="connDot"></span>
+            <span id="connText">Connecting...</span>
+          </div>
+        </div>
+      </div>
       <div id="content"></div>
     </div>
   </main>
