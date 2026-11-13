@@ -202,3 +202,9 @@ body.mini .ag-card { padding: 12px 14px; }
    LX — Suite UI system ke rang + serif headings (suite-ui.css se mel)
    ========================================================= */
 .ag-hello h2{font-family:'Fraunces','Iowan Old Style',Georgia,serif;font-weight:500;letter-spacing:-.02em}
+
+/* ---- persona: quote card (naam ke baad ka vichaar) ---- */
+.b .ag-quote { margin: 10px 0 14px; padding: 14px 18px; border-left: 3px solid var(--accent); border-radius: 0 12px 12px 0; background: var(--accent-soft); font-family: 'Fraunces','Iowan Old Style',Georgia,serif; font-size: 18px; line-height: 1.45; font-style: italic; color: var(--text); animation: agQuote .5s ease both; }
+@keyframes agQuote { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .b .ag-quote { animation: none; } }
+body.mini .b .ag-quote { font-size: 15.5px; padding: 10px 13px; }
