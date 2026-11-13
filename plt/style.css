@@ -546,3 +546,27 @@ body:has(.sidebar) .app{padding:28px 36px 64px;}
 .stat-card{transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s cubic-bezier(.22,1,.36,1),border-color .32s}
 .stat-card:hover{transform:translateY(-4px);border-color:rgba(168,132,63,.4);box-shadow:0 34px 70px -28px rgba(20,22,20,.3)}
 tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 #a8843f}
+
+/* =========================================================
+   ADMIN TOP TABS — Battery Production ke tabs upar (Cash Ledger jaisa underline style)
+   admin.html me sidebar hata, tabs page ke upar. Scan page untouched.
+   ========================================================= */
+.shell.adm{display:block;height:auto;}
+.adm .main{padding:0 28px 40px;}
+body:has(.tabs) .adm .app{max-width:1180px;margin:0 auto;}
+.adm-top{display:flex;align-items:flex-end;gap:16px;border-bottom:1px solid var(--border);margin:0 0 24px;padding-top:10px;position:sticky;top:0;z-index:6;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+body:has(.tabs) .adm .tabs{flex:1;min-width:0;display:flex;flex-direction:row;gap:4px;background:none;border:0;border-radius:0;box-shadow:none;padding:0;margin:0 0 -1px;width:auto;max-width:none;overflow-x:auto;scrollbar-width:none;}
+body:has(.tabs) .adm .tabs::-webkit-scrollbar{display:none;}
+body:has(.tabs) .adm .tab{display:inline-flex;align-items:center;gap:8px;padding:12px 14px;border-radius:0;background:none;border:0;border-bottom:2px solid transparent;color:var(--text-muted);font-size:14px;font-weight:500;white-space:nowrap;box-shadow:none;cursor:pointer;transition:color .25s,border-color .25s;}
+body:has(.tabs) .adm .tab .tab-ic{font-size:14px;opacity:.7;transition:opacity .25s,transform .32s cubic-bezier(.22,1,.36,1);}
+body:has(.tabs) .adm .tab:hover{background:none;color:var(--text);}
+body:has(.tabs) .adm .tab:hover .tab-ic{opacity:1;transform:translateY(-1px);}
+body:has(.tabs) .adm .tab.active{background:none;color:var(--accent);border-bottom-color:var(--accent);font-weight:600;box-shadow:none;}
+body:has(.tabs) .adm .tab.active .tab-ic{opacity:1;}
+.adm-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.adm-status{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.adm-status .footer-note{margin:0;font-size:11.5px;}
+.adm-status .context-pill{padding:5px 11px;}
+@media (max-width:720px){
+  .adm .main{padding:0 14px 28px;}
+}
