@@ -137,7 +137,7 @@ function renderDashboard() {
     }
   });
 
-  return stats +
+ 
     '<div class="panel"><div class="panel-title">Every battery</div>' +
     '<div style="margin-bottom:14px;"><input class="search-input" placeholder="Search a battery serial..." ' +
     'oninput="setSearch(this.value)" value="' + esc(state.search) + '"></div>' +
@@ -1150,7 +1150,7 @@ function renderManual() {
 function renderTabs() {
   var el = document.getElementById('tabs');
   if (!state.unlocked) { el.innerHTML = ''; return; }
-  var tabs = [['dashboard', 'Dashboard', '📊'], ['employees', 'Employees', '👥'], ['labels', 'Battery Labels', '🏷️'],
+ var tabs = [['dashboard', 'Batteries', '🔋'], ['employees', 'Employees', '👥'], ['labels', 'Battery Labels', '🏷️'],
               ['manual', 'Manual Entry', '✍️'], ['setup', 'Setup', '⚙️'], ['cards', 'Print Cards', '🖨️']];
   el.innerHTML = tabs.map(function (t) {
     return '<button class="tab ' + (state.tab === t[0] ? 'active' : '') + '" onclick="setTab(\'' + t[0] + '\')">' +
