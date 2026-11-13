@@ -102,7 +102,7 @@ const pageMeta = {
   deliverychallan:{title:'Delivery Challan',sub:'Generate & track delivery challans'},
   mydashboard:{title:'My Dashboard',sub:'Your orders & production updates'},
   customers:{title:'Accounts',sub:'All customers — with their contacts'},
-  products:{title:'Products',sub:'Product master data'},
+  products:{title:'Products',sub:'Battery models from the common BOM sheet'},
   suppliers:{title:'Suppliers',sub:'Supplier master data'},
   users:{title:'Users & Access',sub:'Manage users and roles'},
   accounts:{title:'Finance',sub:'Order-wise payment, balance and billing'},
@@ -3516,16 +3516,25 @@ function submitCust() {
   });
 }
 
+// Products = Master Models (Common BOM sheet) — read-only
 function loadProducts() {
-  api({ action: 'getProducts' }, r => {
-    if (!r.success || !r.data.length) { document.getElementById('productTable').innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-ico">⚡</div><div class="empty-txt">No products</div></div></td></tr>`; return; }
-    document.getElementById('productTable').innerHTML = r.data.map(p => `<tr><td class="td-id">${p.ProductID}</td><td class="td-bold">${p.ProductName}</td><td>${p.Category}</td><td>₹${fmt(p.SalePrice)}</td><td style="font-family:monospace;font-size:11px;">${p.HSNCode}</td><td>${p.GSTPercent}%</td><td>${p.Unit}</td></tr>`).join('');
-  });
+  masterModels = [];                       // tab kholne par fresh list
+  loadMasterModels(renderProducts);
 }
-function submitProduct() {
-  api({ action:'addProduct', ProductID:document.getElementById('p-id').value, ProductName:document.getElementById('p-name').value, Category:document.getElementById('p-cat').value, SalePrice:document.getElementById('p-price').value, HSNCode:document.getElementById('p-hsn').value, GSTPercent:document.getElementById('p-gst').value, Unit:document.getElementById('p-unit').value }, r => {
-    if (r.success) { toast('Product added'); closeModal('prodModal'); loadProducts(); } else toast(r.message,'e');
-  });
+function renderProducts() {
+  const esc = v => String(v == null ? '' : v).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  const q = (document.getElementById('productSearch').value || '').trim().toLowerCase();
+  const rows = masterModels
+    .filter(m => !q || [m.code, m.category, m.chemistry].join(' ').toLowerCase().includes(q))
+    .sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.code || '').localeCompare(String(b.code || '')));
+  document.getElementById('productCount').textContent = masterModels.length ? `(${rows.length})` : '';
+  if (!rows.length) {
+    document.getElementById('productTable').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-ico">⚡</div><div class="empty-txt">No products</div></div></td></tr>`;
+    return;
+  }
+  document.getElementById('productTable').innerHTML = rows.map((m, i) =>
+    `<tr><td>${i + 1}</td><td class="td-id">${esc(m.code)}</td><td>${esc(m.category) || '—'}</td><td>${esc(m.chemistry) || '—'}</td><td>${esc(m.voltage) || '—'}</td><td>${esc(m.capacity) || '—'}</td></tr>`
+  ).join('');
 }
 
 function loadSuppliers() {
