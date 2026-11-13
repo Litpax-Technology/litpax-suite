@@ -1140,6 +1140,82 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
 
 
 /* =============================================================
+ * DASHBOARD (Admin) — view-dashboard
+ * ============================================================= */
+.db { max-width: 1320px; gap: 16px; }
+.db-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.db-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #a8853f; }
+.db-top h1 { margin: 4px 0 0; font-family: 'Inter Tight', 'Inter', system-ui, sans-serif; font-size: 30px; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; color: #1f3d33; }
+.db-ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.db-seg { display: inline-flex; padding: 3px; border-radius: 10px; background: #edf2ef; }
+.db-seg button { border: 0; background: none; padding: 7px 13px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #5b6b64; cursor: pointer; transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+.db-seg button:hover { color: #1f3d33; }
+.db-seg button.on { background: #fff; color: #1f3d33; box-shadow: 0 1px 3px rgba(20, 39, 31, .16); }
+.db-seg button:focus-visible, .db-open:focus-visible, .db-al:focus-visible { outline: 2px solid #c9a45a; outline-offset: 2px; }
+.db-dates { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.db-dates input { width: auto; padding: 6px 8px; font-size: 13px; }
+.db-spin { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(31, 61, 51, .25); border-top-color: #1f3d33; border-radius: 50%; animation: dbSpin .7s linear infinite; vertical-align: -1px; }
+@keyframes dbSpin { to { transform: rotate(360deg); } }
+
+.db-alerts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line); }
+.db-al-t { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.db-al-ok { font-size: 13.5px; font-weight: 600; color: var(--ok); }
+.db-al { border: 1px solid transparent; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; }
+.db-al:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(20, 22, 50, .1); }
+.db-al.bad { background: var(--bad-soft); color: var(--bad); border-color: #f3c5c5; }
+.db-al.warn { background: var(--warn-soft); color: var(--warn); border-color: #f1d9a8; }
+
+.db-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.db-card { padding: 16px 18px 18px; border-radius: 14px; animation: dbIn .45s ease both; animation-delay: calc(var(--i, 1) * 45ms); transition: box-shadow .2s ease, transform .2s ease; }
+.db-card:hover { box-shadow: 0 8px 24px rgba(20, 39, 31, .09); transform: translateY(-1px); }
+@keyframes dbIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.db-ch { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.db-ch h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1f3d33; }
+.db-n { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 8px; background: #1f3d33; color: #e3c98f; font-size: 12px; font-weight: 700; }
+.db-open { margin-left: auto; border: 0; background: none; padding: 4px 6px; font-size: 12.5px; font-weight: 600; color: #a8853f; cursor: pointer; border-radius: 6px; }
+.db-open:hover { color: #1f3d33; background: #edf2ef; }
+
+.db-ks4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.db-k { padding: 10px 12px; border-radius: 10px; background: #f6f8f7; min-width: 0; }
+.db-kv { font-size: 22px; line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); overflow-wrap: anywhere; }
+.db-kv.ok { color: var(--ok); } .db-kv.warn { color: var(--warn); } .db-kv.bad { color: var(--bad); }
+.db-kl { margin-top: 3px; font-size: 11.5px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+.db-ks { font-size: 10.5px; color: #9aa0b0; }
+
+.db-lt { margin: 4px 0 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.db-bars + .db-lt, .db-list + .db-lt, .db-note + .db-lt { margin-top: 16px; }
+.db-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.db-list { list-style: none; margin: 0; padding: 0; }
+.db-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.db-list li:last-child { border-bottom: 0; }
+.db-lm { min-width: 0; display: flex; flex-direction: column; }
+.db-lm b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-lm small { color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-lr { flex: none; font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.db-lr.bad { color: var(--bad); }
+.db-bars { display: flex; flex-direction: column; gap: 7px; }
+.db-bar { display: grid; grid-template-columns: minmax(70px, 34%) 1fr auto; align-items: center; gap: 10px; font-size: 12.5px; }
+.db-bl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.db-bt { height: 8px; border-radius: 4px; background: #edf2ef; overflow: hidden; }
+.db-bt i { display: block; height: 100%; border-radius: 4px; background: #1f3d33; transform-origin: left; animation: dbGrow .6s ease both; }
+.db-bt i.brass { background: #c9a45a; } .db-bt i.warnbar { background: #d08a2c; }
+@keyframes dbGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.db-bar b { font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.db-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.db-pills span { padding: 5px 11px; border-radius: 999px; background: #f6f8f7; font-size: 12.5px; color: var(--muted); }
+.db-pills span b { color: var(--text); margin-left: 4px; }
+.db-pills span.bad { background: var(--bad-soft); color: var(--bad); } .db-pills span.bad b { color: var(--bad); }
+.db-none, .db-wait, .db-fail, .db-note { font-size: 13px; color: var(--muted); padding: 6px 0; }
+.db-wait { padding: 26px 0; text-align: center; }
+.db-fail { padding: 12px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); }
+.db-note { font-size: 11.5px; margin-top: 8px; }
+.db-foot { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
+@media (max-width: 1100px) { .db-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .db-ks4, .db-two { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-two { grid-template-columns: 1fr; } .db-top h1 { font-size: 24px; } }
+@media (prefers-reduced-motion: reduce) { .db-card, .db-bt i, .db-spin { animation: none; } .db-card:hover, .db-al:hover { transform: none; } }
+
+
+/* =============================================================
  * LX SIDEBAR — deep racing green nav (safed content ke saath)
  * Isi file ke SABSE END me rahe. Poora block hata do to safed sidebar wapas.
  * Rang: green #1f3d33 → #14271f · brass #c9a45a · text halka cream
