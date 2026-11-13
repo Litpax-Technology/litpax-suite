@@ -628,7 +628,12 @@
   /* ---------------- NAV ---------------- */
   function navItems() {
     var u = S.user, s = S.sessions, M = APPNAMES, items = [];
-    // Accounts (ERP ka customers page) — sabse upar
+    // Dashboard (sirf Admin) — sabse upar; login ke baad yahi khulta hai
+    if (u.roles.indexOf('Admin') !== -1) {
+      items.push({ id: 'dashboard', sec: 'Apps', label: 'Dashboard', ic: '▦' });
+      if (!document.getElementById('view-dashboard')) { var dv = document.createElement('section'); dv.id = 'view-dashboard'; dv.className = 'view hidden'; var ov = document.getElementById('view-overview'); ov.parentNode.insertBefore(dv, ov); }
+    }
+    // Accounts (ERP ka customers page) — uske neeche
     var erpRole = s.erp_user && s.erp_user.role;
     if (erpRole === 'Admin' || erpRole === 'Sales') items.push({ id: 'accounts', sec: 'Apps', label: 'Accounts', ic: '◫' });
     // Inward Entry ab IMS ke Inward page me hai (SOMS approval ke saath)
@@ -689,7 +694,7 @@
     tasks: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7 10 2 2 3-3M7 16h10M14 11h3"/>',
     bot: '<rect x="4.5" y="6" width="15" height="15" rx="5"/><path d="M10 3.5h4V6h-4z"/><circle cx="9.6" cy="12.3" r="1.4"/><circle cx="14.4" cy="12.3" r="1.4"/><path d="M10.3 16.4c1 .7 2.4.7 3.4 0"/>'
   };
-  var APPICO = { accounts: 'users', overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
+  var APPICO = { dashboard: 'dash', accounts: 'users', overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
                                   'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'bot', settings: 'gear' };
   var PAGEICO = [[/switch|staff/i, 'users'], [/replacement/i, 'battery'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
@@ -813,6 +818,272 @@
    * VIEWS
    * ============================================================= */
   var VIEWS = {};
+
+  /* =============================================================
+   * DASHBOARD (sirf Admin) — poore business ka haal ek screen pe
+   * Lead → Order → Purchase → Stock → Production → Dispatch → Payment → Service
+   * Data har app ke PURANE actions se aata hai (GAS me koi badlav nahi).
+   * ============================================================= */
+  var DB = { range: 'month', from: '', to: '', data: {}, err: {}, busy: 0, at: 0 };
+  function dbGet(app, action, data, noCb) {   // GET (JSONP text) — ERP / SOMS / IMS read actions isi tarah chalte hain
+    var url = SUITE[app + '_URL'];
+    if (!url || /^PASTE_/.test(url)) return Promise.reject(new Error(app + '_URL is not set'));
+    var body = Object.assign({ action: action, token: S.token }, data || {});
+    var q = Object.keys(body).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(body[k]); }).join('&');
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 60000);
+    return fetch(url + '?' + q + (noCb ? '' : '&callback=cb'), { redirect: 'follow', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { return r.text(); }).then(function (t) {
+        clearTimeout(timer);
+        t = t.trim();
+        if (t.charAt(0) !== '{' && t.charAt(0) !== '[') t = t.substring(t.indexOf('(') + 1, t.lastIndexOf(')'));
+        var j = JSON.parse(t);
+        var err = j && ((j.success === false && (j.message || 'Request failed')) || (j.ok === false && (j.error || j.msg || 'Request failed')) || (j.auth === false && (j.msg || 'Not signed in')) || (!Array.isArray(j) && j.error));
+        if (err) throw new Error(String(err).replace(/^(Error|LOGIN):\s*/, ''));
+        return j;
+      }, function (e) { clearTimeout(timer); throw new Error(e && e.name === 'AbortError' ? 'Timed out' : 'Network error'); });
+  }
+  function dbTs(v) {   // koi bhi date → us din ki local midnight (ms); samajh na aaye to 0
+    if (v == null || v === '') return 0;
+    if (typeof v === 'number') { var n = new Date(v); return new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime(); }
+    var s = String(v).trim(), m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|\s)/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? 0 : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  }
+  function dbToday() { var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+  function dbYmd(ts) { var d = new Date(ts); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function dbDmy(v) { var t = dbTs(v); if (!t) return '—'; var d = new Date(t); return ('0' + d.getDate()).slice(-2) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]; }
+  function dbRange() {
+    var t = dbToday(), d = new Date(t);
+    if (DB.range === 'today') return [t, t];
+    if (DB.range === 'custom') return [DB.from ? dbTs(DB.from) : 0, DB.to ? dbTs(DB.to) : t];
+    return [new Date(d.getFullYear(), d.getMonth(), 1).getTime(), t];
+  }
+  function dbIn(v) { var r = dbRange(), t = dbTs(v); return !!t && t >= r[0] && t <= r[1]; }
+  function dbNum(v) { return parseFloat(String(v == null ? '' : v).replace(/[₹,\s]/g, '')) || 0; }
+  function dbRs(n) { n = Math.round(n); return '₹' + (n >= 1e7 ? (n / 1e7).toFixed(2) + ' Cr' : n >= 1e5 ? (n / 1e5).toFixed(2) + ' L' : fmtN(n)); }
+  function dbLabel() { return DB.range === 'today' ? 'today' : DB.range === 'custom' ? 'in range' : 'this month'; }
+
+  function dbLoad() {
+    DB.data = {}; DB.err = {}; DB.at = Date.now();
+    var stamp = DB.at, sms = S.sessions && S.sessions.sms_session, hub = '';
+    try { hub = localStorage.getItem('hub_token') || ''; } catch (e) {}
+    var jobs = [
+      ['orders',   'erp', function () { return dbGet('ERP', 'getOrders').then(function (r) { return r.data || []; }); }],
+      ['leads',    'erp', function () { return dbGet('ERP', 'getLeads').then(function (r) { return r.data || []; }); }],
+      ['prod',     'erp', function () { return dbGet('ERP', 'getProduction').then(function (r) { return r.data || []; }); }],
+      ['disp',     'erp', function () { return dbGet('ERP', 'getAllDispatches').then(function (r) { return r.data || []; }); }],
+      ['acc',      'erp', function () { return dbGet('ERP', 'getAccounts').then(function (r) { return r.data || []; }); }],
+      ['ims',      'ims', function () { return dbGet('IMS', 'getDashboard', null, true); }],
+      ['imsIn',    'ims', function () { return api('IMS', 'getInward', { date: dbYmd(dbToday()) }); }],
+      ['imsOut',   'ims', function () { return api('IMS', 'getOutward', { date: dbYmd(dbToday()) }); }],
+      ['soms',     'soms', function () { return sms && sms.token ? dbGet('SOMS', 'getAll', { token: sms.token }).then(function (r) { return r.data || {}; }) : Promise.reject(new Error('Purchase is not linked to this login')); }],
+      ['somsInw',  'soms', function () { return sms && sms.token ? dbGet('SOMS', 'inwardApprovals', { token: sms.token, status: 'Pending' }).then(function (r) { return r.data || []; }) : Promise.reject(new Error('—')); }],
+      ['plt',      'plt', function () { return api('PLT', 'init', { limit: (SUITE.PLT && SUITE.PLT.LOG_LIMIT) || 3000 }); }],
+      ['tickets',  'svc', function () { return hub ? api('SERVICE', 'getTickets', { token: hub }).then(function (r) { return r.tickets || []; }) : Promise.reject(new Error('Service Hub is not linked to this login')); }]
+    ];
+    DB.busy = jobs.length;
+    jobs.forEach(function (j) {
+      var p; try { p = j[2](); } catch (e) { p = Promise.reject(e); }
+      p.then(function (v) { if (stamp === DB.at) DB.data[j[0]] = v; }, function (e) { if (stamp === DB.at) DB.err[j[0]] = e.message || 'Failed'; })
+        .then(function () { if (stamp !== DB.at) return; DB.busy--; if (S.view === 'dashboard') dbRender(); });
+    });
+  }
+
+  /* ---- chhote HTML tukde ---- */
+  function dbK(l, v, cls, sub) { return '<div class="db-k"><div class="db-kv ' + (cls || '') + '">' + v + '</div><div class="db-kl">' + esc(l) + '</div>' + (sub ? '<div class="db-ks">' + esc(sub) + '</div>' : '') + '</div>'; }
+  function dbBars(rows, cls) {   // rows: [label, value]
+    var mx = Math.max.apply(null, rows.map(function (r) { return r[1]; }).concat([1]));
+    return rows.length ? '<div class="db-bars">' + rows.map(function (r) {
+      return '<div class="db-bar"><span class="db-bl" title="' + esc(r[0]) + '">' + esc(r[0]) + '</span><span class="db-bt"><i class="' + (cls || '') + '" style="width:' + Math.max(2, Math.round(r[1] / mx * 100)) + '%"></i></span><b>' + (r[2] || fmtN(r[1])) + '</b></div>';
+    }).join('') + '</div>' : '<div class="db-none">Nothing to show</div>';
+  }
+  function dbList(title, rows, empty) {   // rows: [main, sub, right, cls]
+    return '<div class="db-lt">' + esc(title) + '</div>' + (rows.length ? '<ul class="db-list">' + rows.map(function (r) {
+      return '<li><span class="db-lm"><b>' + esc(r[0]) + '</b>' + (r[1] ? '<small>' + esc(r[1]) + '</small>' : '') + '</span><span class="db-lr ' + (r[3] || '') + '">' + esc(r[2] == null ? '' : r[2]) + '</span></li>';
+    }).join('') + '</ul>' : '<div class="db-none">' + esc(empty || 'Nothing here') + '</div>');
+  }
+  function dbCard(n, title, keys, open, body) {   // keys: is card ko kaunsa data chahiye
+    var miss = keys.filter(function (k) { return !(k in DB.data); }), errs = miss.filter(function (k) { return DB.err[k]; });
+    var inner;
+    if (miss.length && !errs.length) inner = '<div class="db-wait"><span class="db-spin"></span> Loading…</div>';
+    else if (errs.length === keys.length) inner = '<div class="db-fail">Could not load — ' + esc(DB.err[errs[0]]) + '</div>';
+    else { try { inner = body(); } catch (e) { inner = '<div class="db-fail">Could not read this data — ' + esc(e.message) + '</div>'; } }
+    return '<section class="card db-card" style="--i:' + n + '"><div class="db-ch"><span class="db-n">' + n + '</span><h3>' + esc(title) + '</h3>' +
+      (open ? '<button type="button" class="db-open" data-go="' + open[0] + '" data-pg="' + (open[1] || '') + '">Open →</button>' : '') + '</div>' + inner + '</section>';
+  }
+  function dbHas(k) { return k in DB.data; }
+
+  function dbRender() {
+    var el = $('#view-dashboard'); if (!el) return;
+    var X = DB.data, today = dbToday(), lab = dbLabel();
+    var orders = X.orders || [], ordById = {};
+    orders.forEach(function (o) { ordById[o['Order ID']] = o; });
+    var done = function (o) { var s = String(o['Final Status'] || '').toLowerCase(); return s.indexOf('production complete') !== -1 || s.indexOf('dispatched') !== -1; };
+
+    /* ---- "Dhyan do" patti ---- */
+    var al = [];
+    if (dbHas('soms')) { var late = (X.soms.orders || []).filter(dbLatePO); if (late.length) al.push(['bad', late.length + ' late PO', 'm-soms', '']); }
+    if (dbHas('somsInw') && X.somsInw.length) al.push(['warn', X.somsInw.length + ' inward approval pending', 'm-soms', '']);
+    if (dbHas('ims') && X.ims.reorderCount > 0) al.push(['bad', X.ims.reorderCount + ' items below reorder level', 'm-ims', '']);
+    if (dbHas('prod')) { var dl = X.prod.filter(function (p) { return p.Status === 'Delayed'; }).length; if (dl) al.push(['bad', dl + ' production delayed', 'm-erp', 'production']); }
+    if (dbHas('tickets')) { var due = X.tickets.filter(dbTkDue).length; if (due) al.push(['warn', due + ' service follow-up overdue', 'm-service', '']); }
+    if (dbHas('plt')) { var fr = dbPlt(today, today); if (fr.bad) al.push(['warn', fr.bad + ' fail / rework today', 'm-pltAdmin', '']); }
+    if (dbHas('orders')) { var rdy = orders.filter(function (o) { var s = String(o['Final Status'] || '').toLowerCase(); return s.indexOf('production complete') !== -1 && s.indexOf('dispatched') === -1; }).length; if (rdy) al.push(['warn', rdy + ' ready, dispatch pending', 'm-erp', 'dispatch']); }
+
+    var hr = new Date().getHours(), who = (S.user && S.user.name) || 'Admin';
+    var h = '<div class="wrap db">' +
+      '<header class="db-top"><div><div class="db-eyebrow">' + esc(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) + '</div>' +
+      '<h1>' + (hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening') + ', ' + esc(who) + '</h1></div>' +
+      '<div class="db-ctl"><div class="db-seg" role="group" aria-label="Date range">' +
+        [['today', 'Today'], ['month', 'This month'], ['custom', 'Custom']].map(function (r) { return '<button type="button" data-r="' + r[0] + '" class="' + (DB.range === r[0] ? 'on' : '') + '" aria-pressed="' + (DB.range === r[0]) + '">' + r[1] + '</button>'; }).join('') + '</div>' +
+        (DB.range === 'custom' ? '<span class="db-dates"><input type="date" id="dbFrom" aria-label="From date" value="' + esc(DB.from) + '"><span>to</span><input type="date" id="dbTo" aria-label="To date" value="' + esc(DB.to) + '"></span>' : '') +
+        '<button type="button" class="btn btn-sm" id="dbRefresh"' + (DB.busy ? ' disabled' : '') + '>' + (DB.busy ? '<span class="db-spin"></span> Loading ' + (12 - DB.busy) + '/12' : '↻ Refresh') + '</button></div></header>';
+
+    h += '<div class="db-alerts">' + (al.length ? '<span class="db-al-t">Needs attention</span>' + al.map(function (a) {
+      return '<button type="button" class="db-al ' + a[0] + '" data-go="' + a[2] + '" data-pg="' + a[3] + '">' + esc(a[1]) + '</button>';
+    }).join('') : (DB.busy ? '<span class="db-al-t">Checking what needs attention…</span>' : '<span class="db-al-ok">✓ Nothing needs attention right now</span>')) + '</div>';
+
+    h += '<div class="db-grid">';
+
+    /* 1. Leads */
+    h += dbCard(1, 'Leads', ['leads'], ['m-erp', 'leads'], function () {
+      var L = X.leads, open = L.filter(function (l) { return l.Stage !== 'Order Confirmed' && l.Stage !== 'Lost'; });
+      var nw = L.filter(function (l) { return dbIn(l['Date Added']); }), won = L.filter(function (l) { return l.Stage === 'Order Confirmed'; }).length, lost = L.filter(function (l) { return l.Stage === 'Lost'; }).length;
+      var st = {}; L.forEach(function (l) { var k = l.Stage || '(no stage)'; st[k] = (st[k] || 0) + 1; });
+      var order = ['New Lead', 'Quotation Sent', 'Follow-up', 'Order Confirmed', 'Lost'];
+      var rows = Object.keys(st).sort(function (a, b) { var i = order.indexOf(a), j = order.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); }).map(function (k) { return [k, st[k]]; });
+      return '<div class="db-ks4">' + dbK('New ' + lab, fmtN(nw.length)) + dbK('Open now', fmtN(open.length)) + dbK('Became orders', fmtN(won), 'ok') +
+        dbK('Conversion', (won + lost ? Math.round(won / (won + lost) * 100) : 0) + '%', '', 'won ÷ closed') + '</div>' + '<div class="db-lt">By stage (all leads)</div>' + dbBars(rows);
+    });
+
+    /* 2. Orders */
+    h += dbCard(2, 'Orders', ['orders'], ['m-erp', 'orders'], function () {
+      var R = orders.filter(function (o) { return dbIn(o.Date); }), val = R.reduce(function (s, o) { return s + dbNum(o['Total Order Value']); }, 0);
+      var pend = orders.filter(function (o) { return !done(o); }).sort(function (a, b) { return (dbTs(a.Date) || 9e15) - (dbTs(b.Date) || 9e15); });
+      var cm = {}; R.forEach(function (o) { var k = o['Customer Name'] || '(no name)'; cm[k] = (cm[k] || 0) + dbNum(o['Total Order Value']); });
+      var top = Object.keys(cm).map(function (k) { return [k, cm[k], dbRs(cm[k])]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 5);
+      return '<div class="db-ks4">' + dbK('Orders ' + lab, fmtN(R.length)) + dbK('Value ' + lab, dbRs(val)) + dbK('Pending (all)', fmtN(pend.length), pend.length ? 'warn' : '') +
+        dbK('Avg order', dbRs(R.length ? val / R.length : 0)) + '</div><div class="db-two"><div>' +
+        dbList('Oldest pending orders', pend.slice(0, 5).map(function (o) { var age = dbTs(o.Date) ? Math.round((today - dbTs(o.Date)) / 864e5) : null; return [o['Order ID'], o['Customer Name'], age == null ? '' : age + 'd', age > 15 ? 'bad' : '']; }), 'No pending orders') +
+        '</div><div><div class="db-lt">Top customers ' + lab + '</div>' + dbBars(top, 'brass') + '</div></div>';
+    });
+
+    /* 3. Purchase */
+    h += dbCard(3, 'Purchase', ['soms'], ['m-soms', ''], function () {
+      var O = X.soms.orders || [], V = {}; (X.soms.vendors || []).forEach(function (v) { V[v.VendorID] = v.Name; });
+      var act = O.filter(function (o) { return o.Status === 'Ordered' || o.Status === 'Partially Received'; }), late = O.filter(dbLatePO);
+      var spend = O.filter(function (o) { return dbIn(o.Date) && o.Status !== 'Cancelled'; }).reduce(function (s, o) { return s + dbNum(o.TotalAmount); }, 0);
+      return '<div class="db-ks4">' + dbK('Open POs', fmtN(act.length)) + dbK('Late POs', fmtN(late.length), late.length ? 'bad' : 'ok') +
+        dbK('Inward approvals', dbHas('somsInw') ? fmtN(X.somsInw.length) : '—', dbHas('somsInw') && X.somsInw.length ? 'warn' : '') + dbK('Ordered ' + lab, dbRs(spend)) + '</div>' +
+        dbList('Late POs — expected date passed', late.sort(function (a, b) { return String(a.RevisedExpectedDate || a.OriginalExpectedDate) < String(b.RevisedExpectedDate || b.OriginalExpectedDate) ? -1 : 1; }).slice(0, 6).map(function (o) {
+          var ex = o.RevisedExpectedDate || o.OriginalExpectedDate; return [o.PO_No, V[o.VendorID] || o.VendorID, Math.max(1, Math.round((today - dbTs(ex)) / 864e5)) + 'd late', 'bad'];
+        }), 'No late POs');
+    });
+
+    /* 4. Stock */
+    h += dbCard(4, 'Stock', ['ims'], ['m-ims', ''], function () {
+      var d = X.ims, low = (d.stocks || []).filter(function (s) { return s.status && s.status !== 'OK'; });
+      var cnt = function (k) { return dbHas(k) && Array.isArray(X[k]) ? fmtN(X[k].length) : '—'; };
+      return '<div class="db-ks4">' + dbK('Items tracked', fmtN(d.totalItems || 0)) + dbK('Below reorder', fmtN(d.reorderCount || 0), d.reorderCount ? 'bad' : 'ok') +
+        dbK('Inward entries today', cnt('imsIn')) + dbK('Outward entries today', cnt('imsOut')) + '</div>' +
+        dbList('Below reorder level', low.slice(0, 6).map(function (s) { return [s.name, 'reorder at ' + fmtN(s.reorderPoint), fmtN(s.currentStock), 'bad']; }), 'All stock is above reorder level');
+    });
+
+    /* 5. Production */
+    h += dbCard(5, 'Production', ['plt', 'prod'], ['m-pltAdmin', ''], function () {
+      var r = dbRange(), out = '';
+      if (dbHas('plt')) {
+        var p = dbPlt(r[0], r[1]), lim = (SUITE.PLT && SUITE.PLT.LOG_LIMIT) || 3000;
+        out += '<div class="db-ks4">' + dbK('Batteries completed ' + lab, fmtN(p.done), 'ok') + dbK('Scans ' + lab, fmtN(p.scans)) + dbK('Fail / rework ' + lab, fmtN(p.bad), p.bad ? 'bad' : '') + dbK('Employees active', fmtN(p.people)) + '</div>' +
+          '<div class="db-lt">Scans by station ' + lab + '</div>' + dbBars(p.stations) +
+          ((X.plt.logs || []).length >= lim ? '<div class="db-note">Only the latest ' + fmtN(lim) + ' scans are loaded, so long ranges may show less than the real total.</div>' : '');
+      } else out += '<div class="db-fail">Line scans could not load — ' + esc(DB.err.plt || '') + '</div>';
+      if (dbHas('prod')) {
+        var c = function (s) { return X.prod.filter(function (x) { return (x.Status || 'Pending') === s; }).length; };
+        out += '<div class="db-lt">Order production status (all orders)</div><div class="db-pills"><span>Pending <b>' + c('Pending') + '</b></span><span>In progress <b>' + c('In Progress') + '</b></span><span class="' + (c('Delayed') ? 'bad' : '') + '">Delayed <b>' + c('Delayed') + '</b></span><span>Completed <b>' + c('Completed') + '</b></span></div>';
+      }
+      return out;
+    });
+
+    /* 6. Dispatch */
+    h += dbCard(6, 'Dispatch', ['disp', 'orders'], ['m-erp', 'dispatch'], function () {
+      var D = (X.disp || []).filter(function (d) { return dbIn(d['Dispatch Date']); }), qty = D.reduce(function (s, d) { return s + dbNum(d['Dispatch Qty']); }, 0);
+      var tdy = (X.disp || []).filter(function (d) { return dbTs(d['Dispatch Date']) === today; }).reduce(function (s, d) { return s + dbNum(d['Dispatch Qty']); }, 0);
+      var rdy = orders.filter(function (o) { var s = String(o['Final Status'] || '').toLowerCase(); return s.indexOf('production complete') !== -1 && s.indexOf('dispatched') === -1; });
+      return '<div class="db-ks4">' + dbK('Qty dispatched today', dbHas('disp') ? fmtN(tdy) : '—') + dbK('Qty dispatched ' + lab, dbHas('disp') ? fmtN(qty) : '—') + dbK('Dispatch entries ' + lab, dbHas('disp') ? fmtN(D.length) : '—') +
+        dbK('Ready, not dispatched', dbHas('orders') ? fmtN(rdy.length) : '—', rdy.length ? 'warn' : '') + '</div>' +
+        dbList('Ready but dispatch pending', rdy.slice(0, 5).map(function (o) { return [o['Order ID'], o['Customer Name'], 'Qty ' + fmtN(dbNum(o['Total Qty'])), '']; }), 'Nothing is waiting for dispatch');
+    });
+
+    /* 7. Payment */
+    h += dbCard(7, 'Payment', ['acc', 'orders'], ['m-erp', 'accounts'], function () {
+      if (!dbHas('acc')) return '<div class="db-fail">Could not load — ' + esc(DB.err.acc || '') + '</div>';
+      var seen = {}, bal = 0, rec = 0, cm = {};
+      X.acc.forEach(function (a) {
+        var id = a['Order ID']; if (!id || seen[id]) return; seen[id] = 1;
+        var b = dbNum(a.Balance); bal += b; rec += dbNum(a['Total Received']) || dbNum(a.Received);
+        if (b > 0) { var k = (ordById[id] && ordById[id]['Customer Name']) || a['Customer Name'] || id; cm[k] = (cm[k] || 0) + b; }
+      });
+      var top = Object.keys(cm).map(function (k) { return [k, cm[k], dbRs(cm[k])]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6);
+      var pp = orders.filter(function (o) { return ['Advance Pending', 'Pending', 'Request Full Payment', 'Credit'].indexOf(o['Payment Status'] || '') !== -1; }).length;
+      return '<div class="db-ks4">' + dbK('Still to receive', dbRs(bal), bal > 0 ? 'warn' : 'ok') + dbK('Received so far', dbRs(rec), 'ok') + dbK('Customers with balance', fmtN(Object.keys(cm).length)) +
+        dbK('Orders with payment pending', dbHas('orders') ? fmtN(pp) : '—') + '</div><div class="db-lt">Highest balance by customer</div>' + dbBars(top, 'warnbar');
+    });
+
+    /* 8. Service */
+    h += dbCard(8, 'Service', ['tickets'], ['m-service', ''], function () {
+      var T = X.tickets, ended = function (t) { return t.Status === 'Closed' || t.Status === 'Cancelled'; };
+      var open = T.filter(function (t) { return !ended(t); }), due = T.filter(dbTkDue);
+      var st = {}; open.forEach(function (t) { var k = t.Status || '(no status)'; st[k] = (st[k] || 0) + 1; });
+      var old = open.slice().sort(function (a, b) { return (dbTs(a['Created At']) || 9e15) - (dbTs(b['Created At']) || 9e15); }).slice(0, 5);
+      return '<div class="db-ks4">' + dbK('Open tickets', fmtN(open.length)) + dbK('Follow-up overdue', fmtN(due.length), due.length ? 'bad' : 'ok') +
+        dbK('Opened ' + lab, fmtN(T.filter(function (t) { return dbIn(t['Created At']); }).length)) + dbK('Closed ' + lab, fmtN(T.filter(function (t) { return t.Status === 'Closed' && dbIn(t['Closed At']); }).length), 'ok') + '</div><div class="db-two"><div>' +
+        dbList('Oldest open tickets', old.map(function (t) { var a = dbTs(t['Created At']) ? Math.round((today - dbTs(t['Created At'])) / 864e5) : null; return [t['Ticket ID'], t['Company Name'] || t['Contact Person'], a == null ? '' : a + 'd', a > 7 ? 'bad' : '']; }), 'No open tickets') +
+        '</div><div><div class="db-lt">Open tickets by status</div>' + dbBars(Object.keys(st).map(function (k) { return [k, st[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6)) + '</div></div>';
+    });
+
+    h += '</div><p class="db-foot">Numbers come live from each app\'s own sheet. "All" figures ignore the date range.</p></div>';
+    var top = el.scrollTop; el.innerHTML = h; el.scrollTop = top;
+
+    $$('#view-dashboard .db-seg button').forEach(function (b) { b.onclick = function () { DB.range = b.dataset.r; if (DB.range === 'custom' && !DB.from) { DB.from = dbYmd(dbRange()[0] || dbToday()); DB.to = dbYmd(dbToday()); } dbRender(); }; });
+    var f = $('#dbFrom'), t = $('#dbTo');
+    if (f) f.onchange = function () { DB.from = f.value; dbRender(); };
+    if (t) t.onchange = function () { DB.to = t.value; dbRender(); };
+    $('#dbRefresh').onclick = dbLoad;
+    $$('#view-dashboard [data-go]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.dataset.go, pg = b.dataset.pg;
+        if (!navItems().some(function (x) { return x.id === id; })) return toast('This app is not linked to your login', 'bad');
+        if (id === 'm-erp' && pg) openRecordX('page', pg); else go(id);
+      };
+    });
+  }
+  function dbLatePO(o) { var ex = o.RevisedExpectedDate || o.OriginalExpectedDate; if (!ex) return false; return !(o.Status === 'Fully Received' || o.Status === 'Closed' || o.Status === 'Cancelled') && dbTs(ex) && dbTs(ex) < dbToday(); }
+  function dbTkDue(t) { var f = t['Next Follow-up']; return !!f && t.Status !== 'Closed' && t.Status !== 'Cancelled' && dbTs(f) && dbTs(f) <= dbToday(); }
+  function dbPlt(from, to) {   // line scans: [ts, _, packId, station, opId, opName, result]
+    var P = DB.data.plt || {}, logs = P.logs || [], rows = P.stationRows || [], names = P.stations || [];
+    var flagged = rows.filter(function (r) { return r.complete; }).map(function (r) { return r.name; });
+    if (!flagged.length) { var cs = (P.settings && P.settings.CompleteStage) || (names.length ? names[names.length - 1] : ''); if (cs) flagged = [typeof cs === 'string' ? cs : cs.name]; }
+    var st = {}, donePacks = {}, ppl = {}, scans = 0, bad = 0;
+    logs.forEach(function (r) {
+      var d = dbTs(Number(r[0]) || r[0]); if (!d || d < from || d > to) return;
+      scans++; st[r[3]] = (st[r[3]] || 0) + 1; if (r[4] || r[5]) ppl[r[4] || r[5]] = 1;
+      var res = String(r[6] || '').toLowerCase();
+      if (res === 'fail' || res === 'rework') bad++;
+      else if (flagged.indexOf(r[3]) !== -1) donePacks[r[2]] = 1;
+    });
+    var order = names.map(function (n) { return typeof n === 'string' ? n : n.name; });
+    return { scans: scans, bad: bad, done: Object.keys(donePacks).length, people: Object.keys(ppl).length,
+      stations: Object.keys(st).sort(function (a, b) { var i = order.indexOf(a), j = order.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); }).map(function (k) { return [k, st[k]]; }) };
+  }
+  VIEWS.dashboard = function () {
+    if (!DB.at || Date.now() - DB.at > 5 * 60000) dbLoad();   // 5 min se purana ho to naya lao
+    dbRender();
+  };
 
   /* ---------- Overview (automation status) ---------- */
   VIEWS.overview = function () {
