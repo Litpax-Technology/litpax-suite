@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Litpax Suite — UI system</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="suite-ui.css?v=ui1">
-<link rel="stylesheet" href="ui-preview.css?v=ui1">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="suite-ui.css?v=ui3">
+<link rel="stylesheet" href="ui-preview.css?v=ui3">
 </head>
 <body class="lx">
 <main class="pv">
@@ -23,13 +23,13 @@
       <button class="is-active">Today</button><button>Week</button><button>Month</button>
     </div>
     <button class="lx-btn">Export</button>
-    <button class="lx-btn lx-btn-accent">+ New order</button>
+    <button class="lx-btn lx-btn-primary">+ New order</button>
   </header>
 
   <section class="lx-grid lx-stagger">
     <div class="lx-card lx-card-hover lx-kpi is-hot">
       <span class="lx-eyebrow">Orders today</span>
-      <span class="lx-kpi-val">42</span>
+      <span class="lx-kpi-val" data-count="42">42</span>
       <span class="lx-trend up">18% vs yesterday</span>
     </div>
     <div class="lx-card lx-card-hover lx-kpi">
@@ -44,7 +44,7 @@
     </div>
     <div class="lx-card lx-card-hover lx-kpi">
       <span class="lx-eyebrow">Overdue dispatch</span>
-      <span class="lx-kpi-val">7</span>
+      <span class="lx-kpi-val" data-count="7">7</span>
       <span class="lx-trend down">3 more than Monday</span>
     </div>
   </section>
@@ -137,6 +137,6 @@
   </section>
 
 </main>
-<script src="ui-preview.js?v=ui1"></script>
+<script src="ui-preview.js?v=ui3"></script>
 </body>
 </html>
