@@ -24,7 +24,7 @@
   (function () {
     var me = document.currentScript && document.currentScript.src;
     if (!me || document.getElementById('lxMotionCss')) return;
-    var base = me.replace(/suite-bridge\.js.*$/, ''), V = '?v=mo1';
+    var base = me.replace(/suite-bridge\.js.*$/, ''), V = '?v=mo2';
     var l = document.createElement('link'); l.id = 'lxMotionCss'; l.rel = 'stylesheet'; l.href = base + 'motion.css' + V;
     document.head.appendChild(l);
     var s = document.createElement('script'); s.src = base + 'motion.js' + V; document.head.appendChild(s);
