@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1f3a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!-- Security: scripts only from this site + Apps Script API; no plugins, no foreign forms -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://script.google.com https://script.googleusercontent.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="icon" href="icon-48.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://script.google.com" />
+  <link rel="preconnect" href="https://script.googleusercontent.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <title>Cash Ledger · Litpax</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div id="loginView" class="lg">
+    <section class="lg-hero">
+      <div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+
+      <div class="lg-top">
+        <div class="lg-brand"><img src="logo-white.png" alt="Litpax" class="brand-logo" /><span class="brand-sep"></span><span class="brand-app">Cash Ledger</span></div>
+        <span class="lg-pill"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>Secure · Role based</span>
+      </div>
+
+
+      <div class="lg-copy">
+        <div class="lg-kicker">Owner cash accountability</div>
+        <h1>Every rupee given,<br><span class="grad">every rupee accounted.</span></h1>
+        <p>Cash received, expenses with bills, returns and employee advances, all in one place.</p>
+      </div>
+
+      <div class="lg-art" aria-hidden="true">
+        <!-- cash flow: Owner → Employee → Bills -->
+        <div class="flow">
+          <div class="fnode"><span class="fic"><svg viewBox="0 0 24 24"><path d="M3 18h18M4 18l-1-10 5 4 4-7 4 7 5-4-1 10"/></svg></span><b>Owner</b><small>gives cash</small></div>
+          <div class="fline"><i class="coin">₹</i></div>
+          <div class="fnode"><span class="fic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><b>Employee</b><small>spends</small></div>
+          <div class="fline"><i class="coin c2">₹</i></div>
+          <div class="fnode"><span class="fic ok"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span><b>Bills</b><small>proof</small></div>
+        </div>
+
+        <div class="stage">
+          <div class="lg-card c-main">
+            <div class="lc-top">
+              <div><div class="lc-title">Diesel / Fuel</div><div class="lc-sub">V-00012 · Cash · 2 days</div></div>
+              <span class="lc-badge"><i class="live"></i>Open</span>
+            </div>
+            <div class="lc-nums">
+              <div><span>Received</span><b data-count="5000">₹5,000</b></div>
+              <div><span>Spent</span><b data-count="3200">₹3,200</b></div>
+              <div><span>Balance</span><b class="acc" data-count="1800">₹1,800</b></div>
+            </div>
+            <div class="lc-bar"><i></i></div>
+            <div class="lc-rows">
+              <div class="lc-row r1"><i class="d"></i><span>Fuel station — truck refill</span><b>₹2,400</b></div>
+              <div class="lc-row r2"><i class="d"></i><span>Toll &amp; parking</span><b>₹500</b></div>
+              <div class="lc-row r3"><i class="d dim"></i><span>Loading labour <em>No bill</em></span><b>₹300</b></div>
+            </div>
+          </div>
+          <div class="lg-card c-float c1"><span class="fi ok">✓</span><div><b>Owner confirmed</b><small>₹5,000 cash given</small></div></div>
+          <div class="lg-card c-float c2"><span class="fi">₹</span><div><b>Cash returned</b><small>₹1,800 · waiting for Owner</small></div></div>
+        </div>
+      </div>
+
+      <div class="lg-feats">
+        <div><b>1-tap</b><span>Owner approval</span></div>
+        <div><b>Photo</b><span>Bill proof</span></div>
+        <div><b>Live</b><span>Cash in hand</span></div>
+      </div>
+    </section>
+
+    <section class="lg-side">
+      <div class="lg-box fade-in" id="lgBox">
+        <div class="lg-head">
+          <div class="logo">₹</div>
+          <div><div class="lg-hello" id="lgHello">Welcome back</div><div class="lg-sub" id="lgSub">Sign in with your Emp ID</div></div>
+        </div>
+        <!-- Step 1: Emp ID (Owner / Admin: apna login ID) -->
+        <div id="idStep">
+          <div class="lbl-row"><label class="lbl" for="loginId">Emp ID</label><span class="muted sm">Owner / Admin: login ID</span></div>
+          <input id="loginId" class="input lg-id" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" maxlength="30" placeholder="Apni Emp ID" />
+        </div>
+        <!-- Step 2: PIN — sirf HR / Owner / Admin ke liye -->
+        <div id="pinStep" class="hidden">
+          <div class="lbl-row"><label class="lbl" for="pin" id="pinLbl">PIN</label><a href="#" class="sm" id="lgBack">← Change ID</a></div>
+          <div class="pinwrap" id="pinWrap">
+            <div class="pinboxes" id="pinBoxes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <input id="pin" class="pin-native" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="PIN" />
+            <button type="button" class="eye" id="pinEye" aria-label="Show PIN"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <div id="loginErr" class="err"></div>
+        <button id="loginBtn" class="btn btn-primary lg-btn"><span>Continue</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7M20 12H4"/></svg></button>
+        <div class="lg-hint" id="lgHint">HR / Owner / Admin ko agle step mein PIN dalna hoga</div>
+        <div class="lg-reg">Naye user ho? <a href="#" id="regLink">Register karo</a></div>
+        <div class="lg-divider"><span>Access for</span></div>
+        <div class="lg-roles"><span>Owner</span><span>Admin</span><span>HR</span><span>Employee</span></div>
+      </div>
+
+      <!-- Self register: Emp ID → Employee Master check → Admin approval -->
+      <div class="lg-box fade-in hidden" id="regBox">
+        <div class="lg-head">
+          <div class="logo">+</div>
+          <div><div class="lg-hello">Register</div><div class="lg-sub">Apni Emp ID se request bhejo</div></div>
+        </div>
+        <div class="lbl-row"><label class="lbl" for="regId">Emp ID</label><span class="muted sm">Employee Master wali</span></div>
+        <input id="regId" class="input lg-id" type="text" autocapitalize="characters" spellcheck="false" maxlength="30" placeholder="Apni Emp ID" />
+        <div id="regInfo" class="reg-info hidden"></div>
+        <div id="regErr" class="err"></div>
+        <button id="regBtn" class="btn btn-primary lg-btn"><span>Check Emp ID</span></button>
+        <div class="lg-reg"><a href="#" id="regBack">← Back to sign in</a></div>
+      </div>
+      <div class="lg-copyr"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Role based access · © Litpax Technology Pvt. Ltd.</div>
+    </section>
+  </div>
+
+  <!-- App -->
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand-side"><img src="logo-dark.png" alt="Litpax" class="side-logo" /><span class="side-app">Cash Ledger</span></div>
+      <nav id="nav" class="nav"></nav>
+      <div class="side-foot">
+        <div id="who" class="who"></div>
+        <button id="logoutBtn" class="btn btn-side">Logout</button>
+      </div>
+    </aside>
+    <main class="content">
+      <header class="topbar">
+        <div class="tb-title"><h2 id="pageTitle" class="page-title"></h2><div id="todayTxt" class="tb-date"></div></div>
+        <button id="refreshBtn" class="btn btn-ghost btn-sm" title="Refresh">Refresh</button>
+      </header>
+      <section id="page" class="page"></section>
+    </main>
+    <nav id="bnav" class="bnav" aria-label="Main"></nav>
+    <button class="fab hidden" id="fab" aria-label="Add">+</button>
+  </div>
+
+  <!-- Modal (forms, details) -->
+  <div id="modal" class="overlay hidden"><div id="modalBox" class="modal-box"></div></div>
+  <!-- Dialog (confirm / reason) — sits above modal -->
+  <div id="dialog" class="overlay top hidden"><div id="dialogBox" class="modal-box modal sm"></div></div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="../config.js"></script>
+  <script src="app.js"></script>
+  <!-- modules (each adds its own tab) -->
+  <script src="modules/scrap.js"></script>
+  <script src="modules/advances.js"></script>
+  <script src="modules/tickets.js"></script>
+  <script src="../suite-bridge.js"></script>
+</body>
+</html>

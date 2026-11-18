@@ -11,6 +11,8 @@ window.SUITE = {
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbyayM6lxMUhOo_zvaGBsX0Er_bUnptQTzPRck1462FWrqvfpU3aDH01uzNEdBSN5ByMLw/exec',
   REPLACE_URL: 'https://script.google.com/macros/s/AKfycbxsa9Rzifq7xVw0-26KBhIUds6DaOVyiIRHuzX8vCNqJigA_V6AruC17m7TGZp0EnKLsQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbw_mW1YOEZGYL3zA9__Prl0gMTUKVZRrVPSaeeJ3K87zfv_n3mWDcmp9Jfqz9j7D6HX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
+  CASH_URL:  'https://script.google.com/macros/s/AKfycbz43ZTItVCc9RFFt8HFg0-Txk1PMXdXQNlpt99iqx9G73W7Bq3N3zN0AUgzjpxRIw-a/exec',   // Cash Ledger GAS
+  TASKS_URL: 'https://script.google.com/macros/s/AKfycbz0j7XEoO9M8c3zm-KkGboD6-jHIexNwYnYI2ocOJxfsTMrISrIUtNgxMXGjJ6gK3x6/exec',   // Company Tasks GAS
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
@@ -32,8 +34,8 @@ window.SUITE = {
     pltAdmin: { label: 'Battery Production', path: 'plt/admin.html' },
     soms:     { label: 'Store Orders',    path: 'soms/index.html' },
     pltPack:  { label: 'Battery Packing', path: 'plt/index.html?mode=packing' },
-    cash:     { label: 'Cash Ledger',     path: 'https://litpax-technology.github.io/Cash-Ledger-/' },
-    tasks:    { label: 'Company Tasks',   path: 'https://litpax-technology.github.io/Litpax-Company-Task/' },
+    cash:     { label: 'Cash Ledger',     path: 'cash/index.html' },
+    tasks:    { label: 'Company Tasks',   path: 'tasks/index.html' },
     service:  { label: 'Service Hub',     path: 'service/index.html' },
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
@@ -130,5 +132,11 @@ window.SUITE = {
   } else if (/\/soms\//.test(p)) {
     window.CONFIG = { API_URL: S.SOMS_URL, APP_NAME: 'Litpax SMS', APP_SUBTITLE: 'Store Management System',
       COMPANY: 'Litpax Technology', REQUEST_TIMEOUT: 30000 };
+  } else if (/\/cash\//.test(p)) {
+    window.CONFIG = { API_URL: S.CASH_URL, APP_NAME: 'Cash Ledger', COMPANY: 'Litpax Technology',
+      MAX_BILL_MB: 8, BILL_MAX_PX: 1400, TIMEOUT_MS: 45000, OWNERS: ['Sahil Sir', 'Sneha Mam'] };
+  } else if (/\/tasks\//.test(p)) {
+    window.CONFIG = { API_URL: S.TASKS_URL, APP_NAME: 'Litpax Tasks', COMPANY: 'Litpax Technology',
+      TIMEOUT_MS: 25000, PAGE_SIZE: 50 };
   }
 })();
