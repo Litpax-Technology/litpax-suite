@@ -84,6 +84,8 @@
       css: '.sidebar,.sidebar-overlay,.hamburger,.topbar-brand{display:none!important}.topbar{padding-left:24px!important}' },          // ERP
     { root: '#app-shell .sidebar nav', item: '.ni', sec: '.ng-label', badge: '.nbadge', acts: '#stf-me button',
       css: '#app-shell>.sidebar{display:none!important}' },                                                                              // IMS
+    { root: '#appView > #sidebar #nav', item: '.nav-item', sec: '.nav-sec', badge: '.nav-badge',
+      css: '#sidebar,#scrim,#menuBtn{display:none!important}' },                                                                     // Company Tasks
     { root: '#sidebar .nav', item: '.nav-item', badge: '.badge', acts: '.stf-switch',
       css: '#sidebar,#hamburger,.sidebar-overlay{display:none!important}.main{margin-left:0!important}' },                               // SOMS
     { root: '#sbNav', item: '.sb-item', sec: '.sb-grp', acts: '.sb-switch',
@@ -104,7 +106,7 @@
       i++;
       if (!shown(el, root)) return;
       var c = el.cloneNode(true);
-      Array.prototype.forEach.call(c.querySelectorAll('svg,.nav-icon,.ic,.nav-ic,.nbadge,.badge'), function (x) { x.remove(); });
+      Array.prototype.forEach.call(c.querySelectorAll('svg,.nav-icon,.ic,.nav-ic,.nbadge,.badge,.nav-badge'), function (x) { x.remove(); });
       var b = NC.badge && el.querySelector(NC.badge), bt = b && shown(b, el) ? b.textContent.trim() : '';
       out.push({ k: el.id || el.getAttribute('data-page') || el.getAttribute('data-view') || el.getAttribute('data-nav') || 'i' + i,
                  label: c.textContent.replace(/\s+/g, ' ').trim(), sec: sec, badge: bt && bt !== '0' ? bt : '', active: el.classList.contains('active') });
