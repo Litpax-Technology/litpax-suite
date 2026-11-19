@@ -37,7 +37,7 @@ window.SUITE = {
     pltPack:  { label: 'Battery Packing', path: 'plt/index.html?mode=packing' },
     cash:     { label: 'Cash Ledger',     path: 'cash/index.html' },
     tasks:    { label: 'Company Tasks',   path: 'tasks/index.html' },
-    me:       { label: 'Employee Requests', path: 'me/index.html' },
+    me:       { label: 'Employee Requests', path: 'emp/index.html' },
     service:  { label: 'Service Hub',     path: 'service/index.html' },
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
@@ -140,7 +140,7 @@ window.SUITE = {
   } else if (/\/tasks\//.test(p)) {
     window.CONFIG = { API_URL: S.TASKS_URL, APP_NAME: 'Litpax Tasks', COMPANY: 'Litpax Technology',
       TIMEOUT_MS: 25000, PAGE_SIZE: 50 };
-  } else if (/\/me\//.test(p)) {
+  } else if (/\/emp\//.test(p)) {
     window.CONFIG = { API_URL: S.EMP_URL, APP_NAME: 'My Space', COMPANY: 'Litpax Technology', TIMEOUT_MS: 25000 };
   }
 })();
