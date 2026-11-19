@@ -88,6 +88,8 @@
       css: '#sidebar,#scrim,#menuBtn{display:none!important}' },                                                                     // Company Tasks
     { root: '#appView > .sidebar #nav', item: '.nav-item', badge: '.count',
       css: '.sidebar,.bnav{display:none!important}' },                                                                               // Cash Ledger
+    { root: '#appView .top #tabs', item: '.tab', badge: '.count',
+      css: '#appView .top #tabs{display:none!important}' },                                                                          // Employee (My Space)
     { root: '#sidebar .nav', item: '.nav-item', badge: '.badge', acts: '.stf-switch',
       css: '#sidebar,#hamburger,.sidebar-overlay{display:none!important}.main{margin-left:0!important}' },                               // SOMS
     { root: '#sbNav', item: '.sb-item', sec: '.sb-grp', acts: '.sb-switch',

@@ -134,12 +134,12 @@
   function tabs(list, cur, keep) {
     S.tabList = list;
     $('#tabs').innerHTML = list.map(function (t) {
-      var dot = t === 'inbox' && S.inbox && S.inbox.requests && S.inbox.requests.length ? '<span class="dot">' + S.inbox.requests.length + '</span>' : '';
-      return '<button class="tab" data-t="' + t + '">' + TAB_L[t] + dot + '</button>';
+      var dot = t === 'inbox' && S.inbox && S.inbox.requests && S.inbox.requests.length ? '<span class="count">' + S.inbox.requests.length + '</span>' : '';
+      return '<button class="tab" data-t="' + t + '" data-nav="' + t + '">' + TAB_L[t] + dot + '</button>';
     }).join('');
     if (!keep) go(cur); else mark();
   }
-  function mark() { [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.dataset.t === S.tab); }); }
+  function mark() { [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.dataset.t === S.tab); b.classList.toggle('active', b.dataset.t === S.tab); }); }
   $('#tabs').addEventListener('click', function (e) { var b = e.target.closest('.tab'); if (b) go(b.dataset.t); });
   $('#outBtn').addEventListener('click', function () { signOut(); });
   function go(t) {
