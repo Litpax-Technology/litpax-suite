@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f3d33" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <title>My Space · Litpax</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div id="loginView" class="lg hidden">
+    <div class="lg-card">
+      <div class="lg-brand">Litpax <span>My Space</span></div>
+      <h1 id="lgTitle">Sign in</h1>
+      <p class="lg-sub" id="lgSub">Apna Employee ID aur 4-digit PIN daalo.</p>
+
+      <form id="loginForm" autocomplete="off">
+        <label class="lbl" for="emp">Employee ID</label>
+        <input id="emp" inputmode="numeric" autocomplete="username" placeholder="e.g. 2" />
+        <label class="lbl" for="pin">PIN</label>
+        <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="••••" />
+        <div class="err" id="loginErr"></div>
+        <button class="btn" id="loginBtn" type="submit">Sign in</button>
+      </form>
+
+      <form id="setupForm" class="hidden" autocomplete="off">
+        <div class="note">Pehli baar login hai — apna PIN set karo. HR/Admin se mila <b>one-time code</b> daalo (ya mobile ke last 4 digit, agar HR ne number dala hai).</div>
+        <label class="lbl" for="verify">One-time code / Mobile last 4</label>
+        <input id="verify" inputmode="numeric" maxlength="6" placeholder="123456" />
+        <label class="lbl" for="pin1">Naya PIN (4 digit)</label>
+        <input id="pin1" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+        <label class="lbl" for="pin2">PIN dobara</label>
+        <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+        <div class="err" id="setupErr"></div>
+        <button class="btn" id="setupBtn" type="submit">Set PIN &amp; sign in</button>
+        <button class="link" id="setupBack" type="button">← Back</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="appView" class="app hidden">
+    <header class="top">
+      <div class="who"><div class="hello" id="hello">My Space</div><div class="sub" id="whoSub"></div></div>
+      <nav class="tabs" id="tabs"></nav>
+      <button class="btn ghost sm" id="outBtn" type="button">Sign out</button>
+    </header>
+    <main id="main"></main>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toast" class="toast"></div>
+
+  <script src="../config.js"></script>
+  <script src="app.js"></script>
+  <script src="../suite-bridge.js"></script>
+</body>
+</html>

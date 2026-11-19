@@ -1279,3 +1279,5 @@ html.intro .hero-copy > .hero-path { animation: ioUp .8s cubic-bezier(.2,.8,.2,1
   .sn-nav .nav-item.active::before, .sn-page.active::before, .sn-sub.open { animation: none !important; }
   .sn-nav .nav-item:hover, .sn-page:hover { transform: none; }
 }
+.emp-link { display:inline-block; margin-top:8px; color:var(--accent,#1f3d33); font-weight:600; text-decoration:none; }
+.emp-link:hover { text-decoration:underline; }

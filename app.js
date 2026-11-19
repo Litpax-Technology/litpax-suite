@@ -645,6 +645,7 @@
     if (u.pltSup) items.push({ id: 'm-pltAdmin', sec: 'Apps', label: M.pltAdmin.label, ic: '⚙', mod: 'pltAdmin' });
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
+    if (isAdmin) items.push({ id: 'm-me', sec: 'Apps', label: SUITE.MODULES.me.label, ic: '☺', mod: 'me' });
     if (isAdmin) items.push({ id: 'm-tasks', sec: 'Apps', label: SUITE.MODULES.tasks.label, ic: '☑', mod: 'tasks' });
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
@@ -695,7 +696,7 @@
     bot: '<rect x="4.5" y="6" width="15" height="15" rx="5"/><path d="M10 3.5h4V6h-4z"/><circle cx="9.6" cy="12.3" r="1.4"/><circle cx="14.4" cy="12.3" r="1.4"/><path d="M10.3 16.4c1 .7 2.4.7 3.4 0"/>'
   };
   var APPICO = { dashboard: 'dash', accounts: 'users', overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
-                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-service': 'wrench', 'm-agent': 'bot', settings: 'gear' };
+                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-me': 'users', 'm-service': 'wrench', 'm-agent': 'bot', settings: 'gear' };
   var PAGEICO = [[/switch|staff/i, 'users'], [/replacement/i, 'battery'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
     [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],

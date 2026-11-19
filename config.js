@@ -13,6 +13,7 @@ window.SUITE = {
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbw_mW1YOEZGYL3zA9__Prl0gMTUKVZRrVPSaeeJ3K87zfv_n3mWDcmp9Jfqz9j7D6HX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
   CASH_URL:  'https://script.google.com/macros/s/AKfycbz43ZTItVCc9RFFt8HFg0-Txk1PMXdXQNlpt99iqx9G73W7Bq3N3zN0AUgzjpxRIw-a/exec',   // Cash Ledger GAS
   TASKS_URL: 'https://script.google.com/macros/s/AKfycbyw6tMoW-GmwNb-50dsr18bQx1ZKh9nXHF83IkKY__Zf0eFxrCmhgSHD_CXvywtj1MI/exec',   // Company Tasks GAS
+  EMP_URL:   'https://script.google.com/macros/s/AKfycbzpRmdQd0ovwrNIYvnp71msjLbsMRJ2CkDuW0UVfF8/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
@@ -36,6 +37,7 @@ window.SUITE = {
     pltPack:  { label: 'Battery Packing', path: 'plt/index.html?mode=packing' },
     cash:     { label: 'Cash Ledger',     path: 'cash/index.html' },
     tasks:    { label: 'Company Tasks',   path: 'tasks/index.html' },
+    me:       { label: 'Employee Requests', path: 'me/index.html' },
     service:  { label: 'Service Hub',     path: 'service/index.html' },
     agent:    { label: 'Ask Litpax',      path: 'agent/index.html' }
   },
@@ -138,5 +140,7 @@ window.SUITE = {
   } else if (/\/tasks\//.test(p)) {
     window.CONFIG = { API_URL: S.TASKS_URL, APP_NAME: 'Litpax Tasks', COMPANY: 'Litpax Technology',
       TIMEOUT_MS: 25000, PAGE_SIZE: 50 };
+  } else if (/\/me\//.test(p)) {
+    window.CONFIG = { API_URL: S.EMP_URL, APP_NAME: 'My Space', COMPANY: 'Litpax Technology', TIMEOUT_MS: 25000 };
   }
 })();
