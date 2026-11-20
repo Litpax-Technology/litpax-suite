@@ -1897,7 +1897,7 @@ document.addEventListener('click', e => {
 
   // My Space (Employee) ke andar: Emp login se hi seedha apna Tasks session (ID ke bina)
   let empTok = '';
-  try { if (window.parent !== window && /\/emp\//.test(window.parent.location.pathname)) empTok = sessionStorage.getItem('emp_token') || ''; } catch (e) {}
+  try { if (window.parent !== window && /\/emp\//.test(window.parent.location.pathname)) empTok = sessionStorage.getItem('emp_handoff') || ''; sessionStorage.removeItem('emp_handoff'); } catch (e) {}
   if (empTok) {
     try {
       const r = await api('empSso', { empToken: empTok });
