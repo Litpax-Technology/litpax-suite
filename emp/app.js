@@ -4,6 +4,7 @@
   var CFG = window.CONFIG || {};
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var inSuite = window.parent !== window;
+  var SKEL = '<div class="skel"><i></i><i></i><i></i></div>';
   var S = { token: '', mode: '', user: null, tab: '', dash: null, inbox: null, canInbox: false };
 
   /* ---------- helpers ---------- */
@@ -126,15 +127,15 @@
     $('#hello').textContent = 'Hi, ' + (u.name || 'Employee');
     $('#whoSub').textContent = ['Emp ' + u.empId, u.designation, u.department].filter(Boolean).join(' · ');
     $('#outBtn').classList.remove('hidden');
-    tabs(['home', 'request', 'mine'], 'home');
+    tabs(['home', 'tasks', 'request', 'mine'], 'home');
     api_probe();
   }
   function api_probe() {   // agar ye employee approver bhi hai to Inbox tab jodo
     call('listRequests', { status: 'Pending' }).then(function (d) {
-      S.canInbox = true; S.inbox = d; tabs(['home', 'request', 'mine', 'inbox'], S.tab || 'home', true);
+      S.canInbox = true; S.inbox = d; tabs(['home', 'tasks', 'request', 'mine', 'inbox'], S.tab || 'home', true);
     }).catch(function () {});
   }
-  var TAB_L = { home: 'Dashboard', request: 'Request Advance', mine: 'My Requests', inbox: 'Inbox', access: 'Employee Access', team: 'Team' };
+  var TAB_L = { home: 'Dashboard', request: 'Request Advance', mine: 'My Requests', inbox: 'Inbox', access: 'Employee Access', team: 'Team', tasks: 'Tasks' };
   function tabs(list, cur, keep) {
     S.tabList = list;
     $('#tabs').innerHTML = list.map(function (t) {
@@ -148,29 +149,32 @@
   $('#outBtn').addEventListener('click', function () { signOut(); });
   function go(t) {
     S.tab = t; mark();
-    var m = $('#main'); m.innerHTML = '<div class="loading">Loading…</div>';
-    ({ home: viewHome, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess, team: viewTeam })[t](m);
+    var m = $('#main'); m.onclick = function (e) { var b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); }; m.classList.toggle('wide', t === 'tasks'); m.innerHTML = SKEL;
+    ({ home: viewHome, tasks: viewTasks, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess, team: viewTeam })[t](m);
   }
   function fail(m, e) { m.innerHTML = '<div class="card empty">' + esc(e.message) + '</div>'; }
 
   /* ---------- dashboard ---------- */
   function loadDash() { return call('myDashboard').then(function (d) { S.dash = d; return d; }); }
-  function section(title, body) { return '<div class="sec-t">' + esc(title) + '</div>' + body; }
+  function section(title, body, act) { return '<div class="sec-h"><div class="sec-t">' + esc(title) + '</div>' + (act || '') + '</div>' + body; }
   function unavail(x) { return x && x.unavailable ? '<div class="card unavail">' + esc(x.message || 'Abhi available nahi') + '</div>' : ''; }
   function kpi(k, v, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div></div>'; }
 
-  function dashHtml(d) {
+  function dashHtml(d, own) {
       var p = d.profile || {}, h = '';
-      var pf = [['Employee ID', p.empId || (S.user && S.user.empId)], ['Name', p.name], ['Department', p.department], ['Designation', p.designation],
-        ['Phone', p.phone], ['Reports to', p.manager]].filter(function (x) { return x[1]; });
-      h += '<div class="card"><div class="prof">' + pf.map(function (x) { return '<div><div class="k">' + x[0] + '</div><div class="v">' + esc(x[1]) + '</div></div>'; }).join('') + '</div></div>';
+      var nm = p.name || (S.user && S.user.name) || 'Employee', ini = nm.split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+      var meta = ['Emp ' + (p.empId || (S.user && S.user.empId)), p.designation, p.department, p.manager ? 'Reports to ' + p.manager : '', p.phone].filter(Boolean).map(esc).join(' · ');
+      h += '<div class="hero"><div class="av">' + esc(ini) + '</div><div class="hero-t"><div class="hn">' + esc(nm) + '</div><div class="hs">' + meta + '</div></div>' +
+        (own ? '<button class="btn sm" data-go="request" type="button">Request advance</button>' : '') + '</div>';
+      var op = own && (d.requests || []).filter(function (r) { return /^(Pending|Approved)/.test(r.status); })[0];
+      if (op) h += '<button class="strip" data-go="mine" type="button"><b>' + money(op.amount) + '</b> advance request · ' + chipFor(op.status) + '<span class="go">Dekho →</span></button>';
 
       var t = d.tasks;
       if (t && !t.unavailable) {
         h += section('Company Tasks', '<div class="grid">' + kpi('Open', t.open || 0) + kpi('Overdue', t.overdue || 0, t.overdue ? 'bad' : '') +
-          kpi('Due today', t.dueToday || 0, t.dueToday ? 'warn' : '') + kpi('Done this week', t.doneThisWeek || 0, 'ok') + '</div>');
+          kpi('Due today', t.dueToday || 0, t.dueToday ? 'warn' : '') + kpi('Done this week', t.doneThisWeek || 0, 'ok') + '</div>', own ? '<button class="btn ghost sm" data-go="tasks" type="button">Open Tasks →</button>' : '');
         var tl = (t.list || []).map(function (x) {
-          return '<tr><td>' + esc(pick(x, ['title', 'task', 'name'])) + '</td><td>' + esc(x.priority || '') + '</td><td>' + dt(pick(x, ['due', 'dueDate', 'deadline'])) + '</td><td>' + (x.overdue ? '<span class="chip bad">Overdue</span>' : chipFor(x.status)) + '</td></tr>';
+          return '<tr' + (x.overdue ? ' class="od"' : '') + '><td>' + esc(pick(x, ['title', 'task', 'name'])) + '</td><td>' + esc(x.priority || '') + '</td><td>' + dt(pick(x, ['due', 'dueDate', 'deadline'])) + '</td><td>' + (x.overdue ? '<span class="chip bad">Overdue</span>' : chipFor(x.status)) + '</td></tr>';
         }).join('');
         var sc = (t.scores || []).map(function (x) {
           return '<tr><td>' + dt(x.week) + '</td><td>' + esc(x.done) + ' / ' + esc(x.planned) + ' done</td><td class="r">' + esc(x.weightedPct) + '%</td></tr>';
@@ -195,7 +199,16 @@
       } else h += section('Advance', unavail(a) || '');
       return h;
   }
-  function viewHome(m) { loadDash().then(function (d) { m.innerHTML = dashHtml(d); }).catch(function (e) { fail(m, e); }); }
+  function viewHome(m) { loadDash().then(function (d) { m.innerHTML = dashHtml(d, true); }).catch(function (e) { fail(m, e); }); }
+
+  /* ---------- Tasks (Company Tasks app, same login) ---------- */
+  function viewTasks(m) {
+    m.innerHTML = '<iframe class="tasks-frame" src="../tasks/index.html" title="Company Tasks"></iframe>';
+  }
+  window.addEventListener('message', function (e) {   // Tasks ke andar Sign out → My Space se bhi sign out
+    if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
+    if (e.data.type === 'logout' && S.mode === 'emp') signOut();
+  });
 
   /* ---------- request advance ---------- */
   function viewRequest(m) {
@@ -360,7 +373,7 @@
     };
   }
   function viewEmpDash(m, emp) {
-    m.onclick = null; m.innerHTML = '<div class="loading">Loading…</div>';
+    m.onclick = null; m.innerHTML = SKEL;
     call('empDashboard', { emp: emp }).then(function (d) {
       m.innerHTML = '<button class="btn ghost sm" id="tmBack" type="button" style="margin-bottom:14px">← Team</button>' + dashHtml(d);
       $('#tmBack').onclick = function () { viewTeam(m); };

@@ -1895,6 +1895,18 @@ document.addEventListener('click', e => {
 (async function init() {
   const sess = store.get('session'), snap = store.get('boot');
 
+  // My Space (Employee) ke andar: Emp login se hi seedha apna Tasks session (ID ke bina)
+  let empTok = '';
+  try { if (window.parent !== window && /\/emp\//.test(window.parent.location.pathname)) empTok = sessionStorage.getItem('emp_token') || ''; } catch (e) {}
+  if (empTok) {
+    try {
+      const r = await api('empSso', { empToken: empTok });
+      if (r && r.ok) { S.token = r.token; store.set('session', { token: r.token }); startApp(r); }
+      else { focusLogin(); if (r && r.message) $('#loginErr').textContent = r.message; }
+    } catch (e) { focusLogin(); $('#loginErr').textContent = e.message; }
+    return;
+  }
+
   // Litpax Suite ke andar (Admin login): ID/PIN ke bina seedha Admin
   let suiteTok = '';
   try { if (window.parent !== window) suiteTok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
