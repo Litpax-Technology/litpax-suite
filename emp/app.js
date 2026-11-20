@@ -120,7 +120,7 @@
     if (S.mode === 'staff') {
       $('#hello').textContent = 'Employee Requests'; $('#whoSub').textContent = 'Advance request inbox & employee access';
       S.canInbox = true; $('#outBtn').classList.add('hidden');
-      return tabs(['inbox', 'access'], 'inbox');
+      return tabs(['inbox', 'team', 'access'], 'inbox');
     }
     var u = S.user || {};
     $('#hello').textContent = 'Hi, ' + (u.name || 'Employee');
@@ -134,7 +134,7 @@
       S.canInbox = true; S.inbox = d; tabs(['home', 'request', 'mine', 'inbox'], S.tab || 'home', true);
     }).catch(function () {});
   }
-  var TAB_L = { home: 'Dashboard', request: 'Request Advance', mine: 'My Requests', inbox: 'Inbox', access: 'Employee Access' };
+  var TAB_L = { home: 'Dashboard', request: 'Request Advance', mine: 'My Requests', inbox: 'Inbox', access: 'Employee Access', team: 'Team' };
   function tabs(list, cur, keep) {
     S.tabList = list;
     $('#tabs').innerHTML = list.map(function (t) {
@@ -149,7 +149,7 @@
   function go(t) {
     S.tab = t; mark();
     var m = $('#main'); m.innerHTML = '<div class="loading">Loading…</div>';
-    ({ home: viewHome, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess })[t](m);
+    ({ home: viewHome, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess, team: viewTeam })[t](m);
   }
   function fail(m, e) { m.innerHTML = '<div class="card empty">' + esc(e.message) + '</div>'; }
 
@@ -159,8 +159,7 @@
   function unavail(x) { return x && x.unavailable ? '<div class="card unavail">' + esc(x.message || 'Abhi available nahi') + '</div>' : ''; }
   function kpi(k, v, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div></div>'; }
 
-  function viewHome(m) {
-    loadDash().then(function (d) {
+  function dashHtml(d) {
       var p = d.profile || {}, h = '';
       var pf = [['Employee ID', p.empId || (S.user && S.user.empId)], ['Name', p.name], ['Department', p.department], ['Designation', p.designation],
         ['Phone', p.phone], ['Email', p.email], ['Reports to', p.reportsTo], ['Joined', p.joinDate ? dt(p.joinDate) : '']].filter(function (x) { return x[1]; });
@@ -194,9 +193,9 @@
         h += '<div class="two" style="margin-top:14px"><div class="card"><table><thead><tr><th>Advances</th><th>Purpose</th><th class="r">Amount</th></tr></thead><tbody>' + (ar || '<tr><td colspan="3" class="empty">Koi advance nahi</td></tr>') + '</tbody></table></div>' +
           '<div class="card"><table><thead><tr><th>Recoveries</th><th>Note</th><th class="r">Amount</th></tr></thead><tbody>' + (rr || '<tr><td colspan="3" class="empty">Koi recovery nahi</td></tr>') + '</tbody></table></div></div>';
       } else h += section('Advance', unavail(a) || '');
-      m.innerHTML = h;
-    }).catch(function (e) { fail(m, e); });
+      return h;
   }
+  function viewHome(m) { loadDash().then(function (d) { m.innerHTML = dashHtml(d); }).catch(function (e) { fail(m, e); }); }
 
   /* ---------- request advance ---------- */
   function viewRequest(m) {
@@ -326,6 +325,46 @@
         call('resetPin', { emp: e }).then(function () { close(); toast('PIN reset ho gaya'); }).catch(function (x) { toast(x.message, true); });
       }, 'Reset PIN');
     };
+  }
+
+
+  /* ---------- Team (Admin/HR/Owner): har employee ki performance ---------- */
+  var T = { rows: [], q: '', sort: 'overdue', dir: -1 };
+  var TCOLS = [['name', 'Employee'], ['department', 'Dept'], ['open', 'Open'], ['overdue', 'Overdue'], ['doneThisWeek', 'Done (wk)'], ['lastScore', 'Last score'], ['outstanding', 'Advance due']];
+  function viewTeam(m) {
+    call('listEmployees').then(function (d) { T.rows = d.employees || []; drawTeam(m); }).catch(function (e) { fail(m, e); });
+  }
+  function drawTeam(m) {
+    var q = T.q.toLowerCase(), k = T.sort;
+    var rows = T.rows.filter(function (r) { return !q || (String(r.name) + ' ' + r.empId + ' ' + (r.department || '')).toLowerCase().indexOf(q) !== -1; });
+    rows.sort(function (a, b) {
+      var x = a[k], y = b[k]; if (x == null || x === '') x = -1e9; if (y == null || y === '') y = -1e9;
+      return (typeof x === 'string' ? x.localeCompare(y) : x - y) * T.dir;
+    });
+    var th = TCOLS.map(function (c) { return '<th class="srt' + (c[0] === k ? ' on' : '') + (c[0] !== 'name' && c[0] !== 'department' ? ' r' : '') + '" data-s="' + c[0] + '">' + c[1] + (c[0] === k ? (T.dir < 0 ? ' ↓' : ' ↑') : '') + '</th>'; }).join('');
+    var tr = rows.map(function (r) {
+      return '<tr class="clk" data-emp="' + esc(r.empId) + '"><td><b>' + esc(r.name) + '</b><div class="req-m">Emp ' + esc(r.empId) + (r.designation ? ' · ' + esc(r.designation) : '') + (r.hasPin === false ? ' · PIN set nahi' : '') + (r.active === false ? ' · inactive' : '') + '</div></td><td>' + esc(r.department || '—') + '</td>' +
+        '<td class="r">' + (r.open == null ? '—' : r.open) + '</td><td class="r">' + (r.overdue ? '<span class="chip bad">' + r.overdue + '</span>' : (r.overdue == null ? '—' : 0)) + '</td>' +
+        '<td class="r">' + (r.doneThisWeek == null ? '—' : r.doneThisWeek) + '</td><td class="r">' + esc(r.lastScore == null || r.lastScore === '' ? '—' : r.lastScore) + '</td>' +
+        '<td class="r">' + (r.outstanding ? '<span class="chip warn">' + money(r.outstanding) + '</span>' : (r.outstanding == null ? '—' : '₹0')) + '</td></tr>';
+    }).join('');
+    var tot = T.rows.reduce(function (a, r) { a.o += Number(r.overdue) || 0; a.a += Number(r.outstanding) || 0; return a; }, { o: 0, a: 0 });
+    m.innerHTML = '<div class="grid" style="margin-bottom:16px">' + kpi('Employees', T.rows.length) + kpi('Overdue tasks', tot.o, tot.o ? 'bad' : '') + kpi('Advance outstanding', money(tot.a), tot.a ? 'warn' : '') + '</div>' +
+      '<input id="tmQ" placeholder="Search name / Emp ID / department" value="' + esc(T.q) + '" /><div class="card"><div class="tbl-wrap"><table><thead><tr>' + th + '</tr></thead><tbody>' +
+      (tr || '<tr><td colspan="7" class="empty">Koi employee nahi mila</td></tr>') + '</tbody></table></div></div>';
+    var qi = $('#tmQ'); qi.addEventListener('input', function () { T.q = qi.value; var p = qi.selectionStart; drawTeam(m); var n = $('#tmQ'); n.focus(); n.setSelectionRange(p, p); });
+    m.onclick = function (e) {
+      var h = e.target.closest('th[data-s]');
+      if (h) { if (T.sort === h.dataset.s) T.dir = -T.dir; else { T.sort = h.dataset.s; T.dir = (T.sort === 'name' || T.sort === 'department') ? 1 : -1; } return drawTeam(m); }
+      var r = e.target.closest('tr[data-emp]'); if (r) viewEmpDash(m, r.dataset.emp);
+    };
+  }
+  function viewEmpDash(m, emp) {
+    m.onclick = null; m.innerHTML = '<div class="loading">Loading…</div>';
+    call('empDashboard', { emp: emp }).then(function (d) {
+      m.innerHTML = '<button class="btn ghost sm" id="tmBack" type="button" style="margin-bottom:14px">← Team</button>' + dashHtml(d);
+      $('#tmBack').onclick = function () { viewTeam(m); };
+    }).catch(function (e) { fail(m, e); });
   }
 
   /* ---------- modal ---------- */

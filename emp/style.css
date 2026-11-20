@@ -61,6 +61,8 @@ th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu
 td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
 td.r,th.r{text-align:right}
+th.srt{cursor:pointer;user-select:none}th.srt.on{color:var(--accent)}
+tr.clk{cursor:pointer}tr.clk:hover td{background:var(--accent-softer)}
 .empty{padding:26px;text-align:center;color:var(--muted)}
 .tbl-wrap{overflow-x:auto}
 
