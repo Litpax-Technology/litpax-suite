@@ -139,7 +139,10 @@
       try { window.parent.postMessage({ source: 'litpax-suite', type: 'nav', items: items }, location.origin); } catch (e) {}
     }, 150);
   }
+  var inEmp = false;   // My Space ke andar khula (parent = emp page): Tasks ka apna sidebar chhupana nahi
+  try { inEmp = /\/emp\//.test(window.parent.location.pathname); } catch (e) {}
   function setupNav() {
+    if (inEmp) return;
     for (var i = 0; i < NAV.length && !NC; i++) if (document.querySelector(NAV[i].root)) NC = NAV[i];
     if (!NC) return;
     var st = document.createElement('style'); st.id = 'suiteNavCss'; st.textContent = NC.css;
