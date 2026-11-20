@@ -81,7 +81,11 @@
       busy(btn, false);
       if (d.needSetup) { return startSetup(emp, d); }
       done(d);
-    }).catch(function (e) { busy(btn, false); err.textContent = e.message; });
+    }).catch(function (e) {
+      busy(btn, false);
+      if (/need.?setup|first time|set your pin/i.test((e.code || '') + ' ' + e.message)) return startSetup(emp);   // PIN abhi set nahi → setup screen
+      err.textContent = e.message;
+    });
   });
   function startSetup(emp) {
     S._setupEmp = emp;
