@@ -37,7 +37,7 @@
         clearTimeout(timer);
         if (!d || !d.ok) {
           var e = new Error((d && (d.message || d.error)) || 'Request failed'); e.code = d && d.error;
-          if (/token|session|expired|unauth/i.test((d && (d.error + ' ' + d.message)) || '') && !useSuiteToken) { e.auth = true; }
+          if (/token|session|expired|unauth|login|sign in/i.test((d && (d.error + ' ' + d.message)) || '') && !useSuiteToken) { e.auth = true; }
           throw e;
         }
         return d;
@@ -120,7 +120,7 @@
     if (S.mode === 'staff') {
       $('#hello').textContent = 'Employee Requests'; $('#whoSub').textContent = 'Advance request inbox & employee access';
       S.canInbox = true; $('#outBtn').classList.add('hidden');
-      return tabs(['inbox', 'access'], 'inbox');
+      return tabs(['inbox', 'team', 'access'], 'inbox');
     }
     var u = S.user || {};
     $('#hello').textContent = 'Hi, ' + (u.name || 'Employee');
@@ -134,11 +134,11 @@
       S.canInbox = true; S.inbox = d; tabs(['home', 'request', 'mine', 'inbox'], S.tab || 'home', true);
     }).catch(function () {});
   }
-  var TAB_L = { home: 'Dashboard', request: 'Request Advance', mine: 'My Requests', inbox: 'Inbox', access: 'Employee Access' };
+  var TAB_L = { home: 'Dashboard', request: 'Request Advance', mine: 'My Requests', inbox: 'Inbox', access: 'Employee Access', team: 'Team' };
   function tabs(list, cur, keep) {
     S.tabList = list;
     $('#tabs').innerHTML = list.map(function (t) {
-      var dot = t === 'inbox' && S.inbox && S.inbox.requests && S.inbox.requests.length ? '<span class="count">' + S.inbox.requests.length + '</span>' : '';
+      var dot = t === 'inbox' && S.inbox && S.inbox.rows && S.inbox.rows.length ? '<span class="count">' + S.inbox.rows.length + '</span>' : '';
       return '<button class="tab" data-t="' + t + '" data-nav="' + t + '">' + TAB_L[t] + dot + '</button>';
     }).join('');
     if (!keep) go(cur); else mark();
@@ -149,7 +149,7 @@
   function go(t) {
     S.tab = t; mark();
     var m = $('#main'); m.innerHTML = '<div class="loading">Loading…</div>';
-    ({ home: viewHome, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess })[t](m);
+    ({ home: viewHome, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess, team: viewTeam })[t](m);
   }
   function fail(m, e) { m.innerHTML = '<div class="card empty">' + esc(e.message) + '</div>'; }
 
@@ -159,11 +159,10 @@
   function unavail(x) { return x && x.unavailable ? '<div class="card unavail">' + esc(x.message || 'Abhi available nahi') + '</div>' : ''; }
   function kpi(k, v, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div></div>'; }
 
-  function viewHome(m) {
-    loadDash().then(function (d) {
+  function dashHtml(d) {
       var p = d.profile || {}, h = '';
       var pf = [['Employee ID', p.empId || (S.user && S.user.empId)], ['Name', p.name], ['Department', p.department], ['Designation', p.designation],
-        ['Phone', p.phone], ['Email', p.email], ['Reports to', p.reportsTo], ['Joined', p.joinDate ? dt(p.joinDate) : '']].filter(function (x) { return x[1]; });
+        ['Phone', p.phone], ['Reports to', p.manager]].filter(function (x) { return x[1]; });
       h += '<div class="card"><div class="prof">' + pf.map(function (x) { return '<div><div class="k">' + x[0] + '</div><div class="v">' + esc(x[1]) + '</div></div>'; }).join('') + '</div></div>';
 
       var t = d.tasks;
@@ -171,14 +170,14 @@
         h += section('Company Tasks', '<div class="grid">' + kpi('Open', t.open || 0) + kpi('Overdue', t.overdue || 0, t.overdue ? 'bad' : '') +
           kpi('Due today', t.dueToday || 0, t.dueToday ? 'warn' : '') + kpi('Done this week', t.doneThisWeek || 0, 'ok') + '</div>');
         var tl = (t.list || []).map(function (x) {
-          return '<tr><td>' + esc(pick(x, ['title', 'task', 'name'])) + '</td><td>' + esc(pick(x, ['project', 'category'])) + '</td><td>' + dt(pick(x, ['due', 'dueDate', 'deadline'])) + '</td><td>' + chipFor(pick(x, ['status'])) + '</td></tr>';
+          return '<tr><td>' + esc(pick(x, ['title', 'task', 'name'])) + '</td><td>' + esc(x.priority || '') + '</td><td>' + dt(pick(x, ['due', 'dueDate', 'deadline'])) + '</td><td>' + (x.overdue ? '<span class="chip bad">Overdue</span>' : chipFor(x.status)) + '</td></tr>';
         }).join('');
         var sc = (t.scores || []).map(function (x) {
-          return '<tr><td>' + esc(pick(x, ['week', 'weekLabel', 'weekStart'])) + '</td><td class="r">' + esc(pick(x, ['score', 'total', 'points'])) + '</td></tr>';
+          return '<tr><td>' + dt(x.week) + '</td><td>' + esc(x.done) + ' / ' + esc(x.planned) + ' done</td><td class="r">' + esc(x.weightedPct) + '%</td></tr>';
         }).join('');
-        h += '<div class="two" style="margin-top:14px"><div class="card"><div class="tbl-wrap"><table><thead><tr><th>My tasks</th><th>Project</th><th>Due</th><th>Status</th></tr></thead><tbody>' +
+        h += '<div class="two" style="margin-top:14px"><div class="card"><div class="tbl-wrap"><table><thead><tr><th>Open tasks</th><th>Priority</th><th>Due</th><th>Status</th></tr></thead><tbody>' +
           (tl || '<tr><td colspan="4" class="empty">Koi open task nahi</td></tr>') + '</tbody></table></div></div>' +
-          '<div class="card"><table><thead><tr><th>Weekly score</th><th class="r">Score</th></tr></thead><tbody>' + (sc || '<tr><td colspan="2" class="empty">Abhi koi score nahi</td></tr>') + '</tbody></table></div></div>';
+          '<div class="card"><table><thead><tr><th>Week</th><th>Tasks</th><th class="r">Score</th></tr></thead><tbody>' + (sc || '<tr><td colspan="3" class="empty">Abhi koi score nahi</td></tr>') + '</tbody></table></div></div>';
       } else h += section('Company Tasks', unavail(t) || '');
 
       var a = d.advance;
@@ -186,17 +185,17 @@
         var tt = a.totals || {};
         h += section('Advance', '<div class="grid">' + kpi('Taken', money(tt.taken)) + kpi('Recovered', money(tt.recovered), 'ok') + kpi('Outstanding', money(tt.outstanding), tt.outstanding ? 'warn' : '') + '</div>');
         var ar = (a.advances || []).map(function (x) {
-          return '<tr><td>' + dt(pick(x, ['date', 'givenOn'])) + '</td><td>' + esc(pick(x, ['purpose', 'reason', 'note'])) + '</td><td class="r">' + money(pick(x, ['amount'])) + '</td></tr>';
+          return '<tr><td>' + dt(x.date) + '</td><td>' + chipFor(x.status) + '<div class="req-m">Recovered ' + money(x.recovered) + '</div></td><td class="r">' + money(x.amount) + '<div class="req-m">Due ' + money(x.outstanding) + '</div></td></tr>';
         }).join('');
         var rr = (a.recoveries || []).map(function (x) {
-          return '<tr><td>' + dt(pick(x, ['date'])) + '</td><td>' + esc(pick(x, ['note', 'mode', 'purpose'])) + '</td><td class="r">' + money(pick(x, ['amount'])) + '</td></tr>';
+          return '<tr><td>' + dt(pick(x, ['date'])) + '</td><td>' + esc([x.mode, x.month, x.remarks].filter(Boolean).join(' · ')) + '</td><td class="r">' + money(pick(x, ['amount'])) + '</td></tr>';
         }).join('');
-        h += '<div class="two" style="margin-top:14px"><div class="card"><table><thead><tr><th>Advances</th><th>Purpose</th><th class="r">Amount</th></tr></thead><tbody>' + (ar || '<tr><td colspan="3" class="empty">Koi advance nahi</td></tr>') + '</tbody></table></div>' +
-          '<div class="card"><table><thead><tr><th>Recoveries</th><th>Note</th><th class="r">Amount</th></tr></thead><tbody>' + (rr || '<tr><td colspan="3" class="empty">Koi recovery nahi</td></tr>') + '</tbody></table></div></div>';
+        h += '<div class="two" style="margin-top:14px"><div class="card"><table><thead><tr><th>Advances</th><th>Status</th><th class="r">Amount</th></tr></thead><tbody>' + (ar || '<tr><td colspan="3" class="empty">Koi advance nahi</td></tr>') + '</tbody></table></div>' +
+          '<div class="card"><table><thead><tr><th>Recoveries</th><th>Details</th><th class="r">Amount</th></tr></thead><tbody>' + (rr || '<tr><td colspan="3" class="empty">Koi recovery nahi</td></tr>') + '</tbody></table></div></div>';
       } else h += section('Advance', unavail(a) || '');
-      m.innerHTML = h;
-    }).catch(function (e) { fail(m, e); });
+      return h;
   }
+  function viewHome(m) { loadDash().then(function (d) { m.innerHTML = dashHtml(d); }).catch(function (e) { fail(m, e); }); }
 
   /* ---------- request advance ---------- */
   function viewRequest(m) {
@@ -245,11 +244,13 @@
     return '<div class="steps">' + h.join('') + '</div>';
   }
   function hist(r) {
-    var l = r.history || r.log || r.timeline || [];
-    if (!l.length) return '';
-    return '<div class="hist">' + l.map(function (x) {
-      return '<div>' + dt(pick(x, ['at', 'date', 'time', 'ts'])) + ' · ' + esc(pick(x, ['action', 'status', 'event'])) + (pick(x, ['by', 'actor']) ? ' · ' + esc(pick(x, ['by', 'actor'])) : '') + (pick(x, ['note', 'comment']) ? ' — ' + esc(pick(x, ['note', 'comment'])) : '') + '</div>';
-    }).join('') + '</div>';
+    var l = [];
+    if (r.createdAt) l.push([r.createdAt, 'Requested']);
+    if (r.hrBy) l.push([r.hrAt, 'HR: ' + r.hrBy, r.hrNote]);
+    if (r.ownerBy) l.push([r.ownerAt, 'Owner: ' + r.ownerBy, r.ownerNote]);
+    if (r.givenAt) l.push([r.givenAt, 'Given' + (r.cashRef ? ' (' + r.cashRef + ')' : '')]);
+    if (l.length < 2) return '';
+    return '<div class="hist">' + l.map(function (x) { return '<div>' + dt(x[0]) + ' · ' + esc(x[1]) + (x[2] ? ' — ' + esc(x[2]) : '') + '</div>'; }).join('') + '</div>';
   }
   function reqCard(r, inbox) {
     var id = pick(r, ['id', 'requestId']), st = r.status, amt = pick(r, ['approvedAmount']) || r.amount;
@@ -260,18 +261,16 @@
       '<div class="req-note">' + esc(r.reason || '') + '</div>';
     if (inbox && r.empOutstanding != null) h += '<div class="req-m">Abhi outstanding: ' + money(r.empOutstanding) + '</div>';
     if (!inbox) h += stepper(st);
-    var note = pick(r, ['decisionNote', 'note', 'hrNote', 'ownerNote']);
-    if (note && !inbox) h += '<div class="req-note"><b>Note:</b> ' + esc(note) + '</div>';
     h += hist(r);
     h += '<div class="req-act">';
     if (!inbox && /^Pending/.test(st)) h += '<button class="btn ghost sm" data-a="cancel" data-id="' + esc(id) + '">Cancel request</button>';
     if (inbox && r.canAct) h += '<button class="btn ok sm" data-a="approve" data-id="' + esc(id) + '">Approve</button><button class="btn ghost sm" data-a="partial" data-id="' + esc(id) + '">Approve less…</button><button class="btn bad sm" data-a="reject" data-id="' + esc(id) + '">Reject</button>';
-    if (inbox && st === 'Approved' && S.canGive !== false) h += '<button class="btn sm" data-a="given" data-id="' + esc(id) + '">Mark given</button>';
+    if (inbox && st === 'Approved' && !(S.access && S.access.hr === false)) h += '<button class="btn sm" data-a="given" data-id="' + esc(id) + '">Mark given</button>';
     return h + '</div></div>';
   }
   function viewMine(m) {
     call('myRequests').then(function (d) {
-      var l = d.requests || [];
+      var l = d.rows || [];
       m.innerHTML = '<h2 style="margin-bottom:14px">My requests</h2>' + (l.length ? l.map(function (r) { return reqCard(r, false); }).join('') : '<div class="card empty">Abhi tak koi request nahi ki.</div>');
       m.onclick = function (e) {
         var b = e.target.closest('[data-a="cancel"]'); if (!b) return;
@@ -286,7 +285,7 @@
   var INB = 'Pending';
   function viewInbox(m) {
     call('listRequests', INB === 'All' ? {} : { status: INB }).then(function (d) {
-      S.inbox = d; var l = d.requests || [];
+      S.inbox = d; S.access = d.access; var l = d.rows || [];
       m.innerHTML = '<div class="filters">' + ['Pending', 'Approved', 'Given', 'All'].map(function (f) { return '<button class="pill' + (f === INB ? ' on' : '') + '" data-f="' + f + '">' + f + '</button>'; }).join('') + '</div>' +
         (l.length ? l.map(function (r) { return reqCard(r, true); }).join('') : '<div class="card empty">Koi request nahi.</div>');
       m.onclick = function (e) {
@@ -326,6 +325,46 @@
         call('resetPin', { emp: e }).then(function () { close(); toast('PIN reset ho gaya'); }).catch(function (x) { toast(x.message, true); });
       }, 'Reset PIN');
     };
+  }
+
+
+  /* ---------- Team (Admin/HR/Owner): har employee ki performance ---------- */
+  var T = { rows: [], q: '', sort: 'overdue', dir: -1 };
+  var TCOLS = [['name', 'Employee'], ['department', 'Dept'], ['open', 'Open'], ['overdue', 'Overdue'], ['doneThisWeek', 'Done (wk)'], ['lastScore', 'Last score'], ['outstanding', 'Advance due']];
+  function viewTeam(m) {
+    call('listEmployees').then(function (d) { T.rows = d.employees || []; drawTeam(m); }).catch(function (e) { fail(m, e); });
+  }
+  function drawTeam(m) {
+    var q = T.q.toLowerCase(), k = T.sort;
+    var rows = T.rows.filter(function (r) { return !q || (String(r.name) + ' ' + r.empId + ' ' + (r.department || '')).toLowerCase().indexOf(q) !== -1; });
+    rows.sort(function (a, b) {
+      var x = a[k], y = b[k]; if (x == null || x === '') x = -1e9; if (y == null || y === '') y = -1e9;
+      return (typeof x === 'string' ? x.localeCompare(y) : x - y) * T.dir;
+    });
+    var th = TCOLS.map(function (c) { return '<th class="srt' + (c[0] === k ? ' on' : '') + (c[0] !== 'name' && c[0] !== 'department' ? ' r' : '') + '" data-s="' + c[0] + '">' + c[1] + (c[0] === k ? (T.dir < 0 ? ' ↓' : ' ↑') : '') + '</th>'; }).join('');
+    var tr = rows.map(function (r) {
+      return '<tr class="clk" data-emp="' + esc(r.empId) + '"><td><b>' + esc(r.name) + '</b><div class="req-m">Emp ' + esc(r.empId) + (r.designation ? ' · ' + esc(r.designation) : '') + (r.hasPin === false ? ' · PIN set nahi' : '') + (r.active === false ? ' · inactive' : '') + '</div></td><td>' + esc(r.department || '—') + '</td>' +
+        '<td class="r">' + (r.open == null ? '—' : r.open) + '</td><td class="r">' + (r.overdue ? '<span class="chip bad">' + r.overdue + '</span>' : (r.overdue == null ? '—' : 0)) + '</td>' +
+        '<td class="r">' + (r.doneThisWeek == null ? '—' : r.doneThisWeek) + '</td><td class="r">' + (r.lastScore == null || r.lastScore === '' ? '—' : esc(r.lastScore) + '%') + '</td>' +
+        '<td class="r">' + (r.outstanding ? '<span class="chip warn">' + money(r.outstanding) + '</span>' : (r.outstanding == null ? '—' : '₹0')) + '</td></tr>';
+    }).join('');
+    var tot = T.rows.reduce(function (a, r) { a.o += Number(r.overdue) || 0; a.a += Number(r.outstanding) || 0; return a; }, { o: 0, a: 0 });
+    m.innerHTML = '<div class="grid" style="margin-bottom:16px">' + kpi('Employees', T.rows.length) + kpi('Overdue tasks', tot.o, tot.o ? 'bad' : '') + kpi('Advance outstanding', money(tot.a), tot.a ? 'warn' : '') + '</div>' +
+      '<input id="tmQ" placeholder="Search name / Emp ID / department" value="' + esc(T.q) + '" /><div class="card"><div class="tbl-wrap"><table><thead><tr>' + th + '</tr></thead><tbody>' +
+      (tr || '<tr><td colspan="7" class="empty">Koi employee nahi mila</td></tr>') + '</tbody></table></div></div>';
+    var qi = $('#tmQ'); qi.addEventListener('input', function () { T.q = qi.value; var p = qi.selectionStart; drawTeam(m); var n = $('#tmQ'); n.focus(); n.setSelectionRange(p, p); });
+    m.onclick = function (e) {
+      var h = e.target.closest('th[data-s]');
+      if (h) { if (T.sort === h.dataset.s) T.dir = -T.dir; else { T.sort = h.dataset.s; T.dir = (T.sort === 'name' || T.sort === 'department') ? 1 : -1; } return drawTeam(m); }
+      var r = e.target.closest('tr[data-emp]'); if (r) viewEmpDash(m, r.dataset.emp);
+    };
+  }
+  function viewEmpDash(m, emp) {
+    m.onclick = null; m.innerHTML = '<div class="loading">Loading…</div>';
+    call('empDashboard', { emp: emp }).then(function (d) {
+      m.innerHTML = '<button class="btn ghost sm" id="tmBack" type="button" style="margin-bottom:14px">← Team</button>' + dashHtml(d);
+      $('#tmBack').onclick = function () { viewTeam(m); };
+    }).catch(function (e) { fail(m, e); });
   }
 
   /* ---------- modal ---------- */
