@@ -203,7 +203,11 @@
 
   /* ---------- Tasks (Company Tasks app, same login) ---------- */
   function viewTasks(m) {
-    m.innerHTML = '<iframe class="tasks-frame" src="../tasks/index.html" title="Company Tasks"></iframe>';
+    m.innerHTML = SKEL;
+    call('handoff').then(function (d) {   // chhota 5-min signed token: Tasks isse bina ID/PIN ke login karta hai
+      try { sessionStorage.setItem('emp_handoff', d.handoff); } catch (e) {}
+      if (S.tab === 'tasks') m.innerHTML = '<iframe class="tasks-frame" src="../tasks/index.html" title="Company Tasks"></iframe>';
+    }).catch(function (e) { fail(m, e); });
   }
   window.addEventListener('message', function (e) {   // Tasks ke andar Sign out → My Space se bhi sign out
     if (e.origin !== location.origin || !e.data || e.data.source !== 'litpax-suite') return;
