@@ -12,8 +12,8 @@ window.SUITE = {
   REPLACE_URL: 'https://script.google.com/macros/s/AKfycbxsa9Rzifq7xVw0-26KBhIUds6DaOVyiIRHuzX8vCNqJigA_V6AruC17m7TGZp0EnKLsQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbw_mW1YOEZGYL3zA9__Prl0gMTUKVZRrVPSaeeJ3K87zfv_n3mWDcmp9Jfqz9j7D6HX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
   CASH_URL:  'https://script.google.com/macros/s/AKfycbz43ZTItVCc9RFFt8HFg0-Txk1PMXdXQNlpt99iqx9G73W7Bq3N3zN0AUgzjpxRIw-a/exec',   // Cash Ledger GAS
-  TASKS_URL: 'https://script.google.com/macros/s/AKfycbyw6tMoW-GmwNb-50dsr18bQx1ZKh9nXHF83IkKY__Zf0eFxrCmhgSHD_CXvywtj1MI/exec',   // Company Tasks GAS
-  EMP_URL:   'https://script.google.com/macros/s/AKfycbx5hJ8QUYnxG-sYHAN5Mw2qCQWxv27uq4Vj7VuiLC_ocLSKaID8550DLC9iuK98x3Q/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
+  TASKS_URL: 'https://script.google.com/macros/s/AKfycbzCGUNyUPu4d23Jl7rQ990bqof5CVvQvxPiec_0ZjUFma9qpMwF_wmOaFF5UPqgkxv8/exec',   // Company Tasks GAS
+  EMP_URL:   'https://script.google.com/macros/s/AKfycbxYloEZrBV0w6mmrt5liK0Xio4G-xSg1d7psYGlHvj0aaOfapJuFmx59VETRYkuE38Y/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
