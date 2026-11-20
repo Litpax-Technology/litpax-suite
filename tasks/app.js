@@ -1910,7 +1910,7 @@ document.addEventListener('click', e => {
   // Litpax Suite ke andar (Admin login): ID/PIN ke bina seedha Admin
   let suiteTok = '';
   try { if (window.parent !== window) suiteTok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
-  if (suiteTok && !(sess && sess.token && snap && snap.me && snap.me.role === 'Admin')) {
+  if (suiteTok) {   // Suite ke andar hamesha taza suiteLogin: purani saved session (purana sheet / purana PIN) se AUTH → Suite se logout ka loop na bane
     try {
       const r = await api('suiteLogin', { suiteToken: suiteTok });
       if (r && r.ok) { S.token = r.token; store.set('session', { token: r.token }); startApp(r); }
