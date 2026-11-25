@@ -557,7 +557,7 @@ var stationRows = state.stationRows.map(function (r, i) {
       '<div class="row" style="margin-top:8px;">' +
         '<div class="field"><label>Emp ID (same as Suite / My Space)</label><input id="staffEmp" placeholder="e.g. 96"></div>' +
         '<div class="field"><label>Role</label><select id="staffRole"><option value="">-- Role --</option>' +
-          (CONFIG.STAFF_ROLES || []).map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>' +
+          staffRoles().map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>' +
         '<div class="field"><label>Station (optional)</label><select id="staffStation"><option value="">any station</option>' +
           state.stationRows.map(function (r) { return '<option>' + esc(r.name) + '</option>'; }).join('') + '</select></div>' +
       '</div>' +
