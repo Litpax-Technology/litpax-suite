@@ -16,6 +16,9 @@ state = {
   loading: true, connected: true, pending: 0, statusMsg: ''
 };
 
+function pltRole() { try { return sessionStorage.getItem('plt_role') || ''; } catch (e) { return ''; } }
+function allowedTabs() { return (CONFIG.OFFICE_TABS || {})[pltRole()] || ['dashboard']; }
+function tabAllowed(t) { return allowedTabs().indexOf(t) !== -1; }
 function breakGapMs() { return (CONFIG.BREAK_GAP_MINUTES || 30) * 60000; }
 
 /* ---------------- Load ---------------- */
@@ -59,6 +62,7 @@ function refreshAll() {
 /* ---------------- Dashboard ---------------- */
 
 function setTab(t) {
+  if (!tabAllowed(t)) return;
   state.tab = t; state.expandedPack = null; state.expandedEmp = null;
   if (t === 'manual' && state.sup) state.sup.loaded = false;
   if (t === 'labels') state.labelPlansLoaded = false;
@@ -369,14 +373,25 @@ function addStaff() {
   if (!name || !id) { alert('Name and Badge ID are both required.'); return; }
   if (/\s/.test(id)) { alert('Badge ID cannot contain spaces. Check that Name and Badge ID are not swapped.'); return; }
   if (!hall) { alert('Pick or type the hall for this employee.'); return; }
-  call('addStaff', { id: id, name: name, hall: hall }).then(function () {
-    state.staff.push({ id: id, name: name, hall: hall });
+  var empId = (document.getElementById('staffEmp').value || '').trim();
+  var role = document.getElementById('staffRole').value;
+  var station = document.getElementById('staffStation').value;
+  if (!role) { alert('Pick a role for this employee.'); return; }
+  call('addStaff', { id: id, name: name, hall: hall, empId: empId, role: role, station: station }).then(function () {
+    state.staff.push({ id: id, name: name, hall: hall, empId: empId, role: role, station: station });
     if (state.halls.indexOf(hall) < 0) state.halls.push(hall);
     nameEl.value = ''; idEl.value = '';
     renderContentOnly();
   }, function (err) { alert(err.message); });
 }
 
+function setStaffAccess(i, field, value) {
+  var s = state.staff[i]; if (!s) return;
+  var prev = s[field]; s[field] = value;
+  call('setStaffAccess', { id: s.id, empId: s.empId || '', role: s.role || '', station: s.station || '' }).then(null, function (err) {
+    s[field] = prev; alert('Not saved: ' + err.message); renderContentOnly();
+  });
+}
 function removeStaffAt(i) {
   var s = state.staff[i];
   if (!s || !confirm('Remove ' + s.name + '? Past scan history is kept.')) return;
@@ -435,9 +450,14 @@ function moveStation(i, dir) {
 function renderSetup() {
   var staffRows = state.staff.map(function (s, i) {
     var hall = s.hall ? '<span class="hall-tag">' + esc(s.hall) + '</span>' : '<span class="hall-tag warn">no hall</span>';
+    var roleSel = '<select class="hall-inline" onchange="setStaffAccess(' + i + ',\'role\',this.value)"><option value="">no role</option>' +
+      (CONFIG.STAFF_ROLES || []).map(function (r) { return '<option' + (s.role === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') + '</select>';
+    var stSel = '<select class="hall-inline" onchange="setStaffAccess(' + i + ',\'station\',this.value)"><option value="">any station</option>' +
+      state.stationRows.map(function (r) { return '<option' + (s.station === r.name ? ' selected' : '') + '>' + esc(r.name) + '</option>'; }).join('') + '</select>';
     return '<div class="list-row"><div><div class="name">' + esc(s.name) + ' ' + hall + '</div>' +
-           '<div class="sub">' + esc(s.id) + '</div></div>' +
-           '<button class="icon-btn danger" onclick="removeStaffAt(' + i + ')">X</button></div>';
+           '<div class="sub">Badge ' + esc(s.id) + (s.empId ? ' · Emp ' + esc(s.empId) : ' · <span style="color:var(--danger)">no Emp ID</span>') + '</div></div>' +
+           '<div style="display:flex;gap:6px;align-items:center;">' + roleSel + stSel +
+           '<button class="icon-btn danger" onclick="removeStaffAt(' + i + ')">X</button></div></div>';
   }).join('');
 
 var stationRows = state.stationRows.map(function (r, i) {
@@ -498,9 +518,16 @@ var stationRows = state.stationRows.map(function (r, i) {
       '<div class="row" style="margin-top:12px;">' +
         '<div class="field"><label>Name</label><input id="staffName" placeholder="Full name"></div>' +
         '<div class="field"><label>Badge ID (goes on the barcode)</label><input id="staffId" placeholder="OP-101"></div>' +
-        '<div class="field"><label>Hall</label><select id="staffHall" onchange="onHallSelect(\'staffHall\',\'staffHallNewWrap\')">' + hallOptions('', true) + '</select></div>' +
+                '<div class="field"><label>Hall</label><select id="staffHall" onchange="onHallSelect(\'staffHall\',\'staffHallNewWrap\')">' + hallOptions('', true) + '</select></div>' +
       '</div>' +
-      '<div class="row" id="staffHallNewWrap" style="display:none;margin-top:8px;"><div class="field"><label>New hall name</label><input id="staffHallNew" placeholder="2 Wheeler"></div></div>' +
+      '<div class="row" style="margin-top:8px;">' +
+        '<div class="field"><label>Emp ID (same as Suite / My Space)</label><input id="staffEmp" placeholder="e.g. 96"></div>' +
+        '<div class="field"><label>Role</label><select id="staffRole"><option value="">-- Role --</option>' +
+          (CONFIG.STAFF_ROLES || []).map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="field"><label>Station (optional)</label><select id="staffStation"><option value="">any station</option>' +
+          state.stationRows.map(function (r) { return '<option>' + esc(r.name) + '</option>'; }).join('') + '</select></div>' +
+      '</div>' +
+      '<div class="row" id="staffHallNewWrap" style="display:none;margin-top:8px;">
       '<div style="margin-top:10px;"><button class="btn" onclick="addStaff()">Add employee</button></div>' +
       '<p style="font-size:12px;color:var(--text-muted);margin:10px 0 0;">The card below shows the name in bold and the badge ID underneath. If they look swapped, remove and re-add.</p>' +
     '</div>' +
@@ -1151,7 +1178,9 @@ function renderTabs() {
   var el = document.getElementById('tabs');
   if (!state.unlocked) { el.innerHTML = ''; return; }
  var tabs = [['dashboard', 'Batteries', '🔋'], ['employees', 'Employees', '👥'], ['labels', 'Battery Labels', '🏷️'],
-              ['manual', 'Manual Entry', '✍️'], ['setup', 'Setup', '⚙️'], ['cards', 'Print Cards', '🖨️']];
+                            ['manual', 'Manual Entry', '✍️'], ['setup', 'Setup', '⚙️'], ['cards', 'Print Cards', '🖨️']]
+    .filter(function (t) { return tabAllowed(t[0]); });
+  if (!tabAllowed(state.tab)) state.tab = allowedTabs()[0];
   el.innerHTML = tabs.map(function (t) {
     return '<button class="tab ' + (state.tab === t[0] ? 'active' : '') + '" onclick="setTab(\'' + t[0] + '\')">' +
            '<span class="tab-ic">' + t[2] + '</span><span>' + t[1] + '</span></button>';
