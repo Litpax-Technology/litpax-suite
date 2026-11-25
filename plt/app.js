@@ -184,6 +184,16 @@ function handleUniversalScan(raw) {
   if (/^STAFF:/i.test(rest)) badgeId = rest.replace(/^STAFF:/i, '').trim();
   var emp = matchStaff(badgeId);
   if (emp) {
+    if (emp.station && String(emp.station).toLowerCase() !== String(station).toLowerCase()) {
+      flash('flash-error'); beep(false);
+      alert(emp.name + ' is assigned to ' + emp.station + ', not ' + station + '.\n\nAsk the supervisor to change the station in Setup.');
+      return;
+    }
+    if (CONFIG.REQUIRE_ROLE && !emp.role) {
+      flash('flash-error'); beep(false);
+      alert(emp.name + ' has no role yet. Ask the admin to set a role in Setup > Employees.');
+      return;
+    }
     state.stationEmp[station] = emp;
     flash('flash-context'); beep(true); render();
     return;
@@ -255,6 +265,7 @@ function commitScan(code, station, emp) {
   call('scan', {
     packId: code, station: entry.station,
     operatorId: entry.operatorId, operatorName: entry.operatorName,
+    empId: emp.empId || '',
     hall: state.hall
   }).then(function () {
     entry.synced = true; render();
