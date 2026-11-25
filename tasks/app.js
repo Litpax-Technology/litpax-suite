@@ -78,18 +78,22 @@ const IC = {
   screen: '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
   lock: '<svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
   target: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+  checklist: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l1.5 1.5L12 7M8 14l1.5 1.5L12 13M14 9h3M14 15h3"/></svg>',
+  clsetup: '<svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h10M18 18h2"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg>',
   refresh: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>'
 };
 
 const NAV = [
   { id: 'home', label: 'Home', roles: MGR },
   { id: 'my', label: 'My Tasks', roles: ALL },
+  { id: 'checklist', label: 'Checklists', roles: ALL },
   { id: 'board', label: 'Board', roles: ALL, hide: true },     // opened from the List / Board toggle
   { id: 'tasks', label: 'All Tasks', roles: MGR },
   { id: 'approvals', label: 'Approvals', roles: ALL },
   { id: 'meeting', label: 'Weekly Review', memberLabel: 'My Score', roles: ALL },
   { sec: 'Manage', roles: MGR },
   { id: 'templates', label: 'Recurring Tasks', roles: MGR },
+  { id: 'clsetup', label: 'Checklist Setup', roles: MGR },
   { id: 'projects', label: 'Projects', roles: MGR },
   { id: 'users', label: 'Employees', roles: ['Admin'] },
   { id: 'settings', label: 'Settings', roles: ['Admin'] }
@@ -126,7 +130,7 @@ function dueText(t) {
 /* =================================================================
    API (JSONP)
    ================================================================= */
-function api(action, params = {}) {
+function api(action, params = {}, url) {
   return new Promise((resolve, reject) => {
     const cb = 'jp_' + newReqId();
     const s = document.createElement('script');
@@ -147,14 +151,14 @@ function api(action, params = {}) {
     q.set('action', action); q.set('callback', cb);
     if (S.token) q.set('token', S.token);
     Object.keys(params).forEach(k => { if (params[k] !== undefined && params[k] !== null && params[k] !== '') q.set(k, params[k]); });
-    s.src = CONFIG.API_URL + '?' + q.toString();
+    s.src = (url || CONFIG.API_URL) + '?' + q.toString();
     s.onerror = () => { if (done) return; finish(); reject(new Error('Network error. Please try again.')); };
     document.body.appendChild(s);
   });
 }
 /** call() = api() that throws on ok:false */
-async function call(action, params) {
-  const r = await api(action, params);
+async function call(action, params, url) {
+  const r = await api(action, params, url);
   if (!r.ok) throw new Error(r.message || 'Something went wrong.');
   return r;
 }
@@ -499,7 +503,7 @@ function buildNav() {
 
 const VIEWS = {
   home: viewHome, my: viewMy, board: viewBoard, tasks: viewTasks, approvals: viewApprovals, meeting: viewMeeting,
-  templates: viewTemplates, projects: viewProjects, users: viewUsers, settings: viewSettings
+  templates: viewTemplates, checklist: viewChecklist, clsetup: viewClSetup, projects: viewProjects, users: viewUsers, settings: viewSettings
 };
 
 function route() {
@@ -1522,6 +1526,289 @@ function templateForm(x) {
 }
 
 /* =================================================================
+   VIEW: Checklists (role-wise daily / weekly / monthly checkpoints)
+   Employee apni role ki checklist bharta hai; Admin/Manager report aur setup dekhte hain.
+   ================================================================= */
+/** Checklist calls: alag Checklists GAS (CHECKLIST_URL), warna Tasks GAS. */
+const clc = (action, params) => call(action, params, CONFIG.CHECKLIST_URL || undefined);
+const CL_WHEN = ['Daily', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', '1st'];
+
+async function viewChecklist() {
+  const cs = S.cl || (S.cl = { date: todayStr(), tab: 'today', month: todayStr().slice(0, 7) });
+  if (!isMgr()) cs.tab = 'today';
+  setTop('Checklists', '');
+  $('#page').innerHTML = (isMgr() ? `<div class="tabs">
+      <button class="tab ${cs.tab === 'today' ? 'active' : ''}" data-cltab="today">My checklist</button>
+      <button class="tab ${cs.tab === 'report' ? 'active' : ''}" data-cltab="report">Report</button></div>` : '') + '<div id="clBody"></div>';
+  $$('[data-cltab]').forEach(b => b.onclick = () => { cs.tab = b.dataset.cltab; viewChecklist(); });
+  if (cs.tab === 'report') clReportView($('#clBody')); else clTodayView($('#clBody'));
+}
+
+async function clTodayView(box) {
+  const cs = S.cl;
+  box.innerHTML = '<div class="skeleton"></div>'.repeat(3);
+  let r;
+  try { r = await clc('clMy', { date: cs.date }); }
+  catch (e) { box.innerHTML = `<div class="card load-err"><p class="muted">${esc(e.message)}</p><button class="btn btn-primary" id="clRetry">${IC.refresh} Try again</button></div>`; $('#clRetry').onclick = viewChecklist; return; }
+  if (S.view !== 'checklist') return;
+  const t = r.today, dates = [{ v: t, l: 'Today' }, { v: addDays(t, -1), l: 'Yesterday' }, { v: addDays(t, -2), l: niceDate(addDays(t, -2)) }];
+  const pills = `<div class="cl-dates">${dates.map(d => `<button class="pill ${d.v === r.date ? 'on' : ''}" data-cldate="${d.v}">${esc(d.l)}</button>`).join('')}</div>`;
+  box.innerHTML = pills + (r.lists.length ? r.lists.map(clListHtml).join('') :
+    `<div class="card empty"><div class="empty-ico">☑</div><p><b>No checklist assigned to you yet.</b></p>
+     <p class="muted">Your Admin / Manager assigns checklists by role. Once assigned, your daily, weekly and monthly points appear here.</p></div>`);
+  $$('[data-cldate]').forEach(b => b.onclick = () => { cs.date = b.dataset.cldate; clTodayView(box); });
+  r.lists.forEach(l => clBindList(box, l, r.date));
+}
+
+function clListHtml(l) {
+  let sec = null, h = '';
+  l.items.forEach(i => {
+    if (i.section !== sec) { sec = i.section; h += `<div class="cl-sec">${esc(sec)}</div>`; }
+    const when = i.when && i.when !== 'Daily' ? `<span class="cl-when">${esc(i.when === '1st' ? '1st of month' : i.when)}</span>` : '';
+    const ctl = i.type === 'number'
+      ? `<div class="cl-btns"><input class="input cl-num" type="number" inputmode="decimal" step="any" data-num value="${esc(i.value)}" ${l.submitted ? 'disabled' : ''} placeholder="0" /><span class="cl-unit">${esc(i.unit)}</span></div>`
+      : `<div class="cl-btns">
+          <button class="cl-b y ${i.value === 'Y' ? 'on' : ''}" data-v="Y" ${l.submitted ? 'disabled' : ''} aria-label="OK">✓</button>
+          <button class="cl-b n ${i.value === 'N' ? 'on' : ''}" data-v="N" ${l.submitted ? 'disabled' : ''} aria-label="Not OK">✗</button>
+          ${i.na ? `<button class="cl-b na ${i.value === 'NA' ? 'on' : ''}" data-v="NA" ${l.submitted ? 'disabled' : ''}>N/A</button>` : ''}</div>`;
+    h += `<div class="cl-item" data-item="${esc(i.id)}"><div class="cl-txt">${i.star ? '<span class="cl-star" title="Critical point">★</span>' : ''}${esc(i.text)}${when}</div>${ctl}</div>`;
+  });
+  return `<section class="card cl" data-tpl="${esc(l.id)}">
+    <div class="card-head"><div><h3>${esc(l.name)}</h3><div class="faint small">${esc(l.role)}</div></div>
+      <div class="row"><span class="badge cl-prog"></span>${l.submitted ? '<span class="badge st-done">Submitted</span>' : ''}</div></div>
+    <div class="cl-body">${h || '<div class="empty">No points for this day.</div>'}</div>
+    <div class="cl-foot">
+      ${l.needMachine ? `<div class="field"><label>Machine ID / Model <span class="req">*</span></label><input class="input" data-machine maxlength="60" value="${esc(l.machine)}" ${l.submitted ? 'disabled' : ''} placeholder="e.g. SW-02" /></div>` : ''}
+      <div class="field"><label>Remarks <span class="faint small" id="clNeed"></span></label><textarea class="textarea" data-remark maxlength="500" ${l.submitted ? 'disabled' : ''} placeholder="Issue and action taken (required if any point is ✗)">${esc(l.remark)}</textarea></div>
+      ${l.submitted ? '' : `<button class="btn btn-primary" data-submit>Submit today's checklist</button>`}
+    </div></section>`;
+}
+
+function clBindList(box, l, date) {
+  const el = $(`.cl[data-tpl="${l.id}"]`, box); if (!el) return;
+  const byId = {}; l.items.forEach(i => byId[i.id] = i);
+  const prog = () => {
+    const done = l.items.filter(i => i.value !== '').length, bad = l.items.filter(i => i.value === 'N').length;
+    const b = $('.cl-prog', el);
+    b.textContent = done + ' / ' + l.items.length + (bad ? ' · ' + bad + ' not OK' : '');
+    b.className = 'badge cl-prog ' + (done === l.items.length ? (bad ? 'st-bad' : 'st-done') : 'st-open');
+    $('#clNeed', el).textContent = bad ? '· required' : '';
+  };
+  prog();
+  const save = async (item, value, row) => {
+    const prev = item.value; item.value = value;
+    try { await clc('clSave', { tpl: l.id, item: item.id, value, date }); }
+    catch (e) { item.value = prev; toast(e.message, false); $$('.cl-b', row).forEach(b => b.classList.toggle('on', b.dataset.v === prev)); const n = $('[data-num]', row); if (n) n.value = prev; }
+    prog();
+  };
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-v]'); if (!b || b.disabled) return;
+    const row = b.closest('.cl-item'), item = byId[row.dataset.item], v = item.value === b.dataset.v ? '' : b.dataset.v;
+    $$('.cl-b', row).forEach(x => x.classList.toggle('on', x.dataset.v === v));
+    save(item, v, row);
+  });
+  el.addEventListener('change', e => {
+    const n = e.target.closest('[data-num]'); if (!n) return;
+    const row = n.closest('.cl-item'), item = byId[row.dataset.item];
+    save(item, n.value.trim(), row);
+  });
+  const sb = $('[data-submit]', el);
+  if (sb) sb.onclick = e => busy(e.currentTarget, async () => {
+    try {
+      await clc('clSubmit', { tpl: l.id, date, machine: $('[data-machine]', el) ? $('[data-machine]', el).value.trim() : '', remark: $('[data-remark]', el).value.trim() });
+      toast('Checklist submitted'); clTodayView(box);
+    } catch (ex) { toast(ex.message, false); }
+  });
+}
+
+/* ---------------- Report (Admin / Manager) ---------------- */
+async function clReportView(box) {
+  const cs = S.cl;
+  box.innerHTML = `<div class="filters"><input class="input" type="month" id="clMonth" value="${esc(cs.month)}" style="width:auto" /></div><div id="clRep"><div class="skeleton"></div></div>`;
+  $('#clMonth').onchange = e => { cs.month = e.target.value || cs.month; clReportView(box); };
+  let r;
+  try { r = await clc('clReport', { month: cs.month }); }
+  catch (e) { $('#clRep').innerHTML = `<div class="card load-err"><p class="muted">${esc(e.message)}</p></div>`; return; }
+  if (S.view !== 'checklist') return;
+  S.clRep = r;
+  const wd = workingDays(), y = Number(r.month.slice(0, 4)), m = Number(r.month.slice(5)) - 1;
+  const kind = (c, d) => {
+    if (!c) return 'fut';
+    const off = !wd.includes(new Date(y, m, d).getDay());
+    if (c.s) return c.n ? 'warn' : 'ok';
+    if (off && !c.a) return 'off';
+    return c.a ? 'part' : 'miss';
+  };
+  const head = Array.from({ length: r.dim }, (_, i) => `<th class="num">${i + 1}</th>`).join('');
+  const rows = r.rows.map((x, ri) => {
+    let okDays = 0, due = 0;
+    const tds = Array.from({ length: r.dim }, (_, i) => {
+      const d = i + 1, c = x.cells[d], k = kind(c, d);
+      if (k !== 'fut' && k !== 'off') { due++; if (k === 'ok' || k === 'warn') okDays++; }
+      return `<td class="num"><span class="cl-cell ${k}" data-ri="${ri}" data-d="${d}" title="${c ? esc(c.a + '/' + c.e + ' answered' + (c.n ? ', ' + c.n + ' not OK' : '')) : ''}"></span></td>`;
+    }).join('');
+    return `<tr><td><b>${esc(userName(x.userId))}</b><div class="faint small">${esc(x.name)}${x.machine ? ' · ' + esc(x.machine) : ''}</div></td>${tds}<td class="num"><b>${okDays}</b> / ${due}</td></tr>`;
+  }).join('');
+  $('#clRep').innerHTML = `<div class="card fade-in"><div class="tbl-wrap"><table class="tbl cl-rep"><thead><tr><th>Employee · Checklist</th>${head}<th class="num">Submitted</th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${r.dim + 2}" class="empty">No assignments yet. Add them in Checklist Setup.</td></tr>`}</tbody></table></div></div>
+    <p class="legend"><span class="cl-cell ok"></span> Submitted &nbsp; <span class="cl-cell warn"></span> Submitted with ✗ points &nbsp; <span class="cl-cell part"></span> Started, not submitted &nbsp; <span class="cl-cell miss"></span> Missed &nbsp; <span class="cl-cell off"></span> Off day. Click a square for details.</p>`;
+  $$('#clRep .cl-cell[data-ri]').forEach(c => c.onclick = () => clDayModal(Number(c.dataset.ri), Number(c.dataset.d)));
+}
+
+function clDayModal(ri, d) {
+  const r = S.clRep, x = r.rows[ri], c = x.cells[d]; if (!c) return;
+  const date = r.month + '-' + String(d).padStart(2, '0');
+  const m = modal({
+    title: userName(x.userId) + ' · ' + niceDate(date, true),
+    body: `<p><b>${esc(x.name)}</b></p>
+      <p>${c.a} of ${c.e} points answered${c.n ? ` · <span class="txt-bad">${c.n} not OK</span>` : ''} · ${c.s ? 'Submitted' : 'Not submitted'}</p>
+      ${c.m ? `<p>Machine: <b>${esc(c.m)}</b></p>` : ''}
+      <p class="muted">${c.r ? 'Remark: ' + esc(c.r) : 'No remark.'}</p>`,
+    foot: `<button class="btn btn-ghost" data-close>Close</button>${c.s ? '<button class="btn btn-danger" data-reopen>Reopen for editing</button>' : ''}`
+  });
+  m.q('[data-close]').onclick = m.close;
+  const rb = m.q('[data-reopen]');
+  if (rb) rb.onclick = e => busy(e.currentTarget, async () => {
+    try { await clc('clReopen', { tpl: x.tpl, userId: x.userId, date }); toast('Reopened'); m.close(); clReportView($('#clBody')); }
+    catch (ex) { toast(ex.message, false); }
+  });
+}
+
+/* ---------------- Setup (Admin / Manager) ---------------- */
+async function viewClSetup() {
+  setTop('Checklist Setup', `<button class="btn btn-primary" id="clNewTpl">${IC.plus}<span class="lbl">New Checklist</span></button>`);
+  $('#clNewTpl').onclick = () => clTplForm();
+  $('#page').innerHTML = '<div class="skeleton"></div>'.repeat(3);
+  let r;
+  try { r = await clc('clSetup'); }
+  catch (e) { $('#page').innerHTML = `<div class="card load-err"><p class="muted">${esc(e.message)}</p><button class="btn btn-primary" id="clRetry">${IC.refresh} Try again</button></div>`; $('#clRetry').onclick = viewClSetup; return; }
+  if (S.view !== 'clsetup') return;
+  S.clSetup = r;
+  const cnt = {}; r.items.forEach(i => { if (i.Active !== '0') cnt[i.TemplateID] = (cnt[i.TemplateID] || 0) + 1; });
+  const roles = [...new Set(r.templates.filter(t => t.Active !== '0').map(t => t.Role))];
+  $('#page').innerHTML = `
+    ${!r.templates.length && isAdmin() ? `<div class="card card-pad fade-in" style="margin-bottom:16px"><b>Start with the 3 ready checklists</b>
+      <p class="muted">Sales Team, IR Machine and Spot Welding Machine (reviewed version). You can edit every point afterwards.</p>
+      <button class="btn btn-primary" id="clSeed">Load starter checklists</button></div>` : ''}
+    <div class="card fade-in"><div class="card-head"><h3>Checklists</h3></div><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Checklist</th><th>For role</th><th>Points</th><th>Machine ID</th><th>Status</th><th></th></tr></thead><tbody>
+      ${r.templates.map(t => `<tr><td><b>${esc(t.Name)}</b><div class="faint small">${esc(t.Dept)}</div></td><td>${esc(t.Role)}</td><td>${cnt[t.TemplateID] || 0}</td>
+        <td>${t.NeedMachine === '1' ? 'Asked' : '—'}</td><td>${t.Active === '0' ? '<span class="badge">Off</span>' : '<span class="badge st-done">Active</span>'}</td>
+        <td class="right"><button class="btn btn-ghost btn-sm" data-pts="${esc(t.TemplateID)}">Points</button> <button class="btn btn-ghost btn-sm" data-etpl="${esc(t.TemplateID)}">Edit</button></td></tr>`).join('')
+        || '<tr><td colspan="6" class="empty">No checklists yet.</td></tr>'}</tbody></table></div></div>
+    <div class="card fade-in" style="margin-top:16px"><div class="card-head"><h3>Who gets which checklist</h3>
+      <button class="btn btn-primary btn-sm" id="clAddAs" ${roles.length ? '' : 'disabled'}>${IC.plus} Assign</button></div><div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Employee</th><th>Role</th><th>Machine / Station</th><th></th></tr></thead><tbody>
+      ${r.assigns.map(a => `<tr><td>${esc(userName(a.UserID))}</td><td>${esc(a.Role)}</td><td>${esc(a.Machine || '—')}</td>
+        <td class="right"><button class="btn btn-danger btn-sm" data-unas="${esc(a.AssignID)}">Remove</button></td></tr>`).join('')
+        || '<tr><td colspan="4" class="empty">Nobody assigned yet. An employee sees a checklist when they hold its role.</td></tr>'}</tbody></table></div></div>
+    <p class="legend">An employee sees a checklist when they hold its role. Daily points show every day, Mon-Sat points only on that weekday, "1st" points on the 1st of the month. ★ marks a critical point.</p>`;
+  if ($('#clSeed')) $('#clSeed').onclick = e => busy(e.currentTarget, async () => {
+    try { const x = await clc('clSeed'); toast('Loaded: ' + (x.made.join(', ') || 'nothing new')); viewClSetup(); } catch (ex) { toast(ex.message, false); }
+  });
+  $$('[data-etpl]').forEach(b => b.onclick = () => clTplForm(r.templates.find(t => t.TemplateID === b.dataset.etpl)));
+  $$('[data-pts]').forEach(b => b.onclick = () => clPointsModal(b.dataset.pts));
+  if ($('#clAddAs')) $('#clAddAs').onclick = () => clAssignForm(roles);
+  $$('[data-unas]').forEach(b => b.onclick = async () => {
+    if (!(await confirmBox('Remove assignment', 'This employee will stop seeing this checklist. Past records are kept.', 'Remove'))) return;
+    busy(b, async () => { try { await clc('clUnassign', { id: b.dataset.unas }); toast('Removed'); viewClSetup(); } catch (e) { toast(e.message, false); } });
+  });
+}
+
+function clTplForm(t) {
+  const d = t || { Active: '1', NeedMachine: '0' };
+  const m = modal({
+    title: t ? 'Edit Checklist' : 'New Checklist',
+    body: `<form id="ctForm" novalidate><div class="form-grid">
+      ${field('Name', `<input class="input" name="Name" maxlength="100" value="${esc(d.Name)}" />`, { req: true, full: true })}
+      ${field('For role', `<input class="input" name="Role" maxlength="60" value="${esc(d.Role)}" placeholder="e.g. Spot Welding Operator" />`, { req: true, hint: 'Employees holding this role see the checklist.' })}
+      ${field('Department', `<input class="input" name="Dept" maxlength="60" value="${esc(d.Dept)}" />`)}
+      ${field('Ask Machine ID', `<select class="select" name="NeedMachine">${opts([{ v: '1', l: 'Yes' }, { v: '0', l: 'No' }], d.NeedMachine)}</select>`)}
+      ${field('Status', `<select class="select" name="Active">${opts([{ v: '1', l: 'Active' }, { v: '0', l: 'Off' }], d.Active)}</select>`)}
+    </div></form>`,
+    foot: '<button class="btn btn-ghost" data-cancel>Cancel</button><button class="btn btn-primary" data-save>Save</button>'
+  });
+  m.q('[data-cancel]').onclick = m.close;
+  m.q('[data-save]').onclick = e => busy(e.currentTarget, async () => {
+    const rec = formData(m.q('#ctForm')), errs = {};
+    if (rec.Name.length < 3) errs.Name = 'Enter a name.';
+    if (rec.Role.length < 2) errs.Role = 'Enter a role.';
+    if (!showErrors(m.q('#ctForm'), errs)) return;
+    if (t) rec.TemplateID = t.TemplateID;
+    try { await clc('clSaveTemplate', { record: JSON.stringify(rec) }); toast('Saved'); m.close(); viewClSetup(); } catch (ex) { toast(ex.message, false); }
+  });
+}
+
+function clAssignForm(roles) {
+  const m = modal({
+    title: 'Assign checklist',
+    body: `<form id="caForm" novalidate><div class="form-grid">
+      ${field('Employee', `<select class="select" name="userId">${opts(assignable().map(u => ({ v: u.UserID, l: u.Name })), '', 'Select employee')}</select>`, { req: true, full: true })}
+      ${field('Role', `<select class="select" name="role">${opts(roles, '', 'Select role')}</select>`, { req: true })}
+      ${field('Machine / Station', `<input class="input" name="machine" maxlength="60" placeholder="e.g. SW-02" />`, { hint: 'Pre-fills the Machine ID.' })}
+    </div></form>`,
+    foot: '<button class="btn btn-ghost" data-cancel>Cancel</button><button class="btn btn-primary" data-save>Assign</button>'
+  });
+  m.q('[data-cancel]').onclick = m.close;
+  m.q('[data-save]').onclick = e => busy(e.currentTarget, async () => {
+    const rec = formData(m.q('#caForm')), errs = {};
+    if (!rec.userId) errs.userId = 'Select an employee.';
+    if (!rec.role) errs.role = 'Select a role.';
+    if (!showErrors(m.q('#caForm'), errs)) return;
+    try { await clc('clAssign', rec); toast('Assigned'); m.close(); viewClSetup(); } catch (ex) { toast(ex.message, false); }
+  });
+}
+
+function clPointsModal(tplId) {
+  const r = S.clSetup, t = r.templates.find(x => x.TemplateID === tplId);
+  const items = r.items.filter(i => i.TemplateID === tplId);
+  let sec = null, h = '';
+  items.forEach(i => {
+    if (i.Section !== sec) { sec = i.Section; h += `<tr><td colspan="4" class="cl-sec">${esc(sec)}</td></tr>`; }
+    h += `<tr class="${i.Active === '0' ? 'cl-off' : ''}"><td>${i.Star === '1' ? '★ ' : ''}${esc(i.Text)}</td><td class="small">${esc(i.When)}</td>
+      <td class="small">${i.Type === 'number' ? 'Number' + (i.Unit ? ' (' + esc(i.Unit) + ')' : '') : 'Tick'}${i.NA === '1' ? ' · N/A ok' : ''}</td>
+      <td class="right"><button class="btn btn-ghost btn-sm" data-ei="${esc(i.ItemID)}">Edit</button></td></tr>`;
+  });
+  const m = modal({
+    title: t.Name + ' · points', wide: true,
+    body: `<div class="tbl-wrap" style="max-height:60vh;overflow:auto"><table class="tbl"><thead><tr><th>Point</th><th>When</th><th>Type</th><th></th></tr></thead><tbody>${h || '<tr><td colspan="4" class="empty">No points.</td></tr>'}</tbody></table></div>`,
+    foot: '<button class="btn btn-ghost" data-close>Close</button><button class="btn btn-primary" data-add>Add point</button>'
+  });
+  m.q('[data-close]').onclick = m.close;
+  const again = async () => { m.close(); S.clSetup = await clc('clSetup'); clPointsModal(tplId); };
+  m.q('[data-add]').onclick = () => { m.close(); clItemForm(tplId, null, again); };
+  m.qa('[data-ei]').forEach(b => b.onclick = () => { m.close(); clItemForm(tplId, items.find(i => i.ItemID === b.dataset.ei), again); });
+}
+
+function clItemForm(tplId, it, done) {
+  const d = it || { When: 'Daily', Type: 'tick', Star: '0', NA: '0', Active: '1' };
+  const yn = v => [{ v: '1', l: 'Yes' }, { v: '0', l: 'No' }];
+  const m = modal({
+    title: it ? 'Edit point' : 'Add point',
+    body: `<form id="ciForm" novalidate><div class="form-grid">
+      ${field('Point', `<textarea class="textarea" name="Text" maxlength="300">${esc(d.Text)}</textarea>`, { req: true, full: true })}
+      ${field('Section', `<input class="input" name="Section" maxlength="80" value="${esc(d.Section)}" placeholder="e.g. A. Shift start" />`, { hint: 'Same text groups points together.' })}
+      ${field('When', `<select class="select" name="When">${opts(CL_WHEN.map(w => ({ v: w, l: w === '1st' ? '1st of the month' : w })), d.When)}</select>`)}
+      ${field('Answer type', `<select class="select" name="Type">${opts([{ v: 'tick', l: 'Tick (✓ / ✗)' }, { v: 'number', l: 'Number (reading)' }], d.Type)}</select>`)}
+      ${field('Unit', `<input class="input" name="Unit" maxlength="12" value="${esc(d.Unit)}" placeholder="mOhm, N, nos" />`)}
+      ${field('Critical (★)', `<select class="select" name="Star">${opts(yn(), d.Star)}</select>`)}
+      ${field('Allow N/A', `<select class="select" name="NA">${opts(yn(), d.NA)}</select>`)}
+      ${field('Order', `<input class="input" type="number" name="Ord" value="${esc(d.Ord)}" />`, { hint: 'Blank = add at the end.' })}
+      ${field('Status', `<select class="select" name="Active">${opts([{ v: '1', l: 'Active' }, { v: '0', l: 'Off' }], d.Active)}</select>`)}
+    </div></form>`,
+    foot: '<button class="btn btn-ghost" data-cancel>Cancel</button><button class="btn btn-primary" data-save>Save</button>'
+  });
+  m.q('[data-cancel]').onclick = () => { m.close(); done(); };
+  m.q('[data-save]').onclick = e => busy(e.currentTarget, async () => {
+    const rec = formData(m.q('#ciForm')), errs = {};
+    if (rec.Text.length < 3) errs.Text = 'Enter the point.';
+    if (!showErrors(m.q('#ciForm'), errs)) return;
+    rec.TemplateID = tplId; if (it) rec.ItemID = it.ItemID;
+    try { await clc('clSaveItem', { record: JSON.stringify(rec) }); toast('Saved'); m.close(); done(); } catch (ex) { toast(ex.message, false); }
+  });
+}
+
+/* =================================================================
    VIEW: Projects
    ================================================================= */
 async function viewProjects() {
@@ -1950,4 +2237,3 @@ document.addEventListener('click', e => {
     $('#loginErr').textContent = e.message;
   }
 })();
-
