@@ -11,10 +11,12 @@ state = {
   labels: [], labelModel: '', labelHall: '',        // serials currently laid out for printing
   labelPick: '', labelCellOpt: 'Main', labelBmsOpt: 'Main', modelsError: '',
   labelPlans: [], labelPlan: '', labelPlansLoaded: false, labelPlansMsg: '',   // Litpax Suite: ERP plan → serial
-  models: [], halls: [], stationRows: [],
+  models: [], halls: [], stationRows: [], roles: [],
   empFrom: '', empTo: '',            // custom date range on the Employees tab
   loading: true, connected: true, pending: 0, statusMsg: ''
 };
+
+function staffRoles() { return state.roles && state.roles.length ? state.roles : (CONFIG.STAFF_ROLES || []); }
 
 function pltRole() { try { return sessionStorage.getItem('plt_role') || ''; } catch (e) { return ''; } }
 function allowedTabs() { return (CONFIG.OFFICE_TABS || {})[pltRole()] || ['dashboard']; }
@@ -29,6 +31,7 @@ function loadAll() {
     state.models = res.models || [];
     state.modelsError = res.modelsError || '';
     state.staff = res.staff || [];
+    state.roles = res.roles || [];
     state.stations = res.stations || [];
     state.stationRows = res.stationRows || [];
     state.halls = res.halls || [];
@@ -50,6 +53,7 @@ function refreshAll() {
     state.models = res.models || [];
     state.modelsError = res.modelsError || '';
     state.staff = res.staff || [];
+    state.roles = res.roles || [];
     state.stations = res.stations || [];
     state.stationRows = res.stationRows || [];
     state.halls = res.halls || [];
@@ -385,6 +389,36 @@ function addStaff() {
   }, function (err) { alert(err.message); });
 }
 
+function addRoleName() {
+  var el = document.getElementById('roleNew'), name = (el.value || '').trim();
+  if (!name) { alert('Role ka naam likho.'); return; }
+  call('addRole', { name: name }).then(function (res) {
+    state.roles = res.roles || state.roles; el.value = ''; renderContentOnly();
+  }, function (err) { alert(err.message); });
+}
+function renameRoleAt(i) {
+  var old = staffRoles()[i]; if (!old) return;
+  var name = prompt('"' + old + '" ka naya naam:', old);
+  if (name === null) return;
+  name = name.trim();
+  if (!name || name === old) return;
+  call('renameRole', { old: old, name: name }).then(function (res) {
+    state.roles = res.roles || state.roles;
+    state.staff.forEach(function (s) { if (s.role === old) s.role = name; });
+    renderContentOnly();
+    if (res.moved) alert(res.moved + ' employee ka role "' + name + '" ho gaya.');
+  }, function (err) { alert(err.message); });
+}
+function removeRoleAt(i) {
+  var r = staffRoles()[i]; if (!r) return;
+  var n = state.staff.filter(function (s) { return s.role === r; }).length;
+  if (n) { alert('"' + r + '" par ' + n + ' employee hain. Pehle unka role badlo, phir hatao.'); return; }
+  if (!confirm('Role "' + r + '" hata do?')) return;
+  call('delRole', { name: r }).then(function (res) {
+    state.roles = res.roles || []; renderContentOnly();
+  }, function (err) { alert(err.message); });
+}
+
 function setStaffAccess(i, field, value) {
   var s = state.staff[i]; if (!s) return;
   var prev = s[field]; s[field] = value;
@@ -451,7 +485,7 @@ function renderSetup() {
   var staffRows = state.staff.map(function (s, i) {
     var hall = s.hall ? '<span class="hall-tag">' + esc(s.hall) + '</span>' : '<span class="hall-tag warn">no hall</span>';
     var roleSel = '<select class="hall-inline" onchange="setStaffAccess(' + i + ',\'role\',this.value)"><option value="">no role</option>' +
-      (CONFIG.STAFF_ROLES || []).map(function (r) { return '<option' + (s.role === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') + '</select>';
+      staffRoles().map(function (r) { return '<option' + (s.role === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') + '</select>';
     var stSel = '<select class="hall-inline" onchange="setStaffAccess(' + i + ',\'station\',this.value)"><option value="">any station</option>' +
       state.stationRows.map(function (r) { return '<option' + (s.station === r.name ? ' selected' : '') + '>' + esc(r.name) + '</option>'; }).join('') + '</select>';
     return '<div class="list-row"><div><div class="name">' + esc(s.name) + ' ' + hall + '</div>' +
@@ -512,7 +546,7 @@ var stationRows = state.stationRows.map(function (r, i) {
     esc(CONFIG.SETTINGS && CONFIG.SETTINGS.SerialPrefix || 'LP-') + '&lt;serial code&gt;-00001.</p>' +
     '</div>';
 
-  return settingsPanel + modelsPanel +
+   return settingsPanel + modelsPanel + rolesPanel +
     '<div class="panel"><div class="panel-title">Employees</div>' +
       (staffRows || '<div class="empty">No employees added yet.</div>') +
       '<div class="row" style="margin-top:12px;">' +
