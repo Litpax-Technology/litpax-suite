@@ -652,6 +652,7 @@
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
     if (has('Admin')) items.push({ id: 'settings', sec: 'Admin', label: 'Settings', ic: '⚑' });
+    if (has('Admin')) items.push({ id: 'org', sec: 'Admin', label: 'Org Setup', ic: '☷' });
     if (has('Approver') && !isAdmin) items.push({ id: 'approvals', sec: 'Automation', label: 'Approvals', ic: '✓', badge: true });
     if (has('Production') || has('Viewer')) items.push({ id: 'overview', sec: 'Automation', label: 'Overview', ic: '◎' });   // sabse neeche
     try { sessionStorage.setItem('suite_can', items.map(function (x) { return x.id; }).join(',')); } catch (e) {}   // apps ko pata ho kaunse link khulenge
@@ -698,7 +699,7 @@
     bot: '<rect x="4.5" y="6" width="15" height="15" rx="5"/><path d="M10 3.5h4V6h-4z"/><circle cx="9.6" cy="12.3" r="1.4"/><circle cx="14.4" cy="12.3" r="1.4"/><path d="M10.3 16.4c1 .7 2.4.7 3.4 0"/>'
   };
   var APPICO = { dashboard: 'dash', accounts: 'users', overview: 'dash', approvals: 'check', 'm-erp': 'doc', 'm-ims': 'box', 'm-plt2W': 'bolt', 'm-pltAdmin': 'factory', 'm-soms': 'store',
-                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-me': 'users', 'm-service': 'wrench', 'm-agent': 'bot', settings: 'gear' };
+                                  'm-cash': 'rupee', 'm-tasks': 'tasks', 'm-me': 'users', 'm-service': 'wrench', 'm-agent': 'bot', settings: 'gear', org: 'users' };
   var PAGEICO = [[/switch|staff/i, 'users'], [/replacement/i, 'battery'], [/lead pipe/i, 'target'], [/lead dash/i, 'trend'], [/my dash|report|material vs/i, 'chart'], [/dash/i, 'dash'], [/pending|follow/i, 'clock'], [/complet|approv/i, 'check'], [/crm/i, 'target'], [/wip|production/i, 'factory'],
     [/battery/i, 'battery'], [/challan|order|indent/i, 'doc'], [/dispatch|consign/i, 'truck'], [/bom|repair/i, 'wrench'], [/^users?$/i, 'shield'],
     [/customer|vendor|supplier/i, 'users'], [/product/i, 'bolt'], [/account|freight|cash/i, 'rupee'], [/inward|receiv|from ims/i, 'in'], [/outward/i, 'out'],
@@ -1562,6 +1563,137 @@
     };
     $('#userForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+
+  /* =============================================================
+   * ORG SETUP (Admin) — Departments → Job Roles → Employee role (EMP GAS, master sheet ke 3 tabs)
+   * Yahan jo role set hota hai wahi Tasks (checklists), PLT aur My Space use karte hain.
+   * ============================================================= */
+  var ORG = { d: null, q: '', f: 'all', sel: {} };
+  /** EMP GAS (POST JSON). api() "VALIDATION" jaisa code dikhata hai, isliye yahan message seedha nikalte hain. */
+  function orgCall(action, data) {
+    var url = SUITE.EMP_URL;
+    if (!url || /^PASTE_/.test(url)) return Promise.reject(new Error('EMP_URL is not set in config.js'));
+    var body = Object.assign({ action: action, token: S.token }, data || {});
+    return fetch(url, { method: 'POST', body: JSON.stringify(body), redirect: 'follow' }).then(function (r) { return r.text(); }).then(function (t) {
+      var j; try { j = JSON.parse(t); } catch (e) { throw new Error('EMP did not respond correctly. Check EMP_URL in config.js.'); }
+      if (j && j.ok === false) { if (j.error === 'LOGIN') signOut(); throw new Error(j.message || j.error || 'Request failed'); }
+      return j;
+    }, function () { throw new Error('Network error. Check your connection.'); });
+  }
+  function orgRun(action, data, msg) {
+    return orgCall(action, data).then(function (r) {
+      toast(typeof msg === 'function' ? msg(r) : (msg || 'Saved'), 'ok');
+      return orgCall('orgGet');
+    }).then(function (d) { ORG.d = d; ORG.sel = {}; orgDraw(); })
+      .catch(function (e) { toast(e.message, 'bad'); });
+  }
+  VIEWS.org = function () {
+    var el = $('#view-org');
+    if (!ORG.d) el.innerHTML = '<div class="wrap"><div class="loading">Loading Org Setup…</div></div>';
+    orgCall('orgGet').then(function (d) { ORG.d = d; orgDraw(); })
+      .catch(function (e) { el.innerHTML = '<div class="wrap"><div class="notice bad">' + esc(e.message) + '</div></div>'; });
+  };
+  function orgRoleOpts(sel, withNone) {
+    var d = ORG.d, h = withNone ? '<option value="">— no role —</option>' : '';
+    d.departments.forEach(function (dp) {
+      var rs = d.roles.filter(function (r) { return r.deptId === dp.id && (r.active || r.id === sel); });
+      if (!rs.length) return;
+      h += '<optgroup label="' + esc(dp.name) + '">' + rs.map(function (r) {
+        return '<option value="' + esc(r.id) + '"' + (r.id === sel ? ' selected' : '') + '>' + esc(r.name) + (r.active ? '' : ' (closed)') + '</option>';
+      }).join('') + '</optgroup>';
+    });
+    return h;
+  }
+  function orgDraw() {
+    var d = ORG.d, el = $('#view-org'), keepQ = ORG.q;
+    var html = '<div class="wrap"><div class="notice">Create departments and the job roles inside them here, then give each employee a role. ' +
+      'Tasks (checklists), Battery Production and My Space read this one list. Rename a role once and it changes everywhere. ' +
+      'The employee\'s Department in the master sheet is filled automatically.</div>' +
+      '<div class="card"><div class="card-h"><div><div class="card-t">Departments &amp; roles</div></div></div><div class="card-b"><div class="row">' +
+      '<input id="orgNewDept" placeholder="New department, e.g. Production" maxlength="40" style="max-width:300px">' +
+      '<button class="btn btn-primary btn-sm" data-dadd="1">+ Add department</button></div></div></div>';
+    d.departments.forEach(function (dp) {
+      var rs = d.roles.filter(function (r) { return r.deptId === dp.id; });
+      html += '<div class="card"><div class="card-h"><div><div class="card-t">' + esc(dp.name) + (dp.active ? '' : ' <span class="chip chip-off">Closed</span>') + '</div>' +
+        '<div class="card-s">' + rs.length + ' role' + (rs.length === 1 ? '' : 's') + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="btn btn-sm" data-dren="' + esc(dp.id) + '">Rename</button>' +
+        '<button class="btn btn-sm" data-dtog="' + esc(dp.id) + '">' + (dp.active ? 'Close' : 'Reopen') + '</button>' +
+        (rs.length ? '' : '<button class="btn btn-sm" data-ddel="' + esc(dp.id) + '">Delete</button>') + '</div></div>';
+      if (rs.length) {
+        html += '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Role</th><th>Employees</th><th>Department</th><th>Status</th><th></th></tr></thead><tbody>' +
+          rs.map(function (r) {
+            return '<tr><td><b>' + esc(r.name) + '</b></td><td>' + r.count + '</td>' +
+              '<td><select data-rmove="' + esc(r.id) + '">' + d.departments.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === r.deptId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></td>' +
+              '<td>' + (r.active ? '<span class="chip chip-ok">Active</span>' : '<span class="chip chip-off">Closed</span>') + '</td>' +
+              '<td style="white-space:nowrap"><button class="btn btn-sm" data-rren="' + esc(r.id) + '">Rename</button> ' +
+              '<button class="btn btn-sm" data-rtog="' + esc(r.id) + '">' + (r.active ? 'Close' : 'Reopen') + '</button>' +
+              (r.used ? '' : ' <button class="btn btn-sm" data-rdel="' + esc(r.id) + '">Delete</button>') + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+      html += '<div class="card-b"' + (rs.length ? ' style="border-top:1px solid var(--line)"' : '') + '><div class="row">' +
+        '<input data-rnew="' + esc(dp.id) + '" placeholder="New role in ' + esc(dp.name) + ', e.g. Spot Welding Operator" maxlength="40" style="max-width:340px"' + (dp.active ? '' : ' disabled') + '>' +
+        '<button class="btn btn-sm btn-primary" data-radd="' + esc(dp.id) + '"' + (dp.active ? '' : ' disabled') + '>+ Add role</button></div></div></div>';
+    });
+    if (!d.departments.length) html += '<div class="card"><div class="card-b hint">No departments yet. Add the first one above.</div></div>';
+    html += '<div class="card"><div class="card-h"><div><div class="card-t">Employees</div><div class="card-s" id="orgEmpCount"></div></div></div>' +
+      '<div class="card-b"><div class="row" style="flex-wrap:wrap;gap:8px">' +
+      '<input id="orgQ" placeholder="Search name / Emp ID" value="' + esc(keepQ) + '" style="max-width:260px">' +
+      '<select id="orgF"><option value="all">All employees</option><option value="norole"' + (ORG.f === 'norole' ? ' selected' : '') + '>Without a role</option></select>' +
+      '<span class="hint" style="margin-left:auto">Selected:</span><select id="orgBulk">' + orgRoleOpts('', true) + '</select>' +
+      '<button class="btn btn-sm btn-primary" data-eapply="1">Apply to selected</button></div></div>' +
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:34px"><input type="checkbox" id="orgAll"></th><th>Emp ID</th><th>Name</th><th>Department (master)</th><th>Role</th></tr></thead><tbody id="orgEmps"></tbody></table></div></div></div>';
+    el.innerHTML = html;
+    orgDrawEmps();
+  }
+  function orgDrawEmps() {
+    var d = ORG.d, q = (ORG.q || '').trim().toLowerCase();
+    var L = d.employees.filter(function (e) {
+      if (!e.active) return false;
+      if (ORG.f === 'norole' && e.roleId) return false;
+      return !q || (e.id + ' ' + e.name).toLowerCase().indexOf(q) !== -1;
+    });
+    var shown = L.slice(0, 300);
+    $('#orgEmps').innerHTML = shown.map(function (e) {
+      return '<tr><td><input type="checkbox" data-esel="' + esc(e.id) + '"' + (ORG.sel[e.id] ? ' checked' : '') + '></td><td class="mono">' + esc(e.id) + '</td>' +
+        '<td><b>' + esc(e.name) + '</b>' + (e.designation ? '<div class="hint">' + esc(e.designation) + '</div>' : '') + '</td>' +
+        '<td>' + esc(e.masterDept || '—') + '</td><td><select data-erole="' + esc(e.id) + '">' + orgRoleOpts(e.roleId, true) + '</select></td></tr>';
+    }).join('') || '<tr><td colspan="5" class="hint" style="padding:16px">No employees match.</td></tr>';
+    var withRole = d.employees.filter(function (e) { return e.active && e.roleId; }).length, total = d.employees.filter(function (e) { return e.active; }).length;
+    $('#orgEmpCount').textContent = withRole + ' of ' + total + ' have a role' + (L.length > shown.length ? ' · showing first 300, search to narrow' : '');
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('#view-org button'); if (!b || !ORG.d) return;
+    var d = ORG.d, ds = b.dataset, dep = function (id) { return d.departments.filter(function (x) { return x.id === id; })[0]; }, role = function (id) { return d.roles.filter(function (x) { return x.id === id; })[0]; };
+    if (ds.dadd) { var n = $('#orgNewDept').value; orgRun('orgSaveDept', { name: n }, 'Department added'); return; }
+    if (ds.dren) { var x = dep(ds.dren), nn = prompt('New name for "' + x.name + '":', x.name); if (nn === null) return;
+      orgRun('orgSaveDept', { id: x.id, name: nn, active: x.active }, function (r) { return 'Renamed' + (r.moved ? ' · ' + r.moved + ' employees updated in master' : ''); }); return; }
+    if (ds.dtog) { var y = dep(ds.dtog); orgRun('orgSaveDept', { id: y.id, name: y.name, active: !y.active }, y.active ? 'Department closed' : 'Department reopened'); return; }
+    if (ds.ddel) { var z = dep(ds.ddel); if (!confirm('Delete department "' + z.name + '"?')) return; orgRun('orgDelete', { kind: 'dept', id: z.id }, 'Deleted'); return; }
+    if (ds.radd) { var inp = $('#view-org input[data-rnew="' + ds.radd + '"]'); orgRun('orgSaveRole', { deptId: ds.radd, name: inp.value }, 'Role added'); return; }
+    if (ds.rren) { var r = role(ds.rren), rn = prompt('New name for "' + r.name + '":', r.name); if (rn === null) return;
+      orgRun('orgSaveRole', { id: r.id, deptId: r.deptId, name: rn, active: r.active }, 'Renamed everywhere'); return; }
+    if (ds.rtog) { var r2 = role(ds.rtog); orgRun('orgSaveRole', { id: r2.id, deptId: r2.deptId, name: r2.name, active: !r2.active }, r2.active ? 'Role closed (existing holders keep it)' : 'Role reopened'); return; }
+    if (ds.rdel) { var r3 = role(ds.rdel); if (!confirm('Delete role "' + r3.name + '"? If a checklist uses it, close it instead.')) return; orgRun('orgDelete', { kind: 'role', id: r3.id }, 'Deleted'); return; }
+    if (ds.eapply) {
+      var ids = Object.keys(ORG.sel).filter(function (k) { return ORG.sel[k]; });
+      if (!ids.length) return toast('Tick the employees first', 'bad');
+      var rid = $('#orgBulk').value;
+      if (!confirm((rid ? 'Give the selected role to ' : 'Remove the role from ') + ids.length + ' employee(s)?')) return;
+      orgRun('orgSetEmpRole', { emp: ids.join(','), roleId: rid }, 'Updated ' + ids.length + ' employee(s)');
+    }
+  });
+  document.addEventListener('change', function (ev) {
+    var t = ev.target; if (!t || !ORG.d || !t.closest || !t.closest('#view-org')) return;
+    var ds = t.dataset;
+    if (ds.erole !== undefined && ds.erole !== '') { orgRun('orgSetEmpRole', { emp: ds.erole, roleId: t.value }, 'Role saved'); return; }
+    if (ds.rmove) { var r = ORG.d.roles.filter(function (x) { return x.id === ds.rmove; })[0]; orgRun('orgSaveRole', { id: r.id, deptId: t.value, name: r.name, active: r.active }, function (res) { return 'Moved' + (res.moved ? ' · ' + res.moved + ' employees updated in master' : ''); }); return; }
+    if (t.id === 'orgF') { ORG.f = t.value; orgDrawEmps(); return; }
+    if (t.id === 'orgAll') { $$('#orgEmps input[data-esel]').forEach(function (c) { c.checked = t.checked; ORG.sel[c.dataset.esel] = t.checked; }); return; }
+    if (ds.esel !== undefined) ORG.sel[ds.esel] = t.checked;
+  });
+  document.addEventListener('input', function (ev) {
+    if (ev.target && ev.target.id === 'orgQ') { ORG.q = ev.target.value; orgDrawEmps(); }
+  });
 
   /* ---------- Staff: har insaan ek baar (Emp ID), apps me team, ek PIN — Links → Staff ---------- */
   var SET = { U: null, ST: null };

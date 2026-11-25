@@ -1685,34 +1685,29 @@ async function viewClSetup() {
   if (S.view !== 'clsetup') return;
   S.clSetup = r;
   const cnt = {}; r.items.forEach(i => { if (i.Active !== '0') cnt[i.TemplateID] = (cnt[i.TemplateID] || 0) + 1; });
-  const roles = [...new Set(r.templates.filter(t => t.Active !== '0').map(t => t.Role))];
+  const withList = r.assigns.filter(a => r.templates.some(t => t.RoleId === a.Role && t.Active !== '0'));   // sirf wo jinke role ki checklist hai
   $('#page').innerHTML = `
     ${!r.templates.length && isAdmin() ? `<div class="card card-pad fade-in" style="margin-bottom:16px"><b>Start with the 3 ready checklists</b>
       <p class="muted">Sales Team, IR Machine and Spot Welding Machine (reviewed version). You can edit every point afterwards.</p>
       <button class="btn btn-primary" id="clSeed">Load starter checklists</button></div>` : ''}
     <div class="card fade-in"><div class="card-head"><h3>Checklists</h3></div><div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>Checklist</th><th>For role</th><th>Points</th><th>Machine ID</th><th>Status</th><th></th></tr></thead><tbody>
-      ${r.templates.map(t => `<tr><td><b>${esc(t.Name)}</b><div class="faint small">${esc(t.Dept)}</div></td><td>${esc(t.Role)}</td><td>${cnt[t.TemplateID] || 0}</td>
+      ${r.templates.map(t => `<tr><td><b>${esc(t.Name)}</b><div class="faint small">${esc(t.Dept)}</div></td><td>${esc(t.RoleName || t.Role)}${t.RoleId ? '' : ' <span class="badge st-bad" title="Create this role in Suite → Org Setup">not in Org Setup</span>'}</td><td>${cnt[t.TemplateID] || 0}</td>
         <td>${t.NeedMachine === '1' ? 'Asked' : '—'}</td><td>${t.Active === '0' ? '<span class="badge">Off</span>' : '<span class="badge st-done">Active</span>'}</td>
         <td class="right"><button class="btn btn-ghost btn-sm" data-pts="${esc(t.TemplateID)}">Points</button> <button class="btn btn-ghost btn-sm" data-etpl="${esc(t.TemplateID)}">Edit</button></td></tr>`).join('')
         || '<tr><td colspan="6" class="empty">No checklists yet.</td></tr>'}</tbody></table></div></div>
-    <div class="card fade-in" style="margin-top:16px"><div class="card-head"><h3>Who gets which checklist</h3>
-      <button class="btn btn-primary btn-sm" id="clAddAs" ${roles.length ? '' : 'disabled'}>${IC.plus} Assign</button></div><div class="tbl-wrap"><table class="tbl">
+    <div class="card fade-in" style="margin-top:16px"><div class="card-head"><h3>Who gets which checklist</h3></div><div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>Employee</th><th>Role</th><th>Machine / Station</th><th></th></tr></thead><tbody>
-      ${r.assigns.map(a => `<tr><td>${esc(userName(a.UserID))}</td><td>${esc(a.Role)}</td><td>${esc(a.Machine || '—')}</td>
-        <td class="right"><button class="btn btn-danger btn-sm" data-unas="${esc(a.AssignID)}">Remove</button></td></tr>`).join('')
-        || '<tr><td colspan="4" class="empty">Nobody assigned yet. An employee sees a checklist when they hold its role.</td></tr>'}</tbody></table></div></div>
-    <p class="legend">An employee sees a checklist when they hold its role. Daily points show every day, Mon-Sat points only on that weekday, "1st" points on the 1st of the month. ★ marks a critical point.</p>`;
+      ${withList.map(a => `<tr><td>${esc(userName(a.UserID))}</td><td>${esc(a.RoleName)}</td><td>${esc(a.Machine || '—')}</td>
+        <td class="right"><button class="btn btn-ghost btn-sm" data-mach="${esc(a.UserID)}">Machine</button></td></tr>`).join('')
+        || '<tr><td colspan="4" class="empty">Nobody yet. Give employees a role in Suite → Org Setup; they then see that role\'s checklist.</td></tr>'}</tbody></table></div></div>
+    <p class="legend">An employee sees a checklist when they hold its role (set in Suite → Org Setup). Daily points show every day, Mon-Sat points only on that weekday, "1st" points on the 1st of the month. ★ marks a critical point.</p>`;
   if ($('#clSeed')) $('#clSeed').onclick = e => busy(e.currentTarget, async () => {
     try { const x = await clc('clSeed'); toast('Loaded: ' + (x.made.join(', ') || 'nothing new')); viewClSetup(); } catch (ex) { toast(ex.message, false); }
   });
   $$('[data-etpl]').forEach(b => b.onclick = () => clTplForm(r.templates.find(t => t.TemplateID === b.dataset.etpl)));
   $$('[data-pts]').forEach(b => b.onclick = () => clPointsModal(b.dataset.pts));
-  if ($('#clAddAs')) $('#clAddAs').onclick = () => clAssignForm(roles);
-  $$('[data-unas]').forEach(b => b.onclick = async () => {
-    if (!(await confirmBox('Remove assignment', 'This employee will stop seeing this checklist. Past records are kept.', 'Remove'))) return;
-    busy(b, async () => { try { await clc('clUnassign', { id: b.dataset.unas }); toast('Removed'); viewClSetup(); } catch (e) { toast(e.message, false); } });
-  });
+  $$('[data-mach]').forEach(b => b.onclick = () => clMachineForm(withList.find(a => a.UserID === b.dataset.mach)));
 }
 
 function clTplForm(t) {
@@ -1721,7 +1716,7 @@ function clTplForm(t) {
     title: t ? 'Edit Checklist' : 'New Checklist',
     body: `<form id="ctForm" novalidate><div class="form-grid">
       ${field('Name', `<input class="input" name="Name" maxlength="100" value="${esc(d.Name)}" />`, { req: true, full: true })}
-      ${field('For role', `<input class="input" name="Role" maxlength="60" value="${esc(d.Role)}" placeholder="e.g. Spot Welding Operator" />`, { req: true, hint: 'Employees holding this role see the checklist.' })}
+      ${field('For role', `<select class="select" name="Role">${opts((S.clSetup.roles || []).map(x => ({ v: x.id, l: x.name + (x.dept ? ' · ' + x.dept : '') })), d.RoleId || '', 'Select role')}</select>`, { req: true, hint: 'Roles come from Suite → Org Setup. Employees holding this role see the checklist.' })}
       ${field('Department', `<input class="input" name="Dept" maxlength="60" value="${esc(d.Dept)}" />`)}
       ${field('Ask Machine ID', `<select class="select" name="NeedMachine">${opts([{ v: '1', l: 'Yes' }, { v: '0', l: 'No' }], d.NeedMachine)}</select>`)}
       ${field('Status', `<select class="select" name="Active">${opts([{ v: '1', l: 'Active' }, { v: '0', l: 'Off' }], d.Active)}</select>`)}
@@ -1732,30 +1727,27 @@ function clTplForm(t) {
   m.q('[data-save]').onclick = e => busy(e.currentTarget, async () => {
     const rec = formData(m.q('#ctForm')), errs = {};
     if (rec.Name.length < 3) errs.Name = 'Enter a name.';
-    if (rec.Role.length < 2) errs.Role = 'Enter a role.';
+    if (!rec.Role) errs.Role = 'Select a role.';
     if (!showErrors(m.q('#ctForm'), errs)) return;
     if (t) rec.TemplateID = t.TemplateID;
     try { await clc('clSaveTemplate', { record: JSON.stringify(rec) }); toast('Saved'); m.close(); viewClSetup(); } catch (ex) { toast(ex.message, false); }
   });
 }
 
-function clAssignForm(roles) {
+function clMachineForm(a) {
+  if (!a) return;
   const m = modal({
-    title: 'Assign checklist',
+    title: 'Machine / Station',
     body: `<form id="caForm" novalidate><div class="form-grid">
-      ${field('Employee', `<select class="select" name="userId">${opts(assignable().map(u => ({ v: u.UserID, l: u.Name })), '', 'Select employee')}</select>`, { req: true, full: true })}
-      ${field('Role', `<select class="select" name="role">${opts(roles, '', 'Select role')}</select>`, { req: true })}
-      ${field('Machine / Station', `<input class="input" name="machine" maxlength="60" placeholder="e.g. SW-02" />`, { hint: 'Pre-fills the Machine ID.' })}
+      ${field('Employee', `<div>${esc(userName(a.UserID))} <span class="faint">· ${esc(a.RoleName)}</span></div>`, { full: true })}
+      ${field('Machine / Station', `<input class="input" name="machine" maxlength="60" value="${esc(a.Machine)}" placeholder="e.g. SW-02" />`, { hint: 'Pre-fills the Machine ID on their checklist. Leave blank to clear.' })}
     </div></form>`,
-    foot: '<button class="btn btn-ghost" data-cancel>Cancel</button><button class="btn btn-primary" data-save>Assign</button>'
+    foot: '<button class="btn btn-ghost" data-cancel>Cancel</button><button class="btn btn-primary" data-save>Save</button>'
   });
   m.q('[data-cancel]').onclick = m.close;
   m.q('[data-save]').onclick = e => busy(e.currentTarget, async () => {
-    const rec = formData(m.q('#caForm')), errs = {};
-    if (!rec.userId) errs.userId = 'Select an employee.';
-    if (!rec.role) errs.role = 'Select a role.';
-    if (!showErrors(m.q('#caForm'), errs)) return;
-    try { await clc('clAssign', rec); toast('Assigned'); m.close(); viewClSetup(); } catch (ex) { toast(ex.message, false); }
+    const rec = formData(m.q('#caForm'));
+    try { await clc('clAssign', { userId: a.UserID, machine: rec.machine }); toast('Saved'); m.close(); viewClSetup(); } catch (ex) { toast(ex.message, false); }
   });
 }
 
