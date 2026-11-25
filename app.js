@@ -1568,7 +1568,8 @@
    * ORG SETUP (Admin) — Departments → Job Roles → Employee role (EMP GAS, master sheet ke 3 tabs)
    * Yahan jo role set hota hai wahi Tasks (checklists), PLT aur My Space use karte hain.
    * ============================================================= */
-  var ORG = { d: null, q: '', f: 'all', sel: {} };
+  var ORG = { d: null, q: '', f: 'all', sel: {}, st: null, stErr: '' };
+  var ORG_APPS = ['ERP', 'IMS', 'SOMS', 'SERVICE'], ORG_APP_TXT = { ERP: 'Opportunities', IMS: 'Inventory', SOMS: 'Purchase', SERVICE: 'Service Hub' };
   /** EMP GAS (POST JSON). api() "VALIDATION" jaisa code dikhata hai, isliye yahan message seedha nikalte hain. */
   function orgCall(action, data) {
     var url = SUITE.EMP_URL;
@@ -1584,13 +1585,53 @@
     return orgCall(action, data).then(function (r) {
       toast(typeof msg === 'function' ? msg(r) : (msg || 'Saved'), 'ok');
       return orgCall('orgGet');
-    }).then(function (d) { ORG.d = d; ORG.sel = {}; orgDraw(); })
-      .catch(function (e) { toast(e.message, 'bad'); });
+    }).then(function (d) { ORG.d = d; ORG.sel = {}; orgDraw(); return true; })
+      .catch(function (e) { toast(e.message, 'bad'); return false; });
+  }
+  /** Settings → Staff ki list (teams + kaun already hai). Fail ho to Org Setup chalta rahe, bas Login wala hissa band. */
+  function orgLoadStaff() {
+    return api('ERP', 'suiteStaff').then(function (r) { ORG.st = r && r.teams ? r : null; ORG.stErr = ORG.st ? '' : 'Staff list nahi mili'; })
+      .catch(function (e) { ORG.st = null; ORG.stErr = e.message || 'Staff list nahi mili'; });
+  }
+  function orgStaffOf(id) { return ORG.st && (ORG.st.staff || []).filter(function (x) { return String(x.id) === String(id); })[0]; }
+  function orgEmpOf(id) { return ORG.d.employees.filter(function (x) { return String(x.id) === String(id); })[0]; }
+  function orgAccOf(rid) { return (ORG.d.access || {})[rid] || {}; }
+  function orgHasAcc(rid) { return Object.keys(orgAccOf(rid)).length > 0; }
+  /** Ek insaan ke liye Settings → Staff save (wahi suiteStaffSave jo Settings use karta hai).
+   *  Naye role ki team lagti hai; purane role ki team tabhi hatti hai jab wo abhi bhi wahi ho (haath se di hui extra team nahi chhoone). */
+  function orgLoginSave(id, rid, oldRid, pin, oldAccOverride) {
+    var s = orgStaffOf(id), e = orgEmpOf(id), na = orgAccOf(rid), oa = oldAccOverride || orgAccOf(oldRid);
+    var d = { isNew: String(!s), empId: String(id), active: s ? String(s.active !== false) : 'true', pin: pin || '', salesName: (s && s.salesName) || '' };
+    ORG_APPS.forEach(function (a) {
+      var cur = (s && s.teams && s.teams[a]) || '';
+      d[a] = na[a] ? na[a] : (oa[a] && cur === oa[a] ? '' : cur);
+    });
+    if (d.ERP === 'Sales' && !d.salesName) d.salesName = e ? e.name : '';
+    return api('ERP', 'suiteStaffSave', d);
+  }
+  /** Role milne ke baad: jo Staff me pehle se hain unka login role ke hisaab se apne aap; naye ke liye PIN chahiye. */
+  function orgAfterRole(ids, rid, oldMap) {
+    if (!ORG.st) return Promise.resolve();
+    var need = [], errs = [], chain = Promise.resolve();
+    ids.forEach(function (id) {
+      var old = oldMap[id] || '';
+      if (!orgHasAcc(rid) && !orgHasAcc(old)) return;
+      if (orgStaffOf(id)) chain = chain.then(function () { return orgLoginSave(id, rid, old, '').catch(function (e) { errs.push(id + ': ' + e.message); }); });
+      else if (orgHasAcc(rid)) need.push(id);
+    });
+    return chain.then(function () {
+      if (need.length === 1 && ids.length === 1) {
+        var pin = prompt('Is role se login bhi milega. ' + need[0] + ' ke liye 4 digit PIN daalo (khali = baad me):', '');
+        if (pin && /^\d{4}$/.test(pin.trim())) return orgLoginSave(need[0], rid, '', pin.trim()).then(function () { toast('Login ready — PIN batana mat bhoolna', 'ok'); }, function (e) { errs.push(need[0] + ': ' + e.message); });
+        if (pin) toast('PIN 4 digit ka hona chahiye. Baad me "Login" button dabao.', 'bad');
+        else toast('Login baaki hai — employee ki row me "Login" dabao', 'ok');
+      } else if (need.length) toast(need.length + ' employee ka login baaki hai (PIN chahiye) — row me "Login" dabao', 'ok');
+    }).then(function () { if (errs.length) toast(errs.join(' · '), 'bad'); return orgLoadStaff(); }).then(function () { if (ORG.d) orgDraw(); });
   }
   VIEWS.org = function () {
     var el = $('#view-org');
     if (!ORG.d) el.innerHTML = '<div class="wrap"><div class="loading">Loading Org Setup…</div></div>';
-    orgCall('orgGet').then(function (d) { ORG.d = d; orgDraw(); })
+    Promise.all([orgCall('orgGet'), orgLoadStaff()]).then(function (r) { ORG.d = r[0]; orgDraw(); })
       .catch(function (e) { el.innerHTML = '<div class="wrap"><div class="notice bad">' + esc(e.message) + '</div></div>'; });
   };
   function orgRoleOpts(sel, withNone) {
@@ -1608,7 +1649,8 @@
     var d = ORG.d, el = $('#view-org'), keepQ = ORG.q;
     var html = '<div class="wrap"><div class="notice">Create departments and the job roles inside them here, then give each employee a role. ' +
       'Tasks (checklists), Battery Production and My Space read this one list. Rename a role once and it changes everywhere. ' +
-      'The employee\'s Department in the master sheet is filled automatically.</div>' +
+      'The employee\'s Department in the master sheet is filled automatically. Use <b>Access</b> on a role to say which app teams that role gets, so login follows the role.</div>' +
+      (ORG.stErr ? '<div class="notice bad">Login part is off: ' + esc(ORG.stErr) + '</div>' : '') + '<div id="orgAccess"></div>' +
       '<div class="card"><div class="card-h"><div><div class="card-t">Departments &amp; roles</div></div></div><div class="card-b"><div class="row">' +
       '<input id="orgNewDept" placeholder="New department, e.g. Production" maxlength="40" style="max-width:300px">' +
       '<button class="btn btn-primary btn-sm" data-dadd="1">+ Add department</button></div></div></div>';
@@ -1622,10 +1664,11 @@
       if (rs.length) {
         html += '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Role</th><th>Employees</th><th>Department</th><th>Status</th><th></th></tr></thead><tbody>' +
           rs.map(function (r) {
-            return '<tr><td><b>' + esc(r.name) + '</b></td><td>' + r.count + '</td>' +
+            var ac = orgAccOf(r.id), acs = ORG_APPS.filter(function (a) { return ac[a]; }).map(function (a) { return esc(ORG_APP_TXT[a]) + ': ' + esc(ac[a]); }).join(' · ');
+            return '<tr><td><b>' + esc(r.name) + '</b><div class="hint">' + (acs || 'No app access set') + '</div></td><td>' + r.count + '</td>' +
               '<td><select data-rmove="' + esc(r.id) + '">' + d.departments.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === r.deptId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></td>' +
               '<td>' + (r.active ? '<span class="chip chip-ok">Active</span>' : '<span class="chip chip-off">Closed</span>') + '</td>' +
-              '<td style="white-space:nowrap"><button class="btn btn-sm" data-rren="' + esc(r.id) + '">Rename</button> ' +
+              '<td style="white-space:nowrap"><button class="btn btn-sm" data-racc="' + esc(r.id) + '"' + (ORG.st ? '' : ' disabled') + '>Access</button> <button class="btn btn-sm" data-rren="' + esc(r.id) + '">Rename</button> ' +
               '<button class="btn btn-sm" data-rtog="' + esc(r.id) + '">' + (r.active ? 'Close' : 'Reopen') + '</button>' +
               (r.used ? '' : ' <button class="btn btn-sm" data-rdel="' + esc(r.id) + '">Delete</button>') + '</td></tr>';
           }).join('') + '</tbody></table></div>';
@@ -1641,9 +1684,27 @@
       '<select id="orgF"><option value="all">All employees</option><option value="norole"' + (ORG.f === 'norole' ? ' selected' : '') + '>Without a role</option></select>' +
       '<span class="hint" style="margin-left:auto">Selected:</span><select id="orgBulk">' + orgRoleOpts('', true) + '</select>' +
       '<button class="btn btn-sm btn-primary" data-eapply="1">Apply to selected</button></div></div>' +
-      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:34px"><input type="checkbox" id="orgAll"></th><th>Emp ID</th><th>Name</th><th>Department (master)</th><th>Role</th></tr></thead><tbody id="orgEmps"></tbody></table></div></div></div>';
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:34px"><input type="checkbox" id="orgAll"></th><th>Emp ID</th><th>Name</th><th>Department (master)</th><th>Role</th><th>Login</th></tr></thead><tbody id="orgEmps"></tbody></table></div></div></div>';
     el.innerHTML = html;
     orgDrawEmps();
+  }
+  function orgLoginCell(e) {
+    if (!ORG.st) return '<span class="muted">—</span>';
+    var s = orgStaffOf(e.id);
+    if (s) return '<span class="chip chip-ok">In Staff</span> <button class="btn btn-sm" data-elogin="' + esc(e.id) + '">PIN / Sync</button>';
+    if (e.roleId && orgHasAcc(e.roleId)) return '<button class="btn btn-sm btn-primary" data-elogin="' + esc(e.id) + '">Set up login</button>';
+    return '<span class="muted">—</span>';
+  }
+  function orgAccessForm(rid) {
+    var r = ORG.d.roles.filter(function (x) { return x.id === rid; })[0], ac = orgAccOf(rid), T = (ORG.st && ORG.st.teams) || {};
+    $('#orgAccess').innerHTML = '<div class="card"><div class="card-h"><div><div class="card-t">App access for "' + esc(r.name) + '"</div>' +
+      '<div class="card-s">Teams come from Settings → Staff. Leave blank where the role should not get that app.</div></div></div><div class="card-b">' +
+      '<div class="grid g2">' + ORG_APPS.map(function (a) {
+        return '<div class="field"><label class="lbl" for="orgAcc' + a + '">' + esc(ORG_APP_TXT[a]) + ' team</label><select id="orgAcc' + a + '" data-accapp="' + a + '"><option value="">— no access —</option>' +
+          (T[a] || []).map(function (t) { return '<option' + (ac[a] === t ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></div>';
+      }).join('') + '</div><div class="row" style="margin-top:12px"><button class="btn btn-primary btn-sm" data-accsave="' + esc(rid) + '">Save access</button> ' +
+      '<button class="btn btn-sm" data-acccancel="1">Cancel</button></div></div></div>';
+    $('#orgAccess').scrollIntoView && $('#orgAccess').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   function orgDrawEmps() {
     var d = ORG.d, q = (ORG.q || '').trim().toLowerCase();
@@ -1656,8 +1717,9 @@
     $('#orgEmps').innerHTML = shown.map(function (e) {
       return '<tr><td><input type="checkbox" data-esel="' + esc(e.id) + '"' + (ORG.sel[e.id] ? ' checked' : '') + '></td><td class="mono">' + esc(e.id) + '</td>' +
         '<td><b>' + esc(e.name) + '</b>' + (e.designation ? '<div class="hint">' + esc(e.designation) + '</div>' : '') + '</td>' +
-        '<td>' + esc(e.masterDept || '—') + '</td><td><select data-erole="' + esc(e.id) + '">' + orgRoleOpts(e.roleId, true) + '</select></td></tr>';
-    }).join('') || '<tr><td colspan="5" class="hint" style="padding:16px">No employees match.</td></tr>';
+        '<td>' + esc(e.masterDept || '—') + '</td><td><select data-erole="' + esc(e.id) + '">' + orgRoleOpts(e.roleId, true) + '</select></td>' +
+        '<td>' + orgLoginCell(e) + '</td></tr>';
+    }).join('') || '<tr><td colspan="6" class="hint" style="padding:16px">No employees match.</td></tr>';
     var withRole = d.employees.filter(function (e) { return e.active && e.roleId; }).length, total = d.employees.filter(function (e) { return e.active; }).length;
     $('#orgEmpCount').textContent = withRole + ' of ' + total + ' have a role' + (L.length > shown.length ? ' · showing first 300, search to narrow' : '');
   }
@@ -1674,18 +1736,48 @@
       orgRun('orgSaveRole', { id: r.id, deptId: r.deptId, name: rn, active: r.active }, 'Renamed everywhere'); return; }
     if (ds.rtog) { var r2 = role(ds.rtog); orgRun('orgSaveRole', { id: r2.id, deptId: r2.deptId, name: r2.name, active: !r2.active }, r2.active ? 'Role closed (existing holders keep it)' : 'Role reopened'); return; }
     if (ds.rdel) { var r3 = role(ds.rdel); if (!confirm('Delete role "' + r3.name + '"? If a checklist uses it, close it instead.')) return; orgRun('orgDelete', { kind: 'role', id: r3.id }, 'Deleted'); return; }
+    if (ds.racc) { orgAccessForm(ds.racc); return; }
+    if (ds.acccancel) { $('#orgAccess').innerHTML = ''; return; }
+    if (ds.accsave) {
+      var rid0 = ds.accsave, teams = {}, oldAcc = Object.assign({}, orgAccOf(rid0));
+      ORG_APPS.forEach(function (a) { teams[a] = $('#orgAcc' + a).value; });
+      orgRun('orgSaveAccess', { roleId: rid0, teams: teams }, 'Access saved').then(function (okk) {
+        if (!okk) return;
+        var holders = ORG.d.employees.filter(function (e) { return e.roleId === rid0 && orgStaffOf(e.id); }).map(function (e) { return e.id; });
+        if (!holders.length || !confirm('Apply this to ' + holders.length + ' employee(s) of this role who already have a login?')) return;
+        var errs = [], chain = Promise.resolve();
+        holders.forEach(function (id) { chain = chain.then(function () { return orgLoginSave(id, rid0, rid0, '', oldAcc).catch(function (e) { errs.push(id + ': ' + e.message); }); }); });
+        chain.then(function () { toast(errs.length ? errs.join(' · ') : 'Logins updated', errs.length ? 'bad' : 'ok'); return orgLoadStaff(); }).then(function () { orgDraw(); });
+      });
+      return;
+    }
+    if (ds.elogin) {
+      var eid = ds.elogin, em = orgEmpOf(eid), st0 = orgStaffOf(eid);
+      var pin2 = prompt(st0 ? 'New PIN for ' + em.name + ' (4 digits, blank = keep as is):' : 'PIN for ' + em.name + ' (4 digits):', '');
+      if (pin2 === null) return; pin2 = String(pin2).trim();
+      if (pin2 && !/^\d{4}$/.test(pin2)) return toast('PIN must be 4 digits', 'bad');
+      if (!st0 && !pin2) return toast('A new login needs a PIN', 'bad');
+      orgLoginSave(eid, em.roleId, em.roleId, pin2).then(function () { toast(pin2 ? 'Login saved — tell them the PIN' : 'Login synced', 'ok'); return orgLoadStaff(); })
+        .then(function () { orgDraw(); }, function (e) { toast(e.message, 'bad'); });
+      return;
+    }
     if (ds.eapply) {
       var ids = Object.keys(ORG.sel).filter(function (k) { return ORG.sel[k]; });
       if (!ids.length) return toast('Tick the employees first', 'bad');
       var rid = $('#orgBulk').value;
       if (!confirm((rid ? 'Give the selected role to ' : 'Remove the role from ') + ids.length + ' employee(s)?')) return;
-      orgRun('orgSetEmpRole', { emp: ids.join(','), roleId: rid }, 'Updated ' + ids.length + ' employee(s)');
+      var oldM = {}; ids.forEach(function (i) { var e0 = orgEmpOf(i); oldM[i] = e0 ? e0.roleId : ''; });
+      orgRun('orgSetEmpRole', { emp: ids.join(','), roleId: rid }, 'Updated ' + ids.length + ' employee(s)').then(function (okk) { if (okk) return orgAfterRole(ids, rid, oldM); });
     }
   });
   document.addEventListener('change', function (ev) {
     var t = ev.target; if (!t || !ORG.d || !t.closest || !t.closest('#view-org')) return;
     var ds = t.dataset;
-    if (ds.erole !== undefined && ds.erole !== '') { orgRun('orgSetEmpRole', { emp: ds.erole, roleId: t.value }, 'Role saved'); return; }
+    if (ds.erole !== undefined && ds.erole !== '') {
+      var e1 = orgEmpOf(ds.erole), om = {}; om[ds.erole] = e1 ? e1.roleId : '';
+      orgRun('orgSetEmpRole', { emp: ds.erole, roleId: t.value }, 'Role saved').then(function (okk) { if (okk) return orgAfterRole([ds.erole], t.value, om); });
+      return;
+    }
     if (ds.rmove) { var r = ORG.d.roles.filter(function (x) { return x.id === ds.rmove; })[0]; orgRun('orgSaveRole', { id: r.id, deptId: t.value, name: r.name, active: r.active }, function (res) { return 'Moved' + (res.moved ? ' · ' + res.moved + ' employees updated in master' : ''); }); return; }
     if (t.id === 'orgF') { ORG.f = t.value; orgDrawEmps(); return; }
     if (t.id === 'orgAll') { $$('#orgEmps input[data-esel]').forEach(function (c) { c.checked = t.checked; ORG.sel[c.dataset.esel] = t.checked; }); return; }
