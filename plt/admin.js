@@ -527,7 +527,7 @@ var stationRows = state.stationRows.map(function (r, i) {
         '<div class="field"><label>Station (optional)</label><select id="staffStation"><option value="">any station</option>' +
           state.stationRows.map(function (r) { return '<option>' + esc(r.name) + '</option>'; }).join('') + '</select></div>' +
       '</div>' +
-      '<div class="row" id="staffHallNewWrap" style="display:none;margin-top:8px;">
+      '<div class="row" id="staffHallNewWrap" style="display:none;margin-top:8px;"><div class="field"><label>New hall name</label><input id="staffHallNew" placeholder="2 Wheeler"></div></div>' +
       '<div style="margin-top:10px;"><button class="btn" onclick="addStaff()">Add employee</button></div>' +
       '<p style="font-size:12px;color:var(--text-muted);margin:10px 0 0;">The card below shows the name in bold and the badge ID underneath. If they look swapped, remove and re-add.</p>' +
     '</div>' +
