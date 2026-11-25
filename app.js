@@ -10,7 +10,7 @@
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
   var S = { token: '', user: null, sessions: {}, hidePages: [], view: '', frames: {}, pending: 0, appNav: {}, open: {}, apr: 0 };
-  var SESSION_KEYS = ['erp_user', 'lpx_role', 'lpx_name', 'sms_session', 'plt_sup', 'suite_bridge'];
+  var SESSION_KEYS = ['erp_user', 'lpx_role', 'lpx_name', 'sms_session', 'plt_sup', 'plt_role', 'suite_bridge'];
   var HUB_KEYS = ['hub_token', 'hub_role', 'hub_user', 'hub_last_act', 'suite_svc_only'];   // suite_svc_only: purana, sirf saaf karne ke liye
 
   /* ---------------- API (4 alag GAS) ----------------
@@ -297,6 +297,8 @@
       if (s.ims) { sessionStorage.setItem('lpx_role', s.ims.role); sessionStorage.setItem('lpx_name', s.ims.name); }
       if (s.sms_session) sessionStorage.setItem('sms_session', JSON.stringify(s.sms_session));
       if (s.plt_sup) sessionStorage.setItem('plt_sup', s.plt_sup);
+      var jr = (S.user && S.user.roles) || [];
+      sessionStorage.setItem('plt_role', jr.indexOf('Admin') !== -1 ? 'Admin' : jr.indexOf('Production') !== -1 ? 'Supervisor' : jr.indexOf('Dispatch') !== -1 ? 'Dispatch' : '');
       sessionStorage.setItem('suite_bridge', JSON.stringify({ hidePages: S.hidePages }));
     } catch (e) {}
     var w = $('#sessionWarn');
