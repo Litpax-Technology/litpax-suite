@@ -23,7 +23,14 @@ window.SUITE = {
     FLOOR: 'Floor-1',            // is PC ka floor / unit — har scan row me jaata hai
     POLL_MS: 15000,              // admin dashboard refresh (0 = band)
     LOG_LIMIT: 3000,             // load par kitni recent scan rows
-    ENFORCE_SEQUENCE: false      // station order galat ho to warning
+    ENFORCE_SEQUENCE: false,     // station order galat ho to warning
+    STAFF_ROLES: ['Operator', 'Line Supervisor', 'FG Incharge', 'Dispatch'],
+    REQUIRE_ROLE: false,         // true = bina role wala employee sign-in nahi kar sakta
+    OFFICE_TABS: {
+      Admin:      ['dashboard', 'employees', 'labels', 'manual', 'setup', 'cards'],
+      Supervisor: ['dashboard', 'employees', 'labels', 'manual'],
+      Dispatch:   ['dashboard']
+    }
   },
 
   // Suite ke sidebar me khulne wale apps
@@ -124,7 +131,8 @@ window.SUITE = {
   window.MP = { ERP_URL: S.ERP_URL, IMS_URL: S.IMS_URL };       // ERP / MaterialProd
   if (/\/plt\//.test(p)) {
     window.CONFIG = { API_URL: S.PLT_URL, FLOOR: S.PLT.FLOOR, POLL_MS: S.PLT.POLL_MS, LOG_LIMIT: S.PLT.LOG_LIMIT,
-      ENFORCE_SEQUENCE: S.PLT.ENFORCE_SEQUENCE, TIMEOUT_MS: S.TIMEOUT_MS };
+      ENFORCE_SEQUENCE: S.PLT.ENFORCE_SEQUENCE, TIMEOUT_MS: S.TIMEOUT_MS,
+      STAFF_ROLES: S.PLT.STAFF_ROLES, OFFICE_TABS: S.PLT.OFFICE_TABS, REQUIRE_ROLE: S.PLT.REQUIRE_ROLE };
   } else if (/\/service\/replace\//.test(p)) {   // service ke andar wala Advance Replacement (apni GAS)
     window.CONFIG = { API_URL: S.REPLACE_URL, TIMEOUT_MS: 25000, STATES: S.SERVICE.STATES };
   } else if (/\/service\//.test(p)) {
