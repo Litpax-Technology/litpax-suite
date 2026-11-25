@@ -155,7 +155,12 @@
   function fail(m, e) { m.innerHTML = '<div class="card empty">' + esc(e.message) + '</div>'; }
 
   /* ---------- dashboard ---------- */
-  function loadDash() { return call('myDashboard').then(function (d) { S.dash = d; return d; }); }
+  function loadDash() {
+    return call('myDashboard').then(function (d) {
+      S.dash = d;
+      return call('orgMine').then(function (o) { d.org = o; return d; }, function () { return d; });   // Org role card optional — fail ho to dashboard chalta rahe
+    });
+  }
   function section(title, body, act) { return '<div class="sec-h"><div class="sec-t">' + esc(title) + '</div>' + (act || '') + '</div>' + body; }
   function unavail(x) { return x && x.unavailable ? '<div class="card unavail">' + esc(x.message || 'Abhi available nahi') + '</div>' : ''; }
   function kpi(k, v, cls) { return '<div class="kpi ' + (cls || '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div></div>'; }
@@ -166,6 +171,8 @@
       var meta = ['Emp ' + (p.empId || (S.user && S.user.empId)), p.designation, p.department, p.manager ? 'Reports to ' + p.manager : '', p.phone].filter(Boolean).map(esc).join(' · ');
       h += '<div class="hero"><div class="av">' + esc(ini) + '</div><div class="hero-t"><div class="hn">' + esc(nm) + '</div><div class="hs">' + meta + '</div></div>' +
         (own ? '<button class="btn sm" data-go="request" type="button">Request advance</button>' : '') + '</div>';
+      if (d.org && d.org.role) h += '<div class="card" style="padding:12px 16px;margin:0 0 12px"><div class="req-m">Where I work</div><div style="font-weight:600;margin-top:2px">' +
+        esc(d.org.role) + (d.org.dept ? ' <span style="font-weight:400;opacity:.7">· ' + esc(d.org.dept) + '</span>' : '') + '</div></div>';
       var op = own && (d.requests || []).filter(function (r) { return /^(Pending|Approved)/.test(r.status); })[0];
       if (op) h += '<button class="strip" data-go="mine" type="button"><b>' + money(op.amount) + '</b> advance request · ' + chipFor(op.status) + '<span class="go">Dekho →</span></button>';
 

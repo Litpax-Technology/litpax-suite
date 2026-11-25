@@ -378,7 +378,7 @@ function addStaff() {
   if (/\s/.test(id)) { alert('Badge ID cannot contain spaces. Check that Name and Badge ID are not swapped.'); return; }
   if (!hall) { alert('Pick or type the hall for this employee.'); return; }
   var empId = (document.getElementById('staffEmp').value || '').trim();
-  var role = document.getElementById('staffRole').value;
+  var role = '';   // role Org Setup se aata hai
   var station = document.getElementById('staffStation').value;
   if (!role) { alert('Pick a role for this employee.'); return; }
   call('addStaff', { id: id, name: name, hall: hall, empId: empId, role: role, station: station }).then(function () {
@@ -484,8 +484,8 @@ function moveStation(i, dir) {
 function renderSetup() {
   var staffRows = state.staff.map(function (s, i) {
     var hall = s.hall ? '<span class="hall-tag">' + esc(s.hall) + '</span>' : '<span class="hall-tag warn">no hall</span>';
-    var roleSel = '<select class="hall-inline" onchange="setStaffAccess(' + i + ',\'role\',this.value)"><option value="">no role</option>' +
-      staffRoles().map(function (r) { return '<option' + (s.role === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') + '</select>';
+    // Role Org Setup se aata hai (Emp ID se) — PLT me alag role list nahi
+    var roleSel = s.role ? '<span class="hall-tag">' + esc(s.role) + '</span>' : '<span class="hall-tag warn">no Org role</span>';
     var stSel = '<select class="hall-inline" onchange="setStaffAccess(' + i + ',\'station\',this.value)"><option value="">any station</option>' +
       state.stationRows.map(function (r) { return '<option' + (s.station === r.name ? ' selected' : '') + '>' + esc(r.name) + '</option>'; }).join('') + '</select>';
     return '<div class="list-row"><div><div class="name">' + esc(s.name) + ' ' + hall + '</div>' +
@@ -546,7 +546,7 @@ var stationRows = state.stationRows.map(function (r, i) {
     esc(CONFIG.SETTINGS && CONFIG.SETTINGS.SerialPrefix || 'LP-') + '&lt;serial code&gt;-00001.</p>' +
     '</div>';
 
-   return settingsPanel + modelsPanel + rolesPanel +
+   return settingsPanel + modelsPanel +
     '<div class="panel"><div class="panel-title">Employees</div>' +
       (staffRows || '<div class="empty">No employees added yet.</div>') +
       '<div class="row" style="margin-top:12px;">' +
@@ -556,8 +556,6 @@ var stationRows = state.stationRows.map(function (r, i) {
       '</div>' +
       '<div class="row" style="margin-top:8px;">' +
         '<div class="field"><label>Emp ID (same as Suite / My Space)</label><input id="staffEmp" placeholder="e.g. 96"></div>' +
-        '<div class="field"><label>Role</label><select id="staffRole"><option value="">-- Role --</option>' +
-          staffRoles().map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>' +
         '<div class="field"><label>Station (optional)</label><select id="staffStation"><option value="">any station</option>' +
           state.stationRows.map(function (r) { return '<option>' + esc(r.name) + '</option>'; }).join('') + '</select></div>' +
       '</div>' +
