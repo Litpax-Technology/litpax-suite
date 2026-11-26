@@ -4,7 +4,7 @@
  * Har app ka GAS deploy karke uska /exec URL neeche paste karo. Bas.
  * ============================================================= */
 window.SUITE = {
-  ERP_URL:  'https://script.google.com/macros/s/AKfycbzN751qiAtpgi6V-M9fWFtNE1CRElTZjJFpSHja0gOW1zNQa2aPbOKoZFeXYOCakNns/exec',
+  ERP_URL:  'https://script.google.com/macros/s/AKfycbxW5UO2qeQ_RGiw-GqAqt72CtSRyP3DT5tzIgDkeuJ0vU3EAj-hHtDxbZOJzVYPhDU/exec',
   IMS_URL:  'https://script.google.com/macros/s/AKfycbw2u2Snm5PnRFozss3M9U4vMhaxstqr5_H9KBLkGJPnlcgHwteDJ23rLQ4KjJBjTYdTBg/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbz0oFVx3MNk5VA78zvfMQnPVjGAjpO-31UzKDsTZa0m5Dlkmlx4BFg8iEIjCnz1Nuim8A/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbzTBAQDtrUOlWvpFj_XCJQvHgm8w-N3INeWqLPYxWKrkIaNzBWl1DmWUjvtIvvGReS9xw/exec',
