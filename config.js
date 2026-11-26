@@ -6,7 +6,7 @@
 window.SUITE = {
   ERP_URL:  'https://script.google.com/macros/s/AKfycbxW5UO2qeQ_RGiw-GqAqt72CtSRyP3DT5tzIgDkeuJ0vU3EAj-hHtDxbZOJzVYPhDU/exec',
   IMS_URL:  'https://script.google.com/macros/s/AKfycby5_rpqXNwn1HGyG1Pg6xxoPaitJHaXHPjEWtVCzLwN4b8KFE81R_A54cYlkQBcKux_Zw/exec',
-  PLT_URL:  'https://script.google.com/macros/s/AKfycbz0oFVx3MNk5VA78zvfMQnPVjGAjpO-31UzKDsTZa0m5Dlkmlx4BFg8iEIjCnz1Nuim8A/exec',
+  PLT_URL:  'https://script.google.com/macros/s/AKfycbw2lUImV_BOYTRdMf5QfTF283wO8aNt7SEZ406-S0gQHsV3GKvhuh4E9MwMeCzya0OexA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbzTBAQDtrUOlWvpFj_XCJQvHgm8w-N3INeWqLPYxWKrkIaNzBWl1DmWUjvtIvvGReS9xw/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbyayM6lxMUhOo_zvaGBsX0Er_bUnptQTzPRck1462FWrqvfpU3aDH01uzNEdBSN5ByMLw/exec',
   REPLACE_URL: 'https://script.google.com/macros/s/AKfycbxsa9Rzifq7xVw0-26KBhIUds6DaOVyiIRHuzX8vCNqJigA_V6AruC17m7TGZp0EnKLsQ/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
