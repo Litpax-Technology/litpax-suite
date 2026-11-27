@@ -4,7 +4,7 @@
  * Har app ka GAS deploy karke uska /exec URL neeche paste karo. Bas.
  * ============================================================= */
 window.SUITE = {
-  ERP_URL:  'https://script.google.com/macros/s/AKfycbxW5UO2qeQ_RGiw-GqAqt72CtSRyP3DT5tzIgDkeuJ0vU3EAj-hHtDxbZOJzVYPhDU/exec',
+  ERP_URL:  'https://script.google.com/macros/s/AKfycbyHQd0Wxquca-iX7NK_p1HdNySUPFXiJJmjeLfebaZGjhg2-lpsjjnngdP_KrXo3bYp/exec',
   IMS_URL:  'https://script.google.com/macros/s/AKfycby5_rpqXNwn1HGyG1Pg6xxoPaitJHaXHPjEWtVCzLwN4b8KFE81R_A54cYlkQBcKux_Zw/exec',
   PLT_URL:  'https://script.google.com/macros/s/AKfycbw2lUImV_BOYTRdMf5QfTF283wO8aNt7SEZ406-S0gQHsV3GKvhuh4E9MwMeCzya0OexA/exec',
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbxOnncoQ2E0Kpl5CuL4whFLlVBOCs8yrHpU92kKg2HJ29x2ycmnlmAtSxVPGI7lhfI1sQ/exec',
@@ -13,7 +13,7 @@ window.SUITE = {
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwldCn4VcYcWokcYlNRzv6NmNIox6v3ProkV6cgMwHYO0zDnMphzxOu06XyIxCC8QLf/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
   CASH_URL:  'https://script.google.com/macros/s/AKfycbzLzZK8XIP8ZPikgx6dx_r-jKrVeAfVEUJqEEsLTWfxbfyBVOgAosMEWhJrepWWehQs/exec',   // Cash Ledger GAS
   TASKS_URL: 'https://script.google.com/macros/s/AKfycbwyW-kJ1RyAMO4HWUosaKjFOI_CPGDxDdTWXUsgSx5iTC7AlwL8yd_T21grQ-lQPWpi/exec',   // Company Tasks GAS
-  EMP_URL:   'https://script.google.com/macros/s/AKfycbx9dxw_IKJtFgwXTNNQtEK4MWNYu9MBnHeUYgLBaRPss_0CVa2mxWWWG3L4Z_SAPw4y/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
+  EMP_URL:   'https://script.google.com/macros/s/AKfycbyUye0H_Qp5MkSGzFlmLXqCPBSqARVf4CNeOnYpwuucFTkyk1D__2WFWv5yE9rCjDl6/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
