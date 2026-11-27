@@ -204,6 +204,7 @@
     S.token = d.token;
     try {
       sessionStorage.setItem('suite_token', d.token);
+      if (d.viaEmp) { sessionStorage.setItem('via_emp', '1'); sessionStorage.setItem('via_emp_go', d.viaEmp); } else { sessionStorage.removeItem('via_emp'); sessionStorage.removeItem('via_emp_go'); }
       STAFF_KEYS.forEach(function (k) { sessionStorage.removeItem(k); });
       if (d.staff) sessionStorage.setItem('suite_staff', JSON.stringify(d.staff));
       if (d.sessions && d.sessions.erp_staff) sessionStorage.setItem('erp_staff', JSON.stringify(d.sessions.erp_staff));
@@ -277,7 +278,7 @@
   function signOut() {
     var htk = ''; try { htk = localStorage.getItem('hub_token') || ''; } catch (e) {}
     if (htk && svcRole() !== 'replace') api('SERVICE', 'logout', { token: htk }).catch(function () {});
-    try { SESSION_KEYS.concat(['suite_token'], STAFF_KEYS).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
+    try { SESSION_KEYS.concat(['suite_token', 'via_emp', 'via_emp_go'], STAFF_KEYS).forEach(function (k) { sessionStorage.removeItem(k); }); localStorage.removeItem('erp_user'); } catch (e) {}
     svcClear();
     try { sessionStorage.removeItem('rep_ok'); sessionStorage.removeItem('rep_prefill'); } catch (e) {}
     promoStop();
@@ -321,6 +322,7 @@
       '<small>' + esc(me ? (me.team === 'System Incharge' ? 'Store' : me.team) + ' · ' + me.id : (S.user.roles || []).slice(0, 2).join(' · ') || S.user.username) + '</small></span>';
     buildNav();
     var want = location.hash.replace('#', '');
+    if (!want) { try { var vg = sessionStorage.getItem('via_emp_go'); if (vg && vg !== 'x') { sessionStorage.removeItem('via_emp_go'); want = 'm-' + vg; } } catch (e) {} }   // My Space ke button se seedha us app me
     var first = navItems().filter(function (n) { return n.id !== 'accounts'; })[0] || {};   // Accounts upar hai, par login pe apna app khule
     go(navItems().some(function (n) { return n.id === want; }) ? want : first.id);
     refreshBadge();
@@ -648,6 +650,7 @@
     if (s.sms_session) items.push({ id: 'm-soms', sec: 'Apps', label: M.soms.label, ic: '⧉', mod: 'soms' });
     if (S.user.roles.indexOf('Admin') !== -1) items.push({ id: 'm-cash', sec: 'Apps', label: SUITE.MODULES.cash.label, ic: '₹', mod: 'cash' });
     if (isAdmin) items.push({ id: 'm-me', sec: 'Apps', label: SUITE.MODULES.me.label, ic: '☺', mod: 'me' });
+    else if (sessionStorage.getItem('via_emp')) items.push({ id: 'm-me', sec: 'Apps', label: 'My Space', ic: '☺', mod: 'me' });
     if (isAdmin) items.push({ id: 'm-tasks', sec: 'Apps', label: SUITE.MODULES.tasks.label, ic: '☑', mod: 'tasks' });
     if (svcRole()) items.push({ id: 'm-service', sec: 'Apps', label: SUITE.MODULES.service.label, ic: '🛠', mod: 'service' });
     if (isAdmin && SUITE.AGENT_URL && !/^PASTE_/.test(SUITE.AGENT_URL)) items.push({ id: 'm-agent', sec: 'Admin', label: SUITE.MODULES.agent.label, ic: '✦', mod: 'agent' });
@@ -2004,6 +2007,15 @@
 
     if (/^PASTE_/.test(SUITE.ERP_URL || 'PASTE_')) {
       showLogin(); $('#loginError').textContent = 'GAS URLs are not set in config.js'; return;
+    }
+    var qs = new URLSearchParams(location.search), empTok = qs.get('emp'), goApp = (qs.get('app') || '').toLowerCase();
+    if (empTok) {                                             // My Space se aaya — Emp login hi PIN hai, dobara nahi poochna
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      S.token = '';
+      return api('ERP', 'suiteEmpLogin', { emp: empTok, app: goApp.toUpperCase() }).then(function (d) {
+        d.viaEmp = goApp || 'x';
+        return loggedIn(d);
+      }).catch(function (e) { showLogin(); $('#loginError').textContent = e.message; });
     }
     var tok = '';
     try { tok = sessionStorage.getItem('suite_token') || ''; } catch (e) {}
