@@ -10,7 +10,7 @@ window.SUITE = {
   SOMS_URL: 'https://script.google.com/macros/s/AKfycbxOnncoQ2E0Kpl5CuL4whFLlVBOCs8yrHpU92kKg2HJ29x2ycmnlmAtSxVPGI7lhfI1sQ/exec',
   SERVICE_URL: 'https://script.google.com/macros/s/AKfycbyayM6lxMUhOo_zvaGBsX0Er_bUnptQTzPRck1462FWrqvfpU3aDH01uzNEdBSN5ByMLw/exec',
   REPLACE_URL: 'https://script.google.com/macros/s/AKfycbwl-eGuYBzOOQwBEmEHp9XJoOrJyHU5Ew_SYwS2StlyTLg8mBeiaAr3tMSPe9OiCgrHOw/exec',   // Litpax_Suite_Replacement GAS /exec (Advance Replacement app)
-  AGENT_URL: 'https://script.google.com/macros/s/AKfycbw_mW1YOEZGYL3zA9__Prl0gMTUKVZRrVPSaeeJ3K87zfv_n3mWDcmp9Jfqz9j7D6HX/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
+  AGENT_URL: 'https://script.google.com/macros/s/AKfycbwldCn4VcYcWokcYlNRzv6NmNIox6v3ProkV6cgMwHYO0zDnMphzxOu06XyIxCC8QLf/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
   CASH_URL:  'https://script.google.com/macros/s/AKfycbw9-FObiWVEbRWdA2ZtAJKMJhR-wWfukO0sHkNSsCv_qPFaFG2Hx4l0PPxRDkDflbl8/exec',   // Cash Ledger GAS
   TASKS_URL: 'https://script.google.com/macros/s/AKfycbxBfLvZ-oAP2s9oMuEcdRe3P9BBfVGfIJZpw6vEYqZF7UlmPX56i7HHVh8CjyCiOR4E/exec',   // Company Tasks GAS
   EMP_URL:   'https://script.google.com/macros/s/AKfycby514rAMenUEMwVyesasVtDyYnB4lib14hOKGo_jyqsVmAeLViR9VQy8uoOqJRCFp1O/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
