@@ -13,7 +13,7 @@ window.SUITE = {
   AGENT_URL: 'https://script.google.com/macros/s/AKfycbwldCn4VcYcWokcYlNRzv6NmNIox6v3ProkV6cgMwHYO0zDnMphzxOu06XyIxCC8QLf/exec',     // Litpax_Suite_AGENT GAS /exec (Ask Litpax)
   CASH_URL:  'https://script.google.com/macros/s/AKfycbzLzZK8XIP8ZPikgx6dx_r-jKrVeAfVEUJqEEsLTWfxbfyBVOgAosMEWhJrepWWehQs/exec',   // Cash Ledger GAS
   TASKS_URL: 'https://script.google.com/macros/s/AKfycbwyW-kJ1RyAMO4HWUosaKjFOI_CPGDxDdTWXUsgSx5iTC7AlwL8yd_T21grQ-lQPWpi/exec',   // Company Tasks GAS
-  EMP_URL:   'https://script.google.com/macros/s/AKfycbyvPiswMFLBY6C3w2QVsWxX6RJLgFk7mXL7p52piVdkZViX2JScYco5XyVl8rtJHcA4/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
+  EMP_URL:   'https://script.google.com/macros/s/AKfycbxpuENdSq52cf3gu_8DcdX85KcIXEI2HdvZ3PpvpI2U8oTjc0jUJn_r_B8wFmiRAEnr/exec',   // Employee (My Space) GAS — public /exec, access = Anyone
 
   APP_NAME: 'Litpax Suite',
   TIMEOUT_MS: 45000,
