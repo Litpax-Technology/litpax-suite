@@ -149,8 +149,15 @@
   $('#outBtn').addEventListener('click', function () { signOut(); });
   function go(t) {
     S.tab = t; mark();
-    var m = $('#main'); m.onclick = function (e) { var b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); }; m.classList.toggle('wide', t === 'tasks'); m.innerHTML = SKEL;
+    var m = $('#main'); m.onclick = function (e) { var ob = e.target.closest('[data-openapp]'); if (ob) return openApp(ob.dataset.openapp, ob); var b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); }; m.classList.toggle('wide', t === 'tasks'); m.innerHTML = SKEL;
     ({ home: viewHome, tasks: viewTasks, request: viewRequest, mine: viewMine, inbox: viewInbox, access: viewAccess, team: viewTeam })[t](m);
+  }
+  /** My Space → Suite me bina dobara login ke (2-min signed token) */
+  function openApp(app, btn) {
+    btn.disabled = true;
+    call('suiteHandoff').then(function (r) {
+      location.href = '../index.html?emp=' + encodeURIComponent(r.handoff) + '&app=' + encodeURIComponent(app);
+    }).catch(function (e) { btn.disabled = false; toast(e.message || 'Nahi khul paya', true); });
   }
   function fail(m, e) { m.innerHTML = '<div class="card empty">' + esc(e.message) + '</div>'; }
 
@@ -173,6 +180,9 @@
         (own ? '<button class="btn sm" data-go="request" type="button">Request advance</button>' : '') + '</div>';
       if (d.org && d.org.role) h += '<div class="card" style="padding:12px 16px;margin:0 0 12px"><div class="req-m">Where I work</div><div style="font-weight:600;margin-top:2px">' +
         esc(d.org.role) + (d.org.dept ? ' <span style="font-weight:400;opacity:.7">· ' + esc(d.org.dept) + '</span>' : '') + '</div></div>';
+      var APPN = { ERP: 'ERP', IMS: 'Inventory (IMS)', SOMS: 'Store orders (SOMS)', SERVICE: 'Service Hub' };
+      if (own && d.apps && !d.apps.unavailable && d.apps.length) h += '<div class="card" style="padding:12px 16px;margin:0 0 12px"><div class="req-m">Meri apps</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">' +
+        d.apps.map(function (a) { return '<button class="btn sm" type="button" data-openapp="' + esc(a.app) + '">' + esc(APPN[a.app] || a.app) + ' · ' + esc(a.team) + ' →</button>'; }).join('') + '</div></div>';
       var op = own && (d.requests || []).filter(function (r) { return /^(Pending|Approved)/.test(r.status); })[0];
       if (op) h += '<button class="strip" data-go="mine" type="button"><b>' + money(op.amount) + '</b> advance request · ' + chipFor(op.status) + '<span class="go">Dekho →</span></button>';
 
