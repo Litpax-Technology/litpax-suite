@@ -176,6 +176,26 @@
       var op = own && (d.requests || []).filter(function (r) { return /^(Pending|Approved)/.test(r.status); })[0];
       if (op) h += '<button class="strip" data-go="mine" type="button"><b>' + money(op.amount) + '</b> advance request · ' + chipFor(op.status) + '<span class="go">Dekho →</span></button>';
 
+      var w = d.work;
+      if (w && !w.unavailable && (w.month || (w.recent || []).length)) {
+        var apps = Object.keys(w.byApp || {}).sort(function (x, y) { return w.byApp[y] - w.byApp[x]; }).map(function (k) { return '<span class="chip">' + esc(k) + ' · ' + esc(w.byApp[k]) + '</span>'; }).join(' ');
+        var wr = (w.recent || []).map(function (x) {
+          return '<tr><td>' + esc(String(x.time).slice(5, 16)) + '</td><td>' + esc(x.app) + '</td><td>' + esc([x.action, x.record, x.party].filter(Boolean).join(' · ')) + '</td><td class="r">' + (x.amount !== '' ? money(x.amount) : '') + '</td></tr>';
+        }).join('');
+        h += section('My work in Suite', '<div class="grid">' + kpi('Today', w.today || 0) + kpi('This week', w.week || 0) + kpi('This month', w.month || 0, 'ok') + '</div>' +
+          (apps ? '<div style="margin:10px 0 0">' + apps + '</div>' : '') +
+          '<div class="card" style="margin-top:12px"><div class="tbl-wrap"><table><thead><tr><th>When</th><th>App</th><th>What</th><th class="r">Amount</th></tr></thead><tbody>' + (wr || '<tr><td colspan="4" class="empty">Abhi kuch nahi</td></tr>') + '</tbody></table></div></div>');
+      }
+      var cs = d.cash;
+      if (cs && !cs.unavailable && (cs.openEntries || cs.pending || cs.monthSpent || (cs.tickets && cs.tickets.open))) {
+        var tk = (cs.tickets && cs.tickets.list || []).map(function (x) {
+          return '<tr><td class="mono">' + esc(x.id) + '</td><td>' + esc(x.customer) + '</td><td>' + chipFor(x.status) + '</td><td>' + esc(x.priority) + '</td></tr>';
+        }).join('');
+        h += section('Cash & field tickets', '<div class="grid">' + kpi(cs.net < 0 ? 'Company owes me' : 'Cash in hand', money(Math.abs(cs.net)), cs.net < 0 ? 'warn' : '') +
+          kpi('Waiting for Owner', cs.pending || 0, cs.pending ? 'warn' : '') + kpi('Spent this month', money(cs.monthSpent)) + kpi('Open tickets', (cs.tickets && cs.tickets.open) || 0) + '</div>' +
+          (tk ? '<div class="card" style="margin-top:12px"><div class="tbl-wrap"><table><thead><tr><th>Ticket</th><th>Customer</th><th>Status</th><th>Priority</th></tr></thead><tbody>' + tk + '</tbody></table></div></div>' : ''));
+      }
+
       var t = d.tasks;
       if (t && !t.unavailable) {
         h += section('Company Tasks', '<div class="grid">' + kpi('Open', t.open || 0) + kpi('Overdue', t.overdue || 0, t.overdue ? 'bad' : '') +
