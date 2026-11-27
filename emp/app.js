@@ -176,6 +176,15 @@
       var op = own && (d.requests || []).filter(function (r) { return /^(Pending|Approved)/.test(r.status); })[0];
       if (op) h += '<button class="strip" data-go="mine" type="button"><b>' + money(op.amount) + '</b> advance request · ' + chipFor(op.status) + '<span class="go">Dekho →</span></button>';
 
+      var sl = d.sales;
+      if (sl && !sl.unavailable && sl.team) {
+        var sr = (sl.recent || []).map(function (x) {
+          return '<tr><td class="mono">' + esc(x.id) + '</td><td>' + esc(String(x.date).slice(0, 10)) + '</td><td>' + esc(x.customer) + '</td><td class="r">' + money(x.value) + '</td><td>' + chipFor(x.status) + '</td></tr>';
+        }).join('');
+        h += section('ERP · ' + sl.team + ' (' + sl.salesName + ')', '<div class="grid">' + kpi('My orders', sl.orders) + kpi('Open orders', sl.open, sl.open ? 'warn' : '') +
+          kpi('This month', sl.monthOrders + ' · ' + money(sl.monthValue)) + kpi('Total value', money(sl.value)) + '</div>' +
+          '<div class="card" style="margin-top:12px"><div class="tbl-wrap"><table><thead><tr><th>Order</th><th>Date</th><th>Customer</th><th class="r">Value</th><th>Status</th></tr></thead><tbody>' + (sr || '<tr><td colspan="5" class="empty">Is naam pe koi order nahi mila — Sales Name check karo</td></tr>') + '</tbody></table></div></div>');
+      }
       var w = d.work;
       if (w && !w.unavailable && (w.month || (w.recent || []).length)) {
         var apps = Object.keys(w.byApp || {}).sort(function (x, y) { return w.byApp[y] - w.byApp[x]; }).map(function (k) { return '<span class="chip">' + esc(k) + ' · ' + esc(w.byApp[k]) + '</span>'; }).join(' ');
